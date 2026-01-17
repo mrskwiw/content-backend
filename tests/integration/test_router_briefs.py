@@ -68,7 +68,7 @@ def auth_headers_user_a(test_user_a, client):
     # test_user_a MUST come before client to ensure database is set up first
     response = client.post(
         "/api/auth/login",
-        json={"email": "usera@example.com", "password": "testpass123"},
+        json={"email": "usera@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -80,7 +80,7 @@ def auth_headers_user_b(test_user_b, client):
     # test_user_b MUST come before client to ensure database is set up first
     response = client.post(
         "/api/auth/login",
-        json={"email": "userb@example.com", "password": "testpass123"},
+        json={"email": "userb@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

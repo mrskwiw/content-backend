@@ -4,6 +4,7 @@ CLI Executor - Execute Python CLI scripts and parse output
 Handles subprocess execution of run_jumpstart.py and other CLI tools
 Uses asyncio.create_subprocess_exec (safe, no shell injection)
 """
+
 import asyncio
 import json
 import re
@@ -54,7 +55,8 @@ class CLIExecutor:
             self.python_exe,
             str(self.project_root / "run_jumpstart.py"),
             brief_path,
-            "-n", str(num_posts),
+            "-n",
+            str(num_posts),
         ]
 
         if platform:
@@ -76,8 +78,8 @@ class CLIExecutor:
 
             stdout, stderr = await process.communicate()
 
-            stdout_text = stdout.decode('utf-8', errors='replace')
-            stderr_text = stderr.decode('utf-8', errors='replace')
+            stdout_text = stdout.decode("utf-8", errors="replace")
+            stderr_text = stderr.decode("utf-8", errors="replace")
 
             logger.info(f"Process exit code: {process.returncode}")
 
@@ -167,7 +169,7 @@ class CLIExecutor:
         files = {}
 
         # Find output directory
-        dir_match = re.search(r'Deliverables saved to:\s*(.+?)$', stdout, re.MULTILINE)
+        dir_match = re.search(r"Deliverables saved to:\s*(.+?)$", stdout, re.MULTILINE)
         if dir_match:
             output_dir = Path(dir_match.group(1).strip())
 
@@ -195,7 +197,7 @@ class CLIExecutor:
                 logger.warning(f"Posts JSON file not found: {json_path}")
                 return []
 
-            with open(json_path, 'r', encoding='utf-8') as f:
+            with open(json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             if isinstance(data, list):
@@ -203,7 +205,7 @@ class CLIExecutor:
             elif isinstance(data, dict) and "posts" in data:
                 return data["posts"]
             else:
-                logger.warning(f"Unexpected JSON structure")
+                logger.warning("Unexpected JSON structure")
                 return []
 
         except Exception as e:

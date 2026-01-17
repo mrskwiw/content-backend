@@ -271,7 +271,7 @@ ARCHETYPES = {
 class BrandArchetypeAnalyzer(ResearchTool, CommonValidationMixin):
     """Analyzes brand positioning to determine primary and secondary archetypes"""
 
-    def __init__(self, project_id: str, config: Dict[str, Any] = None):
+    def __init__(self, project_id: str, config: Optional[Dict[str, Any]] = None):
         """Initialize brand archetype analyzer with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)

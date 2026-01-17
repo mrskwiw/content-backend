@@ -236,12 +236,7 @@ class LengthValidator:
         # Check first post's target_platform field
         first_post = posts[0]
         if hasattr(first_post, "target_platform") and first_post.target_platform:
-            # Handle both Platform enum (new) and string (backward compatibility)
-            if isinstance(first_post.target_platform, Platform):
-                return first_post.target_platform  # Already an enum
-            try:
-                return Platform(first_post.target_platform)  # Convert string to enum
-            except ValueError:
-                return None
+            # target_platform is already typed as Optional[Platform]
+            return first_post.target_platform
 
         return None

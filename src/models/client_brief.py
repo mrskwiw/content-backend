@@ -1,4 +1,5 @@
 """Client brief data models for content generation"""
+
 from enum import Enum
 from typing import List, Optional
 
@@ -64,6 +65,9 @@ class ClientBrief(BaseModel):
     # Voice & Tone
     brand_personality: List[TonePreference] = Field(
         default_factory=list, description="Brand personality traits"
+    )
+    brand_voice: Optional[str] = Field(
+        None, description="Enhanced brand voice description (for AI context)"
     )
     tone_to_avoid: Optional[str] = Field(None, description="What tone to avoid")
     key_phrases: List[str] = Field(default_factory=list, description="Client's common phrases")

@@ -36,11 +36,22 @@ wheels/
 .installed.cfg
 *.egg
 
-# Testing
+# Testing (not needed in deployment)
+tests/
+backend/tests/
+operator-dashboard/src/__tests__/
+operator-dashboard/tests/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+coverage*.json
+test_*.txt
+*_test.py
 
 # IDEs
 .vscode/
@@ -64,6 +75,18 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Development documentation (not needed in deployment)
+*.md
+!README.md
+PHASE*.md
+*COMPLETION*.md
+*SUMMARY*.md
+*_PLAN*.md
+*_REPORT*.md
+BUGS.md
+ERROR_LOG.md
+docs/
 
 # Development artifacts
 *.pyc

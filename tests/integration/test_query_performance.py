@@ -12,14 +12,16 @@ using JOINs = 1 total query (GOOD)
 
 Performance Impact: 50x improvement (500ms → 10ms for 100 items)
 """
+
 # Force UTF-8 encoding on Windows to handle emojis in crud.py print statements
 import sys
 import os
-if sys.platform == 'win32':
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
+
+if sys.platform == "win32":
+    os.environ["PYTHONIOENCODING"] = "utf-8"
     # Reconfigure stdout/stderr for UTF-8
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 import pytest
 from sqlalchemy import event, create_engine
@@ -40,7 +42,7 @@ def test_engine():
 
     # Import and create test-specific model definitions using TestBase
     # This avoids conflicts with backend.models which use backend.database.Base
-    from sqlalchemy import Column, String, ForeignKey, DateTime, Text, JSON, Integer, Float, Boolean
+    from sqlalchemy import Column, String, ForeignKey, DateTime, Text, JSON, Integer, Float
     from sqlalchemy.orm import relationship
     from sqlalchemy.sql import func
 
@@ -53,7 +55,7 @@ def test_engine():
         business_description = Column(Text)
         ideal_customer = Column(Text)
         main_problem_solved = Column(Text)
-        tone_preference = Column(String, default='professional')
+        tone_preference = Column(String, default="professional")
         platforms = Column(JSON)
         customer_pain_points = Column(JSON)
         customer_questions = Column(JSON)
@@ -84,7 +86,7 @@ def test_engine():
     # Store test models as engine attributes for access by tests
     engine.Client = Client
     engine.Project = Project
-    engine.test_models = {'Client': Client, 'Project': Project}
+    engine.test_models = {"Client": Client, "Project": Project}
 
     TestBase.metadata.create_all(bind=engine)
     yield engine
@@ -137,29 +139,17 @@ class QueryCounter:
 
     def __enter__(self):
         """Start listening to query events"""
-        event.listen(
-            self.connection,
-            "before_cursor_execute",
-            self._count_query
-        )
+        event.listen(self.connection, "before_cursor_execute", self._count_query)
         return self
 
     def __exit__(self, *args):
         """Stop listening to query events"""
-        event.remove(
-            self.connection,
-            "before_cursor_execute",
-            self._count_query
-        )
+        event.remove(self.connection, "before_cursor_execute", self._count_query)
 
     def _count_query(self, conn, cursor, statement, parameters, context, executemany):
         """Increment query counter and log query"""
         self.count += 1
-        self.queries.append({
-            'statement': statement,
-            'parameters': parameters,
-            'count': self.count
-        })
+        self.queries.append({"statement": statement, "parameters": parameters, "count": self.count})
 
 
 @pytest.fixture
@@ -172,11 +162,10 @@ def seed_test_data(db_session, test_engine):
     - 3 projects per client (15 total)
     """
     import uuid
-    from datetime import datetime
 
     # Get test model classes from the engine
-    Client = test_engine.test_models['Client']
-    Project = test_engine.test_models['Project']
+    Client = test_engine.test_models["Client"]
+    Project = test_engine.test_models["Project"]
 
     clients = []
     projects = []
@@ -189,7 +178,7 @@ def seed_test_data(db_session, test_engine):
             email=f"client{i}@example.com",
             business_description=f"Test business description for client {i}",
             ideal_customer=f"Audience {i}",
-            tone_preference="professional"
+            tone_preference="professional",
         )
         db_session.add(client)
         db_session.flush()  # Get client.id
@@ -203,17 +192,14 @@ def seed_test_data(db_session, test_engine):
                 client_id=client.id,
                 status="draft",
                 num_posts=30,
-                total_price=1200.0
+                total_price=1200.0,
             )
             db_session.add(project)
             projects.append(project)
 
     db_session.commit()
 
-    return {
-        'clients': clients,
-        'projects': projects
-    }
+    return {"clients": clients, "projects": projects}
 
 
 def test_get_projects_no_n_plus_one(db_session, seed_test_data, test_engine):
@@ -228,14 +214,12 @@ def test_get_projects_no_n_plus_one(db_session, seed_test_data, test_engine):
     """
     from sqlalchemy.orm import joinedload
 
-    Project = test_engine.test_models['Project']
+    Project = test_engine.test_models["Project"]
 
     with QueryCounter(db_session.bind) as counter:
         # Query projects WITH eager loading using joinedload()
         # This fetches both projects AND their clients in a single query with JOIN
-        projects = db_session.query(Project).options(
-            joinedload(Project.client)
-        ).limit(10).all()
+        projects = db_session.query(Project).options(joinedload(Project.client)).limit(10).all()
 
         # Access client relationship - should NOT trigger additional queries
         # because joinedload() already fetched the clients
@@ -248,11 +232,9 @@ def test_get_projects_no_n_plus_one(db_session, seed_test_data, test_engine):
         f"Expected: 1 query (with eager loading via JOIN)\n"
         f"Got: {counter.count} queries\n"
         f"This indicates joinedload() is not working properly.\n"
-        f"\nQueries executed:\n" +
-        "\n".join(f"{i+1}. {q['statement'][:200]}" for i, q in enumerate(counter.queries[:5]))
+        f"\nQueries executed:\n"
+        + "\n".join(f"{i+1}. {q['statement'][:200]}" for i, q in enumerate(counter.queries[:5]))
     )
-
-
 
 
 def test_get_clients_no_n_plus_one(db_session, seed_test_data, test_engine):
@@ -267,14 +249,12 @@ def test_get_clients_no_n_plus_one(db_session, seed_test_data, test_engine):
     """
     from sqlalchemy.orm import joinedload
 
-    Client = test_engine.test_models['Client']
+    Client = test_engine.test_models["Client"]
 
     with QueryCounter(db_session.bind) as counter:
         # Query clients WITH eager loading using joinedload()
         # This fetches both clients AND their projects in a single query with JOIN
-        clients = db_session.query(Client).options(
-            joinedload(Client.projects)
-        ).limit(10).all()
+        clients = db_session.query(Client).options(joinedload(Client.projects)).limit(10).all()
 
         # Access projects relationship - should NOT trigger additional queries
         # because joinedload() already fetched the projects
@@ -291,8 +271,8 @@ def test_get_clients_no_n_plus_one(db_session, seed_test_data, test_engine):
         f"Expected: 1 query (with eager loading via JOIN)\n"
         f"Got: {counter.count} queries\n"
         f"This indicates joinedload() is not working properly.\n"
-        f"\nQueries executed:\n" +
-        "\n".join(f"{i+1}. {q['statement'][:200]}" for i, q in enumerate(counter.queries[:5]))
+        f"\nQueries executed:\n"
+        + "\n".join(f"{i+1}. {q['statement'][:200]}" for i, q in enumerate(counter.queries[:5]))
     )
 
 
@@ -310,16 +290,19 @@ def test_get_project_single_no_n_plus_one(db_session, seed_test_data, test_engin
     """
     from sqlalchemy.orm import joinedload
 
-    Project = test_engine.test_models['Project']
+    Project = test_engine.test_models["Project"]
 
     # Get first project ID
-    project = seed_test_data['projects'][0]
+    project = seed_test_data["projects"][0]
 
     with QueryCounter(db_session.bind) as counter:
         # Get single project with eager loading
-        fetched_project = db_session.query(Project).options(
-            joinedload(Project.client)
-        ).filter(Project.id == project.id).first()
+        fetched_project = (
+            db_session.query(Project)
+            .options(joinedload(Project.client))
+            .filter(Project.id == project.id)
+            .first()
+        )
 
         # Access client relationship - should NOT trigger additional queries
         # beyond the initial 2 (see docstring)
@@ -348,16 +331,19 @@ def test_get_client_single_no_n_plus_one(db_session, seed_test_data, test_engine
     """
     from sqlalchemy.orm import joinedload
 
-    Client = test_engine.test_models['Client']
+    Client = test_engine.test_models["Client"]
 
     # Get first client ID
-    client = seed_test_data['clients'][0]
+    client = seed_test_data["clients"][0]
 
     with QueryCounter(db_session.bind) as counter:
         # Get single client with eager loading
-        fetched_client = db_session.query(Client).options(
-            joinedload(Client.projects)
-        ).filter(Client.id == client.id).first()
+        fetched_client = (
+            db_session.query(Client)
+            .options(joinedload(Client.projects))
+            .filter(Client.id == client.id)
+            .first()
+        )
 
         # Access projects relationship - should NOT trigger additional queries
         # beyond the initial 2 (see docstring)
@@ -374,8 +360,6 @@ def test_get_client_single_no_n_plus_one(db_session, seed_test_data, test_engine
     )
 
 
-
-
 def test_query_counter_detects_multiple_queries(db_session, seed_test_data, test_engine):
     """
     Verify QueryCounter correctly counts multiple queries.
@@ -385,15 +369,21 @@ def test_query_counter_detects_multiple_queries(db_session, seed_test_data, test
     Note: In SQLite, each filter().first() executes 2 queries,
     so 3 iterations = 6 total queries (expected behavior).
     """
-    Client = test_engine.test_models['Client']
+    Client = test_engine.test_models["Client"]
 
     with QueryCounter(db_session.bind) as counter:
         # Intentionally trigger multiple queries
         for i in range(3):
-            _ = db_session.query(Client).filter(Client.id == seed_test_data['clients'][i].id).first()
+            _ = (
+                db_session.query(Client)
+                .filter(Client.id == seed_test_data["clients"][i].id)
+                .first()
+            )
 
     # SQLite executes 2 queries per filter().first() = 3 iterations × 2 = 6 queries
-    assert counter.count == 6, f"QueryCounter should detect 6 queries (3 iterations × 2 per filter), got {counter.count}"
+    assert (
+        counter.count == 6
+    ), f"QueryCounter should detect 6 queries (3 iterations × 2 per filter), got {counter.count}"
     assert len(counter.queries) == 6, "QueryCounter should store query details for all 6 queries"
 
 
@@ -409,21 +399,19 @@ def test_performance_improvement_documentation(db_session, seed_test_data, test_
     import time
     from sqlalchemy.orm import joinedload
 
-    Project = test_engine.test_models['Project']
+    Project = test_engine.test_models["Project"]
 
     # Test with eager loading (current implementation)
     start = time.time()
     with QueryCounter(db_session.bind) as eager_counter:
-        projects = db_session.query(Project).options(
-            joinedload(Project.client)
-        ).limit(10).all()
+        projects = db_session.query(Project).options(joinedload(Project.client)).limit(10).all()
         for project in projects:
             _ = project.client.name
     eager_time = time.time() - start
 
-    print(f"\n📊 Performance Metrics:")
+    print("\n📊 Performance Metrics:")
     print(f"   Eager Loading: {eager_counter.count} queries in {eager_time*1000:.2f}ms")
-    print(f"   Expected without eager loading: ~11 queries (1 + 10*1)")
+    print("   Expected without eager loading: ~11 queries (1 + 10*1)")
     print(f"   Performance improvement: ~{10/max(eager_counter.count, 1):.0f}x fewer queries")
 
     # This test always passes - it's for documentation

@@ -191,7 +191,7 @@ class CoordinatorAgent:
 
         schedule_start = start_date or date.today()
 
-        saved_files = self.output_formatter.save_complete_package(
+        saved_files: Dict[str, Path] = self.output_formatter.save_complete_package(
             posts=posts,
             client_brief=client_brief,
             client_name=client_brief.company_name,
@@ -274,11 +274,11 @@ class CoordinatorAgent:
 
             logger.info(f"   Parsing brief from: {file_path.name}")
             brief_text = file_path.read_text(encoding="utf-8")
-            client_brief = self.brief_parser.parse_brief(brief_text)
+            parsed_brief: ClientBrief = self.brief_parser.parse_brief(brief_text)
 
             if interactive:
-                return await self._fill_missing_fields(client_brief)
-            return client_brief
+                return await self._fill_missing_fields(parsed_brief)
+            return parsed_brief
 
         raise TypeError(f"Unsupported brief_input type: {type(brief_input)}")
 
@@ -356,7 +356,7 @@ class CoordinatorAgent:
             sample_posts.append(post)
 
         # Analyze voice patterns
-        voice_guide = self.voice_analyzer.analyze_voice_patterns(
+        voice_guide: EnhancedVoiceGuide = self.voice_analyzer.analyze_voice_patterns(
             posts=sample_posts,
             client_brief=client_brief,
         )
@@ -384,7 +384,7 @@ class CoordinatorAgent:
 
         # Pain points
         print("\nCustomer Pain Points (enter one per line, empty line to finish):")
-        pain_points = []
+        pain_points: list[str] = []
         while True:
             pain = input(f"  Pain point #{len(pain_points) + 1}: ").strip()
             if not pain:
@@ -427,7 +427,7 @@ class CoordinatorAgent:
 
         # Key phrases
         print("\nKey Phrases/Taglines (enter one per line, empty line to finish):")
-        key_phrases = []
+        key_phrases: list[str] = []
         while True:
             phrase = input(f"  Phrase #{len(key_phrases) + 1}: ").strip()
             if not phrase:
@@ -439,7 +439,7 @@ class CoordinatorAgent:
 
         # Customer questions
         print("\nCommon Customer Questions (enter one per line, empty line to finish):")
-        questions = []
+        questions: list[str] = []
         while True:
             question = input(f"  Question #{len(questions) + 1}: ").strip()
             if not question:

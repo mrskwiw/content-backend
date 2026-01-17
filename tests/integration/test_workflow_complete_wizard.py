@@ -51,7 +51,7 @@ def auth_headers(client, test_user):
     """Get auth headers"""
     response = client.post(
         "/api/auth/login",
-        json={"email": "wizard@example.com", "password": "testpass123"},
+        json={"email": "wizard@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -380,7 +380,10 @@ class TestCompleteWizardWorkflow:
         # Get auth headers for user B
         login_response = client.post(
             "/api/auth/login",
-            json={"email": "userb@example.com", "password": "testpass123"},
+            json={
+                "email": "userb@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
         user_b_headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 

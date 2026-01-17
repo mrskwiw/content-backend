@@ -68,7 +68,7 @@ def auth_headers_user_a(test_user_a, client):
     """Get auth headers for user A"""
     response = client.post(
         "/api/auth/login",
-        json={"email": "usera@example.com", "password": "testpass123"},
+        json={"email": "usera@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -79,7 +79,7 @@ def auth_headers_user_b(test_user_b, client):
     """Get auth headers for user B"""
     response = client.post(
         "/api/auth/login",
-        json={"email": "userb@example.com", "password": "testpass123"},
+        json={"email": "userb@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -275,7 +275,7 @@ class TestGenerateAllEndpoint:
 
         # Wait for generation to complete (or poll status)
         # In real implementation, this might be async
-        run_id = response.json().get("run_id") or response.json().get("id")
+        _run_id = response.json().get("run_id") or response.json().get("id")  # noqa: F841
 
         # Check if posts were created
         posts = db_session.query(Post).filter(Post.project_id == project_with_brief.id).all()

@@ -113,12 +113,8 @@ class CTAValidator:
             return None
         first_post = posts[0]
         if hasattr(first_post, "target_platform") and first_post.target_platform:
-            if isinstance(first_post.target_platform, Platform):
-                return first_post.target_platform
-            try:
-                return Platform(first_post.target_platform)
-            except ValueError:
-                pass
+            # target_platform is already typed as Optional[Platform]
+            return first_post.target_platform
         return None
 
     def _extract_cta_types(self, posts: List[Post]) -> List[str]:

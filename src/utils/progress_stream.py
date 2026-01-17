@@ -122,13 +122,15 @@ class ProgressStream:
 
         if total is not None and total != self.total:
             self.total = total
-            self.progress.update(self.task_id, total=total)
+            if self.task_id is not None:
+                self.progress.update(self.task_id, total=total)
 
         if status:
             self.status_message = status
 
         # Update progress
-        self.progress.update(self.task_id, completed=current, description=status or self.title)
+        if self.task_id is not None:
+            self.progress.update(self.task_id, completed=current, description=status or self.title)
 
         # Refresh display
         if self.live:
@@ -157,7 +159,8 @@ class ProgressStream:
             status: New status message
         """
         self.status_message = status
-        self.progress.update(self.task_id, description=status)
+        if self.task_id is not None:
+            self.progress.update(self.task_id, description=status)
 
         if self.live:
             self.live.update(self._render())
@@ -258,7 +261,8 @@ class SimpleProgress:
         Args:
             message: New message
         """
-        elapsed = time.time() - self.start_time
+        start = self.start_time if self.start_time is not None else time.time()
+        elapsed = time.time() - start
         self.console.print(f"  [{elapsed:.1f}s] {message}")
 
 

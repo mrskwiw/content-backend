@@ -2,7 +2,11 @@
 
 Uses lazy imports for docx library to reduce startup time.
 Heavy modules are only loaded when DOCX generation is actually needed.
+
+Note: python-docx library lacks type stubs, so mypy errors are ignored for docx imports.
 """
+
+# mypy: disable-error-code="valid-type, attr-defined"
 
 from datetime import datetime
 from pathlib import Path
@@ -10,7 +14,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 # Lazy imports - these modules are heavy and only loaded when needed
 if TYPE_CHECKING:
-    from docx import Document
+    from docx import Document  # type: ignore[import]
 
 from ..models.client_brief import ClientBrief
 from ..models.post import Post

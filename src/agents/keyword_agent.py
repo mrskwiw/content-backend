@@ -107,7 +107,7 @@ class KeywordExtractionAgent:
 
         # Strategy 3: Try to parse JSON
         try:
-            data = json.loads(text)
+            data: Dict[str, Any] = json.loads(text)
             logger.debug("Successfully parsed JSON response")
             return data
         except json.JSONDecodeError as e:
@@ -133,9 +133,9 @@ class KeywordExtractionAgent:
                     text_fixed += "]" * (open_brackets - close_brackets)
 
                 try:
-                    data = json.loads(text_fixed)
+                    data_fixed: Dict[str, Any] = json.loads(text_fixed)
                     logger.info("Successfully repaired truncated JSON")
-                    return data
+                    return data_fixed
                 except json.JSONDecodeError:
                     pass
 

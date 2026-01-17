@@ -1,6 +1,14 @@
-import json, urllib.request
-pkgs = ['"'"'starlette'"'"','"'"'python-multipart'"'"','"'"'python-jose'"'"','"'"'ecdsa'"'"','"'"'requests'"'"']
+import json
+import urllib.request
+
+pkgs = [
+    '"' "'starlette'" '"',
+    '"' "'python-multipart'" '"',
+    '"' "'python-jose'" '"',
+    '"' "'ecdsa'" '"',
+    '"' "'requests'" '"',
+]
 for name in pkgs:
-    with urllib.request.urlopen(f"https://pypi.org/pypi/{name}/json") as resp:
+    with urllib.request.urlopen(f"https://pypi.org/pypi/{name}/json") as resp:  # nosec B310
         data = json.load(resp)
     print(f"{name} {data['"'"'info'"'"']['"'"'version'"'"']}")

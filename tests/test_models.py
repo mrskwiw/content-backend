@@ -1,7 +1,5 @@
 """Unit tests for data models"""
 
-import pytest
-
 from src.models.client_brief import ClientBrief, Platform, TonePreference
 from src.models.post import Post
 from src.models.template import Template, TemplateDifficulty, TemplateType

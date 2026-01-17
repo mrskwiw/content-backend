@@ -68,7 +68,10 @@ class TestLoginEndpoint:
         """Test successful login with valid credentials"""
         response = client.post(
             "/api/auth/login",
-            json={"email": "test@example.com", "password": "testpass123"  # pragma: allowlist secret},
+            json={
+                "email": "test@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
 
         assert response.status_code == 200
@@ -83,7 +86,10 @@ class TestLoginEndpoint:
         """Test login with non-existent email"""
         response = client.post(
             "/api/auth/login",
-            json={"email": "nonexistent@example.com", "password": "anypass"  # pragma: allowlist secret},
+            json={
+                "email": "nonexistent@example.com",
+                "password": "anypass",
+            },  # pragma: allowlist secret
         )
 
         assert response.status_code == 401
@@ -93,7 +99,10 @@ class TestLoginEndpoint:
         """Test login with wrong password"""
         response = client.post(
             "/api/auth/login",
-            json={"email": "test@example.com", "password": "wrongpassword"  # pragma: allowlist secret},
+            json={
+                "email": "test@example.com",
+                "password": "wrongpassword",
+            },  # pragma: allowlist secret
         )
 
         assert response.status_code == 401
@@ -103,7 +112,10 @@ class TestLoginEndpoint:
         """Test login with inactive user account"""
         response = client.post(
             "/api/auth/login",
-            json={"email": "inactive@example.com", "password": "testpass123"  # pragma: allowlist secret},
+            json={
+                "email": "inactive@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
 
         assert response.status_code in [401, 403]  # Could be 401 or 403 depending on implementation
@@ -116,7 +128,9 @@ class TestLoginEndpoint:
         assert response.status_code == 422
 
         # Missing email
-        response = client.post("/api/auth/login", json={"password": "testpass123"  # pragma: allowlist secret})
+        response = client.post(
+            "/api/auth/login", json={"password": "testpass123"}
+        )  # pragma: allowlist secret
         assert response.status_code == 422
 
         # Empty body
@@ -127,7 +141,7 @@ class TestLoginEndpoint:
         """Test login with invalid email format"""
         response = client.post(
             "/api/auth/login",
-            json={"email": "not-an-email", "password": "testpass123"  # pragma: allowlist secret},
+            json={"email": "not-an-email", "password": "testpass123"},  # pragma: allowlist secret
         )
 
         assert response.status_code == 422
@@ -139,7 +153,10 @@ class TestLoginEndpoint:
         for i in range(11):
             response = client.post(
                 "/api/auth/login",
-                json={"email": f"test{i}@example.com", "password": "testpass123"  # pragma: allowlist secret},
+                json={
+                    "email": f"test{i}@example.com",
+                    "password": "testpass123",
+                },  # pragma: allowlist secret
             )
 
             if i < 10:
@@ -158,7 +175,10 @@ class TestRefreshTokenEndpoint:
         # First, login to get tokens
         login_response = client.post(
             "/api/auth/login",
-            json={"email": "test@example.com", "password": "testpass123"  # pragma: allowlist secret},
+            json={
+                "email": "test@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
         assert login_response.status_code == 200
         refresh_token = login_response.json()["refresh_token"]
@@ -189,7 +209,10 @@ class TestRefreshTokenEndpoint:
         # Login to get access token
         login_response = client.post(
             "/api/auth/login",
-            json={"email": "test@example.com", "password": "testpass123"  # pragma: allowlist secret},
+            json={
+                "email": "test@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
         access_token = login_response.json()["access_token"]
 
@@ -218,7 +241,7 @@ class TestUserCreationEndpoint:
             "/api/auth/users",
             json={
                 "email": "newuser@example.com",
-                "password": "SecurePass123!"  # pragma: allowlist secret,
+                "password": "SecurePass123!",  # pragma: allowlist secret
                 "full_name": "New User",
             },
         )
@@ -237,7 +260,7 @@ class TestUserCreationEndpoint:
             "/api/auth/users",
             json={
                 "email": "test@example.com",  # Already exists
-                "password": "SecurePass123!"  # pragma: allowlist secret,
+                "password": "SecurePass123!",  # pragma: allowlist secret
                 "full_name": "Duplicate User",
             },
         )
@@ -251,14 +274,22 @@ class TestUserCreationEndpoint:
         # Too short
         response = client.post(
             "/api/auth/users",
-            json={"email": "user@example.com", "password": "123"  # pragma: allowlist secret, "full_name": "User"},
+            json={
+                "email": "user@example.com",
+                "password": "123",
+                "full_name": "User",
+            },  # pragma: allowlist secret
         )
         assert response.status_code == 422
 
         # No special characters (if required)
         response = client.post(
             "/api/auth/users",
-            json={"email": "user@example.com", "password": "password123"  # pragma: allowlist secret, "full_name": "User"},
+            json={
+                "email": "user@example.com",
+                "password": "password123",
+                "full_name": "User",
+            },  # pragma: allowlist secret
         )
         # May pass or fail depending on password policy
         assert response.status_code in [201, 422]
@@ -285,7 +316,10 @@ class TestAuthenticationHeaders:
         # Login to get token
         login_response = client.post(
             "/api/auth/login",
-            json={"email": "test@example.com", "password": "testpass123"  # pragma: allowlist secret},
+            json={
+                "email": "test@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
         access_token = login_response.json()["access_token"]
 
@@ -339,7 +373,10 @@ class TestPasswordSecurity:
         # Login
         response = client.post(
             "/api/auth/login",
-            json={"email": "test@example.com", "password": "testpass123"  # pragma: allowlist secret},
+            json={
+                "email": "test@example.com",
+                "password": "testpass123",
+            },  # pragma: allowlist secret
         )
 
         data = response.json()
@@ -360,7 +397,7 @@ class TestPasswordSecurity:
         """Test password verification function"""
         from backend.utils.auth import get_password_hash, verify_password
 
-        password = "testpass123"
+        password = "testpass123"  # pragma: allowlist secret
         hashed = get_password_hash(password)
 
         # Correct password should verify

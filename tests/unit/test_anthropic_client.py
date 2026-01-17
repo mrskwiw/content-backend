@@ -35,7 +35,7 @@ def mock_anthropic_response():
 def mock_settings():
     """Mock settings for testing"""
     with patch("src.utils.anthropic_client.settings") as mock_settings:
-        mock_settings.ANTHROPIC_API_KEY = "test_api_key_123"
+        mock_settings.ANTHROPIC_API_KEY = "test_api_key_123"  # pragma: allowlist secret
         mock_settings.ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
         mock_settings.MAX_TOKENS = 4096
         mock_settings.TEMPERATURE = 0.7
@@ -52,13 +52,13 @@ class TestAnthropicClientInit:
 
     def test_init_with_api_key(self, mock_settings):
         """Test initialization with explicit API key"""
-        client = AnthropicClient(api_key="custom_key")
+        client = AnthropicClient(api_key="custom_key")  # pragma: allowlist secret
         assert client.api_key == "custom_key"
 
     def test_init_with_settings_api_key(self, mock_settings):
         """Test initialization uses settings API key by default"""
         client = AnthropicClient()
-        assert client.api_key == "test_api_key_123"
+        assert client.api_key == "test_api_key_123"  # pragma: allowlist secret
 
     def test_init_missing_api_key(self):
         """Test initialization fails without API key"""
@@ -531,7 +531,7 @@ class TestGetDefaultClient:
     @patch("src.utils.anthropic_client.settings")
     def test_get_default_client_returns_instance(self, mock_settings):
         """Test get_default_client returns AnthropicClient instance"""
-        mock_settings.ANTHROPIC_API_KEY = "test_key"
+        mock_settings.ANTHROPIC_API_KEY = "test_key"  # pragma: allowlist secret
         mock_settings.ENABLE_RESPONSE_CACHE = False
         client = get_default_client()
         assert isinstance(client, AnthropicClient)
@@ -539,7 +539,7 @@ class TestGetDefaultClient:
     @patch("src.utils.anthropic_client.settings")
     def test_get_default_client_singleton(self, mock_settings):
         """Test get_default_client returns same instance"""
-        mock_settings.ANTHROPIC_API_KEY = "test_key"
+        mock_settings.ANTHROPIC_API_KEY = "test_key"  # pragma: allowlist secret
         mock_settings.ENABLE_RESPONSE_CACHE = False
         client1 = get_default_client()
         client2 = get_default_client()

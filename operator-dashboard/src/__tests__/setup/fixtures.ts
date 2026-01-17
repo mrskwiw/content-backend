@@ -129,7 +129,7 @@ export const mockDeliverables: Deliverable[] = [
     path: '/data/outputs/AcmeCorp/deliverable.txt',
     status: 'ready',
     fileSizeBytes: 15360,
-    checksum: 'abc123def456',
+    checksum: 'abc123def456', // pragma: allowlist secret
     createdAt: '2024-01-01T10:10:00Z',
     deliveredAt: null,
     proofUrl: null,

@@ -192,12 +192,8 @@ class HeadlineValidator:
             return None
         first_post = posts[0]
         if hasattr(first_post, "target_platform") and first_post.target_platform:
-            if isinstance(first_post.target_platform, Platform):
-                return first_post.target_platform
-            try:
-                return Platform(first_post.target_platform)
-            except ValueError:
-                return None
+            # target_platform is already typed as Optional[Platform]
+            return first_post.target_platform
         return None
 
     def _count_engagement_elements(self, headline: str) -> int:

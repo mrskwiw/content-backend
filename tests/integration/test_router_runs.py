@@ -67,7 +67,7 @@ def auth_headers_user_a(test_user_a, client):
     """Get auth headers for user A"""
     response = client.post(
         "/api/auth/login",
-        json={"email": "usera@example.com", "password": "testpass123"  # pragma: allowlist secret},
+        json={"email": "usera@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -78,7 +78,7 @@ def auth_headers_user_b(test_user_b, client):
     """Get auth headers for user B"""
     response = client.post(
         "/api/auth/login",
-        json={"email": "userb@example.com", "password": "testpass123"  # pragma: allowlist secret},
+        json={"email": "userb@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

@@ -526,12 +526,32 @@ class ContentGeneratorAgent:
                 generated_posts=posts, reference_voice_guide=reference_voice_guide
             )
 
+            readability = (
+                voice_match_report.readability_score.score
+                if voice_match_report.readability_score
+                else 0.0
+            )
+            word_count = (
+                voice_match_report.word_count_score.score
+                if voice_match_report.word_count_score
+                else 0.0
+            )
+            archetype = (
+                voice_match_report.archetype_score.score
+                if voice_match_report.archetype_score
+                else 0.0
+            )
+            phrases = (
+                voice_match_report.phrase_usage_score.score
+                if voice_match_report.phrase_usage_score
+                else 0.0
+            )
             logger.info(
                 f"Voice Match Score: {voice_match_report.match_score:.1%} "
-                f"(Readability: {voice_match_report.readability_score.score:.1%}, "
-                f"Word Count: {voice_match_report.word_count_score.score:.1%}, "
-                f"Archetype: {voice_match_report.archetype_score.score:.1%}, "
-                f"Phrases: {voice_match_report.phrase_usage_score.score:.1%})"
+                f"(Readability: {readability:.1%}, "
+                f"Word Count: {word_count:.1%}, "
+                f"Archetype: {archetype:.1%}, "
+                f"Phrases: {phrases:.1%})"
             )
 
             return posts, voice_match_report
@@ -938,7 +958,7 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
         Returns:
             Generated Post object (either first adequate or best of attempts)
         """
-        attempts = []
+        attempts: list[dict[str, Any]] = []
 
         for attempt in range(max_attempts):
             # Generate post
@@ -983,13 +1003,14 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
 
         # No adequate result - return best attempt
         best = max(attempts, key=lambda x: x["quality_score"])
+        best_post: Post = best["post"]
         logger.warning(
             f"Post {post_number} did not meet quality standards after {max_attempts} attempts. "
             f"Returning best attempt (#{best['attempt_number']}, quality score: {best['quality_score']:.2%}, "
-            f"review reason: {best['post'].review_reason if best['post'].review_reason else 'none'})"
+            f"review reason: {best_post.review_reason if best_post.review_reason else 'none'})"
         )
 
-        return best["post"]
+        return best_post
 
     def _calculate_post_quality_score(self, post: Post) -> float:
         """

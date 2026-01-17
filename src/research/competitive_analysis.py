@@ -6,7 +6,7 @@ Analyzes competitors' content strategies and identifies differentiation opportun
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..models.competitive_analysis_models import (
     CompetitiveAnalysis,
@@ -66,7 +66,7 @@ def extract_json_from_response(response_text: str) -> str:
 class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
     """Automated competitive analysis and strategy development"""
 
-    def __init__(self, project_id: str, config: Dict[str, Any] = None):
+    def __init__(self, project_id: str, config: Optional[Dict[str, Any]] = None):
         """Initialize competitive analyzer with input validator"""
         super().__init__(project_id=project_id, config=config)
         self.validator = ResearchInputValidator(strict_mode=False)

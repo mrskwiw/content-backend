@@ -283,14 +283,14 @@ class MemoryLearningAgent:
 
         return themes
 
-    def synthesize_multi_project_learnings(self, client_name: str) -> ClientMemory:
+    def synthesize_multi_project_learnings(self, client_name: str) -> Optional[ClientMemory]:
         """Synthesize learnings across multiple projects for a client
 
         Args:
             client_name: Client name
 
         Returns:
-            Updated client memory with synthesized patterns
+            Updated client memory with synthesized patterns, or None if client not found
         """
         logger.info(f"Synthesizing multi-project learnings for: {client_name}")
 

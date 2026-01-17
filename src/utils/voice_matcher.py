@@ -238,14 +238,15 @@ class VoiceMatcher:
         # Readability assessment
         if readability_score:
             if readability_score.score >= 0.9:
-                strengths.append(
-                    f"Readability perfectly matches target ({readability_score.target_value:.1f})"
-                )
+                target_val = readability_score.target_value or 0.0
+                strengths.append(f"Readability perfectly matches target ({target_val:.1f})")
             elif readability_score.score < 0.7:
+                target_val = readability_score.target_value or 0.0
+                actual_val = readability_score.actual_value or 0.0
                 weaknesses.append(
-                    f"Readability differs from target (target: {readability_score.target_value:.1f}, actual: {readability_score.actual_value:.1f})"
+                    f"Readability differs from target (target: {target_val:.1f}, actual: {actual_val:.1f})"
                 )
-                if readability_score.actual_value > readability_score.target_value:
+                if actual_val > target_val:
                     improvements.append(
                         "Make content slightly more complex to match client's style"
                     )
@@ -254,15 +255,15 @@ class VoiceMatcher:
 
         # Word count assessment
         if word_count_score:
+            target_val = word_count_score.target_value or 0.0
+            actual_val = word_count_score.actual_value or 0.0
             if word_count_score.score >= 0.9:
-                strengths.append(
-                    f"Post length matches target well ({int(word_count_score.target_value)} words)"
-                )
+                strengths.append(f"Post length matches target well ({int(target_val)} words)")
             elif word_count_score.score < 0.7:
                 weaknesses.append(
-                    f"Post length differs from target (target: {int(word_count_score.target_value)}, actual: {int(word_count_score.actual_value)})"
+                    f"Post length differs from target (target: {int(target_val)}, actual: {int(actual_val)})"
                 )
-                if word_count_score.actual_value > word_count_score.target_value:
+                if actual_val > target_val:
                     improvements.append("Shorten posts to match client's typical length")
                 else:
                     improvements.append("Expand posts to match client's typical length")
@@ -282,9 +283,9 @@ class VoiceMatcher:
             if phrase_usage_score.score >= 0.8:
                 strengths.append("Good use of client's key phrases")
             elif phrase_usage_score.score < 0.5:
-                weaknesses.append(
-                    f"Only {int(phrase_usage_score.actual_value)} of {int(phrase_usage_score.target_value)} key phrases used"
-                )
+                actual_val = phrase_usage_score.actual_value or 0.0
+                target_val = phrase_usage_score.target_value or 0.0
+                weaknesses.append(f"Only {int(actual_val)} of {int(target_val)} key phrases used")
                 improvements.append("Incorporate more of client's signature phrases and vocabulary")
 
         # Overall improvement suggestion

@@ -11,7 +11,7 @@ Time: 3-4 minutes automated
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..models.audience_research_models import (
     AgeRange,
@@ -36,7 +36,7 @@ class AudienceResearcher(ResearchTool, CommonValidationMixin):
     content preferences, and strategic recommendations.
     """
 
-    def __init__(self, project_id: str, config: Dict[str, Any] = None):
+    def __init__(self, project_id: str, config: Optional[Dict[str, Any]] = None):
         """Initialize audience researcher with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)

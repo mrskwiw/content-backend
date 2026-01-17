@@ -410,7 +410,12 @@ class VoiceAnalyzer(ResearchTool, CommonValidationMixin):
                 ctas.append(last_line)
 
         # Classify CTA types
-        patterns = {"question": [], "invitation": [], "directive": [], "link": []}
+        patterns: Dict[str, List[str]] = {
+            "question": [],
+            "invitation": [],
+            "directive": [],
+            "link": [],
+        }
 
         for cta in ctas:
             if cta.endswith("?"):
@@ -452,7 +457,7 @@ class VoiceAnalyzer(ResearchTool, CommonValidationMixin):
         total = sum(counts.values())
 
         if total > 0:
-            focus = max(counts, key=counts.get).lower()
+            focus = max(counts, key=lambda k: counts.get(k, 0)).lower()
         else:
             focus = "neutral"
 
@@ -544,7 +549,7 @@ Focus on objective patterns in the writing, not what the content is about."""
             # Find JSON in response
             json_match = re.search(r"\{.*\}", content, re.DOTALL)
             if json_match:
-                result = json.loads(json_match.group())
+                result: Dict[str, Any] = json.loads(json_match.group())
 
                 # Convert strings to enums
                 result["primary_tone"] = ToneType(result["primary_tone"])

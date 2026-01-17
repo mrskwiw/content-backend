@@ -6,16 +6,18 @@ logic without requiring the full FastAPI app stack.
 
 Run with: pytest tests/integration/test_template_quantities_validation.py -v
 """
+
 import pytest
 from pydantic import ValidationError
 
 # Import schemas directly (no app imports to avoid SQLAlchemy issues)
 import sys
 from pathlib import Path
+
 backend_dir = Path(__file__).parent.parent.parent / "backend"
 sys.path.insert(0, str(backend_dir))
 
-from schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from schemas.project import ProjectCreate
 
 
 class TestTemplateQuantitiesValidation:
@@ -120,7 +122,7 @@ class TestTemplateQuantitiesValidation:
 
         # Error message changed to be more specific
         error_str = str(exc_info.value)
-        assert ("Invalid template_id" in error_str or "template_id must be numeric" in error_str)
+        assert "Invalid template_id" in error_str or "template_id must be numeric" in error_str
 
         print("✓ Invalid template ID rejected")
 
@@ -226,7 +228,11 @@ class TestTemplateQuantitiesValidation:
             "name": "Quick Start",
             "clientId": "client-test-123",
             "templateQuantities": {
-                "1": 3, "2": 3, "5": 3, "9": 3, "10": 3,
+                "1": 3,
+                "2": 3,
+                "5": 3,
+                "9": 3,
+                "10": 3,
             },
             "pricePerPost": 40.0,
         }
@@ -244,9 +250,21 @@ class TestTemplateQuantitiesValidation:
             "name": "Professional",
             "clientId": "client-test-123",
             "templateQuantities": {
-                "1": 2, "2": 2, "3": 2, "4": 2, "5": 2,
-                "6": 2, "7": 2, "8": 2, "9": 2, "10": 2,
-                "11": 2, "12": 2, "13": 2, "14": 2, "15": 2,
+                "1": 2,
+                "2": 2,
+                "3": 2,
+                "4": 2,
+                "5": 2,
+                "6": 2,
+                "7": 2,
+                "8": 2,
+                "9": 2,
+                "10": 2,
+                "11": 2,
+                "12": 2,
+                "13": 2,
+                "14": 2,
+                "15": 2,
             },
             "pricePerPost": 40.0,
         }
@@ -264,9 +282,21 @@ class TestTemplateQuantitiesValidation:
             "name": "Premium",
             "clientId": "client-test-123",
             "templateQuantities": {
-                "1": 4, "2": 4, "3": 4, "4": 4, "5": 4,  # 20 posts
-                "6": 3, "7": 3, "8": 3, "9": 3, "10": 3,  # 15 posts
-                "11": 3, "12": 3, "13": 3, "14": 3, "15": 3,  # 15 posts
+                "1": 4,
+                "2": 4,
+                "3": 4,
+                "4": 4,
+                "5": 4,  # 20 posts
+                "6": 3,
+                "7": 3,
+                "8": 3,
+                "9": 3,
+                "10": 3,  # 15 posts
+                "11": 3,
+                "12": 3,
+                "13": 3,
+                "14": 3,
+                "15": 3,  # 15 posts
                 # Total: 20 + 15 + 15 = 50
             },
             "pricePerPost": 40.0,

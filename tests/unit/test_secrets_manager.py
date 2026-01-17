@@ -434,7 +434,7 @@ class TestGlobalFunctions:
         """Test get_secret convenience function."""
         monkeypatch.chdir(tmp_path)
         os.environ["CONVENIENCE_TEST"] = "convenience_value"
-        os.environ["SECRETS_PROVIDER"] = "environment"
+        os.environ["SECRETS_PROVIDER"] = "environment"  # pragma: allowlist secret
 
         result = get_secret("CONVENIENCE_TEST")
         assert result == "convenience_value"
@@ -447,7 +447,9 @@ class TestGlobalFunctions:
         monkeypatch.chdir(tmp_path)
         os.environ["SECRETS_PROVIDER"] = "environment"
 
-        result = get_secret("NONEXISTENT_KEY", default="default", required=False)
+        result = get_secret(
+            "NONEXISTENT_KEY", default="default", required=False
+        )  # pragma: allowlist secret
         assert result == "default"
 
     def test_get_secret_required_raises(self, tmp_path, monkeypatch):

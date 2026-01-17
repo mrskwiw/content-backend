@@ -250,7 +250,7 @@ class VoiceMetrics:
             # Determine dominant category
             total_matches = sum(dim_scores.values())
             if total_matches > 0:
-                dominant = max(dim_scores, key=dim_scores.get)
+                dominant = max(dim_scores, key=lambda k: dim_scores.get(k, 0))
                 results[dimension] = {
                     "dominant": dominant,
                     "scores": dim_scores,

@@ -17,10 +17,8 @@ This test verifies that the entire system works correctly for:
 """
 
 import pytest
-from pathlib import Path
-from typing import Dict, Any
 
-from src.models.client_brief import ClientBrief, Platform
+from src.models.client_brief import Platform
 from src.agents.brief_parser import BriefParserAgent
 from src.agents.content_generator import ContentGeneratorAgent
 from src.validators.length_validator import LengthValidator
@@ -78,7 +76,9 @@ class TestMultiPlatformE2E:
     """End-to-end tests for multi-platform content generation"""
 
     @pytest.mark.asyncio
-    async def test_linkedin_generation_and_validation(self, brief_parser, content_generator, sample_brief_file):
+    async def test_linkedin_generation_and_validation(
+        self, brief_parser, content_generator, sample_brief_file
+    ):
         """Test LinkedIn content generation (200-300 words) + validation"""
         # Step 1: Parse brief
         brief_text = sample_brief_file.read_text()
@@ -90,7 +90,7 @@ class TestMultiPlatformE2E:
             template_ids=[1, 2, 3],  # Problem Recognition, Statistic, Contrarian
             platform=Platform.LINKEDIN,
             num_posts=3,
-            use_client_memory=False  # Disable memory for testing
+            use_client_memory=False,  # Disable memory for testing
         )
 
         # Verify generation
@@ -99,11 +99,11 @@ class TestMultiPlatformE2E:
         assert all(p.target_platform == Platform.LINKEDIN for p in posts)
 
         # Debug: Print actual word counts
-        print(f"\n=== DEBUG: LinkedIn Posts Generated ===")
+        print("\n=== DEBUG: LinkedIn Posts Generated ===")
         for i, post in enumerate(posts):
             print(f"Post {i+1}: {post.word_count} words")
             print(f"Content preview: {post.content[:100]}...")
-        print(f"=======================================\n")
+        print("=======================================\n")
 
         # Step 3: Validate lengths
         length_validator = LengthValidator()
@@ -115,9 +115,11 @@ class TestMultiPlatformE2E:
         # LinkedIn optimal range is 200-300 words
         # NOTE: This might fail if prompt isn't working - that's what we're testing!
         if length_results["optimal_ratio"] < 0.66:
-            print(f"⚠️ WARNING: Only {length_results['optimal_ratio']:.0%} in optimal range (200-300 words)")
+            print(
+                f"⚠️ WARNING: Only {length_results['optimal_ratio']:.0%} in optimal range (200-300 words)"
+            )
             print(f"Word counts: {[p.word_count for p in posts]}")
-            print(f"This indicates platform-specific prompts may not be working correctly")
+            print("This indicates platform-specific prompts may not be working correctly")
 
         # Check that most posts are in optimal range (200-300 words for LinkedIn)
         in_range_count = sum(1 for p in posts if 200 <= p.word_count <= 300)
@@ -128,7 +130,9 @@ class TestMultiPlatformE2E:
         hook_results = hook_validator.validate(posts)
 
         assert hook_results["platform"] == "linkedin"
-        assert len(hook_results.get("hook_length_issues", [])) == 0, "Hooks should be under 140 chars"
+        assert (
+            len(hook_results.get("hook_length_issues", [])) == 0
+        ), "Hooks should be under 140 chars"
 
         # Step 5: Validate CTAs
         cta_validator = CTAValidator()
@@ -142,7 +146,9 @@ class TestMultiPlatformE2E:
         headline_results = headline_validator.validate(posts)
 
         assert headline_results["platform"] == "linkedin"
-        assert headline_results["min_elements"] == 2, "LinkedIn should require 2+ engagement elements"
+        assert (
+            headline_results["min_elements"] == 2
+        ), "LinkedIn should require 2+ engagement elements"
 
         # Print summary
         print("\n=== LinkedIn Generation Summary ===")
@@ -154,7 +160,9 @@ class TestMultiPlatformE2E:
         print(f"Headline validation: {'PASS' if headline_results['passed'] else 'FAIL'}")
 
     @pytest.mark.asyncio
-    async def test_twitter_generation_and_validation(self, brief_parser, content_generator, sample_brief_file):
+    async def test_twitter_generation_and_validation(
+        self, brief_parser, content_generator, sample_brief_file
+    ):
         """Test Twitter content generation (12-18 words) + validation"""
         # Step 1: Parse brief
         brief_text = sample_brief_file.read_text()
@@ -166,7 +174,7 @@ class TestMultiPlatformE2E:
             template_ids=[1, 2, 5],  # Problem, Stat, Question
             platform=Platform.TWITTER,
             num_posts=3,
-            use_client_memory=False
+            use_client_memory=False,
         )
 
         # Verify generation
@@ -174,11 +182,11 @@ class TestMultiPlatformE2E:
         assert all(p.target_platform == Platform.TWITTER for p in posts)
 
         # Debug: Print actual word counts
-        print(f"\n=== DEBUG: Twitter Posts Generated ===")
+        print("\n=== DEBUG: Twitter Posts Generated ===")
         for i, post in enumerate(posts):
             print(f"Post {i+1}: {post.word_count} words, {len(post.content)} chars")
             print(f"Content: {post.content[:150]}...")
-        print(f"=======================================\n")
+        print("=======================================\n")
 
         # Step 3: Validate lengths
         length_validator = LengthValidator()
@@ -190,10 +198,10 @@ class TestMultiPlatformE2E:
 
         # Check that posts are SHORT
         if not all(p.word_count <= 50 for p in posts):
-            print(f"⚠️ WARNING: Twitter posts exceeding 50 words!")
+            print("⚠️ WARNING: Twitter posts exceeding 50 words!")
             print(f"Word counts: {[p.word_count for p in posts]}")
-            print(f"Target: 12-18 words, Max: 50 words")
-            print(f"This indicates prompts need tuning for Twitter's ultra-short format")
+            print("Target: 12-18 words, Max: 50 words")
+            print("This indicates prompts need tuning for Twitter's ultra-short format")
 
         # Check distribution buckets are Twitter-specific
         assert "0-10" in length_results["length_distribution"]
@@ -231,7 +239,9 @@ class TestMultiPlatformE2E:
         print(f"Headline validation: {'PASS' if headline_results['passed'] else 'FAIL'}")
 
     @pytest.mark.asyncio
-    async def test_facebook_generation_and_validation(self, brief_parser, content_generator, sample_brief_file):
+    async def test_facebook_generation_and_validation(
+        self, brief_parser, content_generator, sample_brief_file
+    ):
         """Test Facebook content generation (10-15 words) + validation"""
         # Step 1: Parse brief
         brief_text = sample_brief_file.read_text()
@@ -243,7 +253,7 @@ class TestMultiPlatformE2E:
             template_ids=[1, 5, 9],  # Problem, Question, How-To
             platform=Platform.FACEBOOK,
             num_posts=3,
-            use_client_memory=False
+            use_client_memory=False,
         )
 
         # Verify generation
@@ -251,11 +261,11 @@ class TestMultiPlatformE2E:
         assert all(p.target_platform == Platform.FACEBOOK for p in posts)
 
         # Debug: Print actual word counts
-        print(f"\n=== DEBUG: Facebook Posts Generated ===")
+        print("\n=== DEBUG: Facebook Posts Generated ===")
         for i, post in enumerate(posts):
             print(f"Post {i+1}: {post.word_count} words, {len(post.content)} chars")
             print(f"Content: {post.content[:150]}...")
-        print(f"==========================================\n")
+        print("==========================================\n")
 
         # Step 3: Validate lengths
         length_validator = LengthValidator()
@@ -267,9 +277,9 @@ class TestMultiPlatformE2E:
 
         # Check that posts are ULTRA-SHORT
         if not all(p.word_count <= 25 for p in posts):
-            print(f"⚠️ WARNING: Facebook posts exceeding 25 words!")
+            print("⚠️ WARNING: Facebook posts exceeding 25 words!")
             print(f"Word counts: {[p.word_count for p in posts]}")
-            print(f"Target: 10-15 words, Max: 25 words")
+            print("Target: 10-15 words, Max: 25 words")
 
         # Step 4: Validate CTAs
         cta_validator = CTAValidator()
@@ -286,7 +296,9 @@ class TestMultiPlatformE2E:
         print(f"CTA validation: {'✅' if cta_results['passed'] else '❌'}")
 
     @pytest.mark.asyncio
-    async def test_blog_generation_and_validation(self, brief_parser, content_generator, sample_brief_file):
+    async def test_blog_generation_and_validation(
+        self, brief_parser, content_generator, sample_brief_file
+    ):
         """Test Blog content generation (1500-2000 words) + validation"""
         # Step 1: Parse brief
         brief_text = sample_brief_file.read_text()
@@ -298,7 +310,7 @@ class TestMultiPlatformE2E:
             template_ids=[9],  # How-To (best for blog format)
             platform=Platform.BLOG,
             num_posts=1,  # Blogs are long, generate just 1
-            use_client_memory=False
+            use_client_memory=False,
         )
 
         # Verify generation
@@ -306,11 +318,11 @@ class TestMultiPlatformE2E:
         assert posts[0].target_platform == Platform.BLOG
 
         # Debug: Print actual word count
-        print(f"\n=== DEBUG: Blog Post Generated ===")
+        print("\n=== DEBUG: Blog Post Generated ===")
         print(f"Post 1: {posts[0].word_count} words, {len(posts[0].content)} chars")
         print(f"Content preview (first 200 chars): {posts[0].content[:200]}...")
         print(f"H2 headers: {posts[0].content.count('##')}")
-        print(f"=====================================\n")
+        print("=====================================\n")
 
         # Step 3: Validate lengths
         length_validator = LengthValidator()
@@ -322,9 +334,9 @@ class TestMultiPlatformE2E:
 
         # Check that blog is LONG
         if posts[0].word_count < 1500:
-            print(f"⚠️ WARNING: Blog post too short!")
+            print("⚠️ WARNING: Blog post too short!")
             print(f"Word count: {posts[0].word_count}")
-            print(f"Target: 1500-2000 words, Minimum: 1500")
+            print("Target: 1500-2000 words, Minimum: 1500")
 
         # Check for H2 headers (blog structure requirement)
         assert "##" in posts[0].content, "Blog should have H2 headers"
@@ -353,7 +365,9 @@ class TestMultiPlatformE2E:
         print(f"Headline validation: {'✅' if headline_results['passed'] else '❌'}")
 
     @pytest.mark.asyncio
-    async def test_email_generation_and_validation(self, brief_parser, content_generator, sample_brief_file):
+    async def test_email_generation_and_validation(
+        self, brief_parser, content_generator, sample_brief_file
+    ):
         """Test Email content generation (150-250 words) + validation"""
         # Step 1: Parse brief
         brief_text = sample_brief_file.read_text()
@@ -365,7 +379,7 @@ class TestMultiPlatformE2E:
             template_ids=[1, 2, 9],  # Problem, Stat, How-To
             platform=Platform.EMAIL,
             num_posts=3,
-            use_client_memory=False
+            use_client_memory=False,
         )
 
         # Verify generation
@@ -393,7 +407,9 @@ class TestMultiPlatformE2E:
         print(f"CTA validation: {'✅' if cta_results['passed'] else '❌'}")
 
     @pytest.mark.asyncio
-    async def test_all_platforms_comparison(self, brief_parser, content_generator, sample_brief_file):
+    async def test_all_platforms_comparison(
+        self, brief_parser, content_generator, sample_brief_file
+    ):
         """Generate content for all platforms and compare results"""
         # Parse brief once
         brief_text = sample_brief_file.read_text()
@@ -402,7 +418,13 @@ class TestMultiPlatformE2E:
         results = {}
 
         # Generate for each platform
-        for platform in [Platform.LINKEDIN, Platform.TWITTER, Platform.FACEBOOK, Platform.BLOG, Platform.EMAIL]:
+        for platform in [
+            Platform.LINKEDIN,
+            Platform.TWITTER,
+            Platform.FACEBOOK,
+            Platform.BLOG,
+            Platform.EMAIL,
+        ]:
             num_posts = 1 if platform == Platform.BLOG else 3
 
             posts = await content_generator.generate_posts_async(
@@ -410,7 +432,7 @@ class TestMultiPlatformE2E:
                 template_ids=[1],  # Same template for fair comparison
                 platform=platform,
                 num_posts=num_posts,
-                use_client_memory=False
+                use_client_memory=False,
             )
 
             # Validate
@@ -433,18 +455,22 @@ class TestMultiPlatformE2E:
         print("-" * 80)
 
         for platform_name, data in results.items():
-            print(f"{platform_name.upper():<12} "
-                  f"{data['posts_generated']:<8} "
-                  f"{data['avg_word_count']:<12.1f} "
-                  f"{data['optimal_ratio']:<12.0%} "
-                  f"{'PASS' if data['validation_passed'] else 'FAIL':<8}")
+            print(
+                f"{platform_name.upper():<12} "
+                f"{data['posts_generated']:<8} "
+                f"{data['avg_word_count']:<12.1f} "
+                f"{data['optimal_ratio']:<12.0%} "
+                f"{'PASS' if data['validation_passed'] else 'FAIL':<8}"
+            )
 
         print("=" * 80)
 
         # Verify platform-specific ranges
         assert results["twitter"]["avg_word_count"] < 50, "Twitter should be under 50 words"
         assert results["facebook"]["avg_word_count"] < 30, "Facebook should be under 30 words"
-        assert 150 <= results["linkedin"]["avg_word_count"] <= 350, "LinkedIn should be 150-350 words"
+        assert (
+            150 <= results["linkedin"]["avg_word_count"] <= 350
+        ), "LinkedIn should be 150-350 words"
         assert results["blog"]["avg_word_count"] >= 1500, "Blog should be 1500+ words"
         assert 100 <= results["email"]["avg_word_count"] <= 300, "Email should be 100-300 words"
 

@@ -85,7 +85,7 @@ def benchmark_function(name: str, func: Callable, iterations: int = 10) -> dict:
     max_time = max(times)
     avg_queries = sum(query_counts) / len(query_counts)
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Average time: {avg_time:.2f}ms")
     print(f"  Min time: {min_time:.2f}ms")
     print(f"  Max time: {max_time:.2f}ms")
@@ -102,6 +102,7 @@ def benchmark_function(name: str, func: Callable, iterations: int = 10) -> dict:
 
 def benchmark_get_posts_basic():
     """Benchmark basic get_posts query"""
+
     def run():
         db = SessionLocal()
         try:
@@ -121,6 +122,7 @@ def benchmark_get_posts_basic():
 
 def benchmark_get_posts_filtered():
     """Benchmark filtered get_posts query"""
+
     def run():
         db = SessionLocal()
         try:
@@ -137,6 +139,7 @@ def benchmark_get_posts_filtered():
 
 def benchmark_get_posts_complex_filter():
     """Benchmark complex filtered get_posts query"""
+
     def run():
         db = SessionLocal()
         try:
@@ -146,7 +149,7 @@ def benchmark_get_posts_complex_filter():
                 platform="linkedin",
                 min_word_count=100,
                 max_word_count=300,
-                limit=100
+                limit=100,
             )
             for post in posts:
                 if post.project:
@@ -160,6 +163,7 @@ def benchmark_get_posts_complex_filter():
 
 def benchmark_get_posts_search():
     """Benchmark text search query"""
+
     def run():
         db = SessionLocal()
         try:
@@ -173,6 +177,7 @@ def benchmark_get_posts_search():
 
 def benchmark_get_projects():
     """Benchmark get_projects query"""
+
     def run():
         db = SessionLocal()
         try:
@@ -207,7 +212,7 @@ def create_test_data(db):
         print("  Run content generation to create more posts.")
         print()
         response = input("Continue with limited data? (yes/no): ")
-        if response.lower() != 'yes':
+        if response.lower() != "yes":
             return False
 
     return True
@@ -215,16 +220,18 @@ def create_test_data(db):
 
 def print_summary(results: List[dict]):
     """Print benchmark summary"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("BENCHMARK SUMMARY")
-    print("="*60)
+    print("=" * 60)
     print()
     print(f"{'Benchmark':<40} {'Avg Time':>10} {'Queries':>8}")
-    print("-"*60)
+    print("-" * 60)
 
     for result in results:
         if "error" not in result:
-            print(f"{result['name']:<40} {result['avg_time_ms']:>9.2f}ms {result['avg_queries']:>7.1f}")
+            print(
+                f"{result['name']:<40} {result['avg_time_ms']:>9.2f}ms {result['avg_queries']:>7.1f}"
+            )
 
     print()
     print("Performance Analysis:")
@@ -240,9 +247,9 @@ def print_summary(results: List[dict]):
 
 def main():
     """Main benchmark runner"""
-    print("="*60)
+    print("=" * 60)
     print("DATABASE QUERY PERFORMANCE BENCHMARK")
-    print("="*60)
+    print("=" * 60)
     print()
     print("This script measures query performance with optimizations:")
     print("  - Eager loading (joinedload)")
@@ -271,9 +278,9 @@ def main():
     finally:
         db.close()
 
-    print("="*60)
+    print("=" * 60)
     print("Benchmark complete!")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

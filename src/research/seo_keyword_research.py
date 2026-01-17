@@ -475,20 +475,33 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
     ) -> str:
         """Generate executive summary of keyword strategy"""
         # Count intent distribution
-        intent_counts = {}
+        intent_counts: Dict[str, int] = {}
         for kw in primary_keywords:
             intent_counts[kw.search_intent.value] = intent_counts.get(kw.search_intent.value, 0) + 1
 
         # Count difficulty distribution
-        difficulty_counts = {}
+        difficulty_counts: Dict[str, int] = {}
         for kw in primary_keywords + secondary_keywords:
             difficulty_counts[kw.difficulty.value] = (
                 difficulty_counts.get(kw.difficulty.value, 0) + 1
             )
 
+        # Find dominant intent for summary
+        dominant_intent = (
+            max(intent_counts, key=lambda k: intent_counts.get(k, 0))
+            if intent_counts
+            else "informational"
+        )
+        dominant_intent_count = intent_counts.get(dominant_intent, 0)
+        intent_description = (
+            "awareness and education"
+            if dominant_intent == "informational"
+            else "conversion and sales"
+        )
+
         summary = f"""This keyword strategy identifies {len(primary_keywords)} primary keywords and {len(secondary_keywords)} secondary/long-tail keywords organized into {len(clusters)} thematic clusters.
 
-**Search Intent Focus:** {max(intent_counts, key=intent_counts.get).title()} intent dominates with {intent_counts[max(intent_counts, key=intent_counts.get)]} primary keywords, supporting {"awareness and education" if max(intent_counts, key=intent_counts.get) == "informational" else "conversion and sales"}.
+**Search Intent Focus:** {dominant_intent.title()} intent dominates with {dominant_intent_count} primary keywords, supporting {intent_description}.
 
 **Difficulty Balance:** {difficulty_counts.get('low', 0)} low-difficulty keywords offer quick wins, {difficulty_counts.get('medium', 0)} medium-difficulty keywords provide sustainable growth, and {difficulty_counts.get('high', 0)} high-difficulty keywords represent long-term authority plays.
 

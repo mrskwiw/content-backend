@@ -71,7 +71,7 @@ class KeywordRefinementAgent:
         logger.info(f"Adding {len(custom_keywords)} custom {keyword_type} keywords")
 
         # Create SEOKeyword objects for custom keywords
-        new_keywords = []
+        new_keywords: List[SEOKeyword] = []
         for kw_text in custom_keywords:
             keyword = SEOKeyword(
                 keyword=kw_text,

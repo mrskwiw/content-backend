@@ -165,7 +165,8 @@ class SimilarityIndex:
 
             # Return first candidate (LSH already filtered by threshold)
             if candidates:
-                return candidates[0]
+                result: str = candidates[0]
+                return result
 
             return None
 

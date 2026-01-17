@@ -255,7 +255,8 @@ Return ONLY valid JSON, no additional commentary."""
             json_str = response.strip()
 
         try:
-            return json.loads(json_str)
+            result: Dict[str, Any] = json.loads(json_str)
+            return result
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from response: {response}")
             raise ValueError(f"Invalid JSON in response: {str(e)}")

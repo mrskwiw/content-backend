@@ -4,7 +4,7 @@ This agent analyzes posts against quality thresholds and regenerates those that
 fall outside acceptable parameters for readability, length, engagement, or CTAs.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..config.constants import POST_GENERATION_TEMPERATURE
 from ..models.client_brief import ClientBrief
@@ -315,8 +315,8 @@ class PostRegenerator:
         Returns:
             Tuple of (regenerated_posts: List[Post], stats: Dict)
         """
-        regenerated_posts = []
-        stats = {
+        regenerated_posts: List[Post] = []
+        stats: Dict[str, Any] = {
             "total_posts": len(posts),
             "posts_regenerated": 0,
             "posts_improved": 0,

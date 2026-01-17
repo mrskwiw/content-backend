@@ -131,13 +131,16 @@ class HookValidator:
         # Check first post's target_platform field
         first_post = posts[0]
         if hasattr(first_post, "target_platform") and first_post.target_platform:
-            # Handle both Platform enum (new) and string (backward compatibility)
-            if isinstance(first_post.target_platform, Platform):
-                return first_post.target_platform  # Already an enum
-            try:
-                return Platform(first_post.target_platform)  # Convert string to enum
-            except ValueError:
-                return None
+            target = first_post.target_platform
+            # Verify it's actually a Platform enum instance
+            if isinstance(target, Platform):
+                return target
+            # If it's a string (edge case from mock or raw data), try to convert
+            if isinstance(target, str):
+                try:
+                    return Platform(target)
+                except ValueError:
+                    return None
 
         return None
 

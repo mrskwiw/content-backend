@@ -28,7 +28,7 @@ class TestSettingsAPIKeyValidation:
     def test_api_key_placeholder_raises_error(self):
         """Test that placeholder values raise ValueError (line 39)."""
         with pytest.raises(ValidationError) as exc_info:
-            Settings(ANTHROPIC_API_KEY="your_api_key_here")
+            Settings(ANTHROPIC_API_KEY="your_api_key_here")  # pragma: allowlist secret
 
         assert "placeholder value" in str(exc_info.value).lower()
 
@@ -42,7 +42,7 @@ class TestSettingsAPIKeyValidation:
     def test_api_key_xxx_placeholder_raises_error(self):
         """Test that 'xxx' placeholder raises ValueError."""
         with pytest.raises(ValidationError) as exc_info:
-            Settings(ANTHROPIC_API_KEY="xxx")
+            Settings(ANTHROPIC_API_KEY="xxx")  # pragma: allowlist secret
 
         # Both short length and placeholder might trigger
         assert (
@@ -53,7 +53,7 @@ class TestSettingsAPIKeyValidation:
     def test_api_key_too_short_raises_error(self):
         """Test that short API key raises ValueError (line 46)."""
         with pytest.raises(ValidationError) as exc_info:
-            Settings(ANTHROPIC_API_KEY="sk-ant-short")  # Only 12 chars
+            Settings(ANTHROPIC_API_KEY="sk-ant-short")  # Only 12 chars  # pragma: allowlist secret
 
         assert "too short" in str(exc_info.value).lower()
 

@@ -35,6 +35,7 @@ import secrets
 @dataclass
 class Secret:
     """Represents a cryptographic secret"""
+
     id: str  # Unique identifier (hash of secret)
     value: str  # The actual secret
     created_at: str  # ISO timestamp
@@ -91,7 +92,7 @@ class SecretManager:
             return
 
         try:
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path, "r") as f:
                 data = json.load(f)
 
             for secret_data in data.get("secrets", []):
@@ -109,8 +110,8 @@ class SecretManager:
         }
 
         # Write atomically (write to temp file, then rename)
-        temp_path = self.config_path.with_suffix('.tmp')
-        with open(temp_path, 'w') as f:
+        temp_path = self.config_path.with_suffix(".tmp")
+        with open(temp_path, "w") as f:
             json.dump(data, f, indent=2)
 
         temp_path.replace(self.config_path)
@@ -124,10 +125,7 @@ class SecretManager:
         return hashlib.sha256(secret.encode()).hexdigest()[:16]
 
     def add_secret(
-        self,
-        secret: str,
-        expires_in_days: Optional[int] = None,
-        auto_save: bool = True
+        self, secret: str, expires_in_days: Optional[int] = None, auto_save: bool = True
     ) -> Secret:
         """
         Add new secret to store
@@ -165,11 +163,7 @@ class SecretManager:
 
         return new_secret
 
-    def rotate_secret(
-        self,
-        grace_period_days: int = 7,
-        deprecation_period_days: int = 7
-    ) -> Secret:
+    def rotate_secret(self, grace_period_days: int = 7, deprecation_period_days: int = 7) -> Secret:
         """
         Rotate secrets with zero downtime
 
@@ -194,9 +188,7 @@ class SecretManager:
         for secret in self.secrets.values():
             if secret.id != new_secret.id and secret.is_active():
                 # Set to expire after grace + deprecation period
-                secret.expires_at = (
-                    datetime.now() + timedelta(days=total_days)
-                ).isoformat()
+                secret.expires_at = (datetime.now() + timedelta(days=total_days)).isoformat()
 
                 # Mark as deprecated after grace period
                 if grace_period_days == 0:
@@ -204,10 +196,12 @@ class SecretManager:
 
         self.save_secrets()
 
-        print(f"✅ Secret rotated successfully")
+        print("✅ Secret rotated successfully")
         print(f"   New secret ID: {new_secret.id}")
         print(f"   Grace period: {grace_period_days} days")
-        print(f"   Old secrets will expire on: {secret.expires_at if secret.expires_at else 'never'}")
+        print(
+            f"   Old secrets will expire on: {secret.expires_at if secret.expires_at else 'never'}"
+        )
 
         return new_secret
 
@@ -218,10 +212,7 @@ class SecretManager:
         Returns:
             List of active secrets (primary first)
         """
-        active = [
-            secret for secret in self.secrets.values()
-            if secret.is_active()
-        ]
+        active = [secret for secret in self.secrets.values() if secret.is_active()]
 
         # Sort by created_at (newest first)
         active.sort(key=lambda s: s.created_at, reverse=True)
@@ -245,7 +236,8 @@ class SecretManager:
 
         # Keep only active and deprecated (not expired) secrets
         self.secrets = {
-            sid: secret for sid, secret in self.secrets.items()
+            sid: secret
+            for sid, secret in self.secrets.items()
             if secret.status in ["active", "deprecated"] and not secret.is_expired()
         }
 
@@ -271,16 +263,13 @@ class SecretManager:
                     "expires_at": s.expires_at,
                     "is_active": s.is_active(),
                 }
-                for s in sorted(
-                    self.secrets.values(),
-                    key=lambda x: x.created_at,
-                    reverse=True
-                )
-            ]
+                for s in sorted(self.secrets.values(), key=lambda x: x.created_at, reverse=True)
+            ],
         }
 
 
 # Convenience functions
+
 
 def rotate_jwt_secret():
     """Rotate JWT signing secret"""
@@ -330,6 +319,7 @@ if __name__ == "__main__":
     elif command == "status":
         manager = SecretManager()
         import json
+
         print(json.dumps(manager.get_status(), indent=2))
     elif command == "cleanup":
         manager = SecretManager()

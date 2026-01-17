@@ -71,7 +71,7 @@ def _extract_from_docx(file_path: Path) -> str:
             "Install it with: pip install python-docx"
         )
 
-    doc = Document(file_path)
+    doc = Document(str(file_path))
     paragraphs = [paragraph.text for paragraph in doc.paragraphs]
     return "\n\n".join(paragraphs)
 
@@ -109,10 +109,11 @@ def _extract_from_json(file_path: Path) -> str:
 
         for field in text_fields:
             if field in data:
-                if isinstance(data[field], str):
-                    return data[field]
-                elif isinstance(data[field], list):
-                    return "\n\n".join(str(item) for item in data[field])
+                field_value = data[field]
+                if isinstance(field_value, str):
+                    return field_value
+                elif isinstance(field_value, list):
+                    return "\n\n".join(str(item) for item in field_value)
 
         # If no text field found, extract all string values
         texts = _extract_strings_from_dict(data)

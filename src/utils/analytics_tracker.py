@@ -2,7 +2,7 @@
 
 import csv
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from ..models.post import Post
 from ..models.posting_schedule import PostingSchedule
@@ -47,7 +47,7 @@ class AnalyticsTracker:
     def create_tracking_sheet(
         self,
         posts: List[Post],
-        schedule: PostingSchedule,
+        schedule: Optional[PostingSchedule],
         output_path: Path,
         format: str = "csv",
     ) -> Path:
@@ -56,7 +56,7 @@ class AnalyticsTracker:
 
         Args:
             posts: List of Post objects
-            schedule: PostingSchedule with dates/times
+            schedule: PostingSchedule with dates/times (optional)
             output_path: Path for output file
             format: "csv" or "xlsx"
 
@@ -80,7 +80,9 @@ class AnalyticsTracker:
         else:
             raise ValueError(f"Unsupported format: {format}. Use 'csv' or 'xlsx'")
 
-    def _create_csv(self, posts: List[Post], schedule: PostingSchedule, output_path: Path) -> Path:
+    def _create_csv(
+        self, posts: List[Post], schedule: Optional[PostingSchedule], output_path: Path
+    ) -> Path:
         """Create CSV tracking sheet"""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -93,10 +95,12 @@ class AnalyticsTracker:
             # Data rows
             for i, post in enumerate(posts):
                 # Find corresponding scheduled post
-                scheduled_post = next(
-                    (sp for sp in schedule.scheduled_posts if sp.post_id == i + 1),
-                    None,
-                )
+                scheduled_post = None
+                if schedule:
+                    scheduled_post = next(
+                        (sp for sp in schedule.scheduled_posts if sp.post_id == i + 1),
+                        None,
+                    )
 
                 # Prepare row data
                 row = [
@@ -115,9 +119,11 @@ class AnalyticsTracker:
                     ),  # Scheduled Time
                     post.word_count,  # Word Count
                     "Yes" if post.has_cta else "No",  # Has CTA
-                    ", ".join(getattr(post, "keywords_used", [])[:3])
-                    if getattr(post, "keywords_used", [])
-                    else "",  # Keywords
+                    (
+                        ", ".join(getattr(post, "keywords_used", [])[:3])
+                        if getattr(post, "keywords_used", [])
+                        else ""
+                    ),  # Keywords
                     "",  # Post URL (blank)
                     "",  # Impressions (blank)
                     "",  # Engagement (blank)
@@ -133,7 +139,9 @@ class AnalyticsTracker:
         logger.info(f"CSV tracker saved to {output_path}")
         return output_path
 
-    def _create_xlsx(self, posts: List[Post], schedule: PostingSchedule, output_path: Path) -> Path:
+    def _create_xlsx(
+        self, posts: List[Post], schedule: Optional[PostingSchedule], output_path: Path
+    ) -> Path:
         """Create Excel tracking sheet with formulas and formatting"""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -164,10 +172,12 @@ class AnalyticsTracker:
         # Write data rows
         for i, post in enumerate(posts, 2):  # Start at row 2 (row 1 is header)
             # Find corresponding scheduled post
-            scheduled_post = next(
-                (sp for sp in schedule.scheduled_posts if sp.post_id == i - 1),
-                None,
-            )
+            scheduled_post = None
+            if schedule:
+                scheduled_post = next(
+                    (sp for sp in schedule.scheduled_posts if sp.post_id == i - 1),
+                    None,
+                )
 
             # Column A: Post #
             ws_data[f"A{i}"] = i - 1
@@ -224,9 +234,9 @@ class AnalyticsTracker:
         ws_summary["B3"] = f"=COUNTA('Post Tracker'!A2:A{len(posts)+1})"
 
         ws_summary["A4"] = "Posts Published:"
-        ws_summary[
-            "B4"
-        ] = f"=COUNTIF('Post Tracker'!I2:I{len(posts)+1},\"<>\")"  # Count non-empty URLs
+        ws_summary["B4"] = (
+            f"=COUNTIF('Post Tracker'!I2:I{len(posts)+1},\"<>\")"  # Count non-empty URLs
+        )
 
         ws_summary["A5"] = "Total Impressions:"
         ws_summary["B5"] = f"=SUM('Post Tracker'!J2:J{len(posts)+1})"
