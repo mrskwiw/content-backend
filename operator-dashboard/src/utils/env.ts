@@ -13,9 +13,7 @@ const FALLBACK_API_URL = 'http://localhost:8000';
 
 function resolveEnvSource(): EnvSource {
   try {
-    // @ts-expect-error Allow import.meta access in environments where module target may differ in tests.
     if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // @ts-expect-error Allow import.meta access in environments where module target may differ in tests.
       return import.meta.env as EnvSource;
     }
   } catch {
