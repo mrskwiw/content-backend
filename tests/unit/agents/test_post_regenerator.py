@@ -727,3 +727,121 @@ class TestRegenerateFailedPosts:
         assert len(regenerated) == 1
         assert regenerated[0] == posts[0]  # Original post unchanged
         assert stats["posts_unchanged"] >= 1
+
+
+class TestEdgeCases:
+    """Test edge cases for improved coverage"""
+
+    def test_weak_headline_malformed_reason_silent_fail(self, quality_profile):
+        """Test malformed review_reason for headline check fails silently (lines 129-130)"""
+        regenerator = PostRegenerator(quality_profile=quality_profile)
+        # Malformed review reason that will cause parsing to fail
+        post = Post(
+            content="Post content here.",
+            template_id=1,
+            template_name="Test",
+            variant=1,
+            client_name="Test",
+            needs_review=True,
+            review_reason="headline has only xyz/3 engagement elements",  # Non-numeric score
+        )
+
+        should_regen, reasons = regenerator.should_regenerate(post)
+
+        # Should NOT have weak_headline reason due to parsing failure
+        weak_headline_reasons = [r for r in reasons if r.reason_type == "weak_headline"]
+        assert len(weak_headline_reasons) == 0
+
+    @patch("src.agents.post_regenerator.VoiceMetrics")
+    def test_regenerate_retries_when_still_has_issues(
+        self,
+        mock_voice_metrics,
+        quality_profile,
+    ):
+        """Test regeneration retries when regenerated post still has issues (lines 205-206)"""
+        # First call returns bad readability (triggers retry)
+        # Second call returns good readability (stops retry)
+        mock_voice_metrics.return_value.calculate_readability.side_effect = [30.0, 30.0, 60.0]
+
+        mock_client = MagicMock()
+        # First regeneration returns content that's still too short
+        # Second regeneration returns good content
+        first_content = " ".join(["word"] * 50) + " What do you think?"  # 51 words - too short
+        second_content = " ".join(["word"] * 170) + " What do you think?"  # 171 words - good
+        mock_client.generate_post_content.side_effect = [first_content, second_content]
+
+        regenerator = PostRegenerator(client=mock_client, quality_profile=quality_profile)
+        from src.models.template import Template, TemplateType, TemplateDifficulty
+
+        template = Template(
+            template_id=1,
+            name="Test",
+            template_type=TemplateType.PROBLEM_RECOGNITION,
+            structure="Test",
+            best_for="Test",
+            difficulty=TemplateDifficulty.FAST,
+            requires_story=False,
+            requires_data=False,
+        )
+        brief = ClientBrief(
+            company_name="Test",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        original_post = Post(
+            content="Short",
+            template_id=1,
+            template_name="Test",
+            variant=1,
+            client_name="Test",
+        )
+        reasons = [RegenerationReason("too_short", "Too short", 5)]
+
+        # Allow up to 3 attempts
+        quality_profile.max_attempts = 3
+        regenerator.regenerate_post(original_post, template, brief, reasons, attempt=1)
+
+        # Should have called generate twice due to retry
+        assert mock_client.generate_post_content.call_count >= 2
+
+    @patch("src.agents.post_regenerator.VoiceMetrics")
+    def test_regenerate_failed_posts_tracks_unchanged_when_not_improved(
+        self,
+        mock_voice_metrics,
+        mock_anthropic_client,
+        sample_template,
+        sample_brief,
+        quality_profile,
+    ):
+        """Test regeneration tracks posts_unchanged when regeneration doesn't improve (lines 360-361)"""
+        # Always return bad readability so regeneration doesn't help
+        mock_voice_metrics.return_value.calculate_readability.return_value = 30.0
+
+        # Return content that still has issues (too short)
+        short_content = "Still short content here."
+        mock_anthropic_client.generate_post_content.return_value = short_content
+
+        # Set max_attempts to 1 so it doesn't keep retrying
+        quality_profile.max_attempts = 1
+
+        regenerator = PostRegenerator(client=mock_anthropic_client, quality_profile=quality_profile)
+        posts = [
+            Post(
+                content="Original short",
+                template_id=1,
+                template_name="Test",
+                variant=1,
+                client_name="Test",
+            )
+        ]
+
+        regenerated, stats = regenerator.regenerate_failed_posts(
+            posts, [sample_template], sample_brief
+        )
+
+        # Post was regenerated but not improved
+        assert stats["posts_regenerated"] == 1
+        # The regenerated post should still be in the list (even if not improved)
+        assert len(regenerated) == 1

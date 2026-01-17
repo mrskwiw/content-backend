@@ -13,17 +13,18 @@ const FALLBACK_API_URL = 'http://localhost:8000';
 
 function resolveEnvSource(): EnvSource {
   try {
-    // @ts-ignore Allow import.meta access in environments where module target may differ in tests.
+    // @ts-expect-error Allow import.meta access in environments where module target may differ in tests.
     if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // @ts-ignore Allow import.meta access in environments where module target may differ in tests.
+      // @ts-expect-error Allow import.meta access in environments where module target may differ in tests.
       return import.meta.env as EnvSource;
     }
   } catch {
     // Swallow reference errors when import.meta is unavailable (e.g., Jest without ESM env).
   }
 
-  if ((globalThis as any).__ENV__) {
-    return (globalThis as any).__ENV__ as EnvSource;
+  const globalThisWithEnv = globalThis as { __ENV__?: EnvSource };
+  if (globalThisWithEnv.__ENV__) {
+    return globalThisWithEnv.__ENV__;
   }
 
   return {};

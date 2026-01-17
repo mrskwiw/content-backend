@@ -13,9 +13,9 @@ test.describe('Wizard Flow', () => {
     test.setTimeout(180000); // 3 minutes for full integration test with 6 posts
 
     // Mock the generation endpoint to avoid API dependency
-    let mockRunId = `run-${Date.now()}`;
+    const mockRunId = `run-${Date.now()}`;
     let runStatus = 'pending';
-    const createdPosts: any[] = [];
+    const createdPosts: { id: string; projectId: string; runId: string; content: string; templateName: string; variant: number; wordCount: number; hasCta: boolean; keywords: string[]; status: string; createdAt: string }[] = [];
 
     // Mock generate-all endpoint
     await page.route('**/api/generator/generate-all', async (route) => {
@@ -203,7 +203,7 @@ test.describe('Wizard Flow', () => {
 
         // Verify fields populated
         await expect(page.getByLabel(/company name/i)).not.toBeEmpty();
-      } catch (error) {
+      } catch {
         // File import feature might not be fully implemented yet
         console.log('Brief import test skipped - feature not available');
       }

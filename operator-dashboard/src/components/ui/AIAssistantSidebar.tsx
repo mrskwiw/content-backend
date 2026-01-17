@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, X, Send, RotateCcw, Sparkles } from 'lucide-react';
+import { X, Send, RotateCcw, Sparkles } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 interface Message {

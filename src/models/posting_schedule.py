@@ -1,4 +1,5 @@
 """Data models for posting schedule generation"""
+
 import csv
 from datetime import date, time
 from enum import Enum
@@ -82,7 +83,7 @@ class PostingSchedule(BaseModel):
         lines.append(f"**Frequency:** {self.posts_per_week} posts per week\n")
         lines.append(f"**Total Posts:** {len(self.scheduled_posts)}\n\n---\n")
 
-        posts_by_week = {}
+        posts_by_week: dict[int, list[ScheduledPost]] = {}
         for post in self.scheduled_posts:
             if post.week_number not in posts_by_week:
                 posts_by_week[post.week_number] = []

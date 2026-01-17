@@ -1,6 +1,7 @@
 """Logging configuration using Rich for beautiful console output"""
 
 import logging
+import platform
 from pathlib import Path
 from typing import Optional
 
@@ -20,8 +21,6 @@ custom_theme = Theme(
 
 # Force UTF-8 encoding for Windows compatibility
 # Use legacy_windows=True to avoid emoji encoding issues on Windows
-import platform
-
 is_windows = platform.system() == "Windows"
 console = Console(
     theme=custom_theme, force_terminal=True, legacy_windows=is_windows, no_color=False

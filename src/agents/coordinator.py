@@ -23,6 +23,7 @@ from ..agents.voice_analyzer import VoiceAnalyzer
 from ..config.settings import settings
 from ..models.client_brief import ClientBrief, DataUsagePreference, Platform, TonePreference
 from ..models.post import Post
+from ..models.voice_guide import EnhancedVoiceGuide
 from ..utils.logger import logger
 from ..utils.output_formatter import OutputFormatter
 

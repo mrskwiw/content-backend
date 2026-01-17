@@ -175,7 +175,7 @@ class DOCXGenerator:
     def _add_introduction(self, doc: "Document", client_brief: ClientBrief):
         """Add introduction section with client context"""
         # Section header
-        intro_header = doc.add_heading("About This Content Package", level=1)
+        _intro_header = doc.add_heading("About This Content Package", level=1)
 
         # Client overview
         doc.add_paragraph(
@@ -224,7 +224,7 @@ class DOCXGenerator:
         ]
 
         for point in usage_points:
-            para = doc.add_paragraph(point, style="List Bullet")
+            _para = doc.add_paragraph(point, style="List Bullet")
 
         # Page break
         doc.add_page_break()
@@ -232,7 +232,7 @@ class DOCXGenerator:
     def _add_posts_section(self, doc: "Document", posts: List[Post], client_brief: ClientBrief):
         """Add all posts with formatting"""
         # Section header
-        posts_header = doc.add_heading("Your 30 Posts", level=1)
+        _posts_header = doc.add_heading("Your 30 Posts", level=1)
 
         doc.add_paragraph(
             f"Below are your 30 custom posts for {', '.join([p.value for p in client_brief.target_platforms])}. "
@@ -259,7 +259,7 @@ class DOCXGenerator:
         from docx.shared import Pt
 
         # Post header
-        post_header = doc.add_heading(f"Post {post_number}: {post.template_name}", level=2)
+        _post_header = doc.add_heading(f"Post {post_number}: {post.template_name}", level=2)
 
         # Post content
         content_para = doc.add_paragraph(post.content)
@@ -285,7 +285,7 @@ class DOCXGenerator:
             metadata_parts.append(f"Keywords: {keywords_str}")
 
         metadata_text = " | ".join(metadata_parts)
-        metadata_para = doc.add_paragraph(metadata_text, style="Metadata")
+        _metadata_para = doc.add_paragraph(metadata_text, style="Metadata")
 
         # Horizontal line separator
         doc.add_paragraph("_" * 80, style="Metadata")

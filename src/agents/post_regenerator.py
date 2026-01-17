@@ -126,7 +126,7 @@ class PostRegenerator:
                                 score,
                             )
                         )
-                except:
+                except (ValueError, IndexError):
                     pass
 
         should_regen = len(reasons) > 0

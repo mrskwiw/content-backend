@@ -778,11 +778,11 @@ Generate a post following this template structure, customized for this client's 
 
         # Priority fields (always include if present)
         priority_fields = ["company_name", "ideal_customer", "problem_solved", "brand_voice"]
-        for field in priority_fields:
-            if field in context and context[field]:
-                value = context[field]
+        for field_name in priority_fields:
+            if field_name in context and context[field_name]:
+                value = context[field_name]
                 if isinstance(value, str) and value.strip():
-                    lines.append(f"{field}: {value}")
+                    lines.append(f"{field_name}: {value}")
 
         # Optional fields (only if non-empty and relevant)
         for k, v in context.items():

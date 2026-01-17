@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DeliverableDetails, Post } from '@/types/domain';
+import type { DeliverableDetails } from '@/types/domain';
 import { postsApi } from '@/api/posts';
 import { FileText, AlertCircle, Edit, Loader2 } from 'lucide-react';
 import { PostEditor } from '../PostEditor';
