@@ -1,0 +1,297 @@
+>> DEBUG: Creating database engine for sqlite
+>> DEBUG: SQLite engine created successfully
+>> Frontend static files enabled: C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\operator-dashboard\dist
+============================= test session starts =============================
+platform win32 -- Python 3.12.6, pytest-7.4.4, pluggy-1.5.0 -- C:\Python312\python.exe
+cachedir: .pytest_cache
+metadata: {'Python': '3.12.6', 'Platform': 'Windows-11-10.0.26200-SP0', 'Packages': {'pytest': '7.4.4', 'pluggy': '1.5.0'}, 'Plugins': {'anyio': '4.7.0', 'Faker': '19.3.1', 'asyncio': '0.23.3', 'cov': '4.1.0', 'env': '1.1.1', 'html': '4.1.1', 'metadata': '3.1.1', 'mock': '3.12.0', 'timeout': '2.2.0', 'xdist': '3.5.0', 'superclaude': '4.1.9'}}
+SuperClaude: 4.1.9
+rootdir: C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project
+configfile: pyproject.toml
+plugins: anyio-4.7.0, Faker-19.3.1, asyncio-0.23.3, cov-4.1.0, env-1.1.1, html-4.1.1, metadata-3.1.1, mock-3.12.0, timeout-2.2.0, xdist-3.5.0, superclaude-4.1.9
+asyncio: mode=Mode.STRICT
+collecting ... collected 1 item
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+[DEBUG] Registered tables in Base.metadata: ['briefs', 'clients', 'deliverables', 'posts', 'projects', 'runs', 'users']
+[DEBUG] Created tables in database: ['briefs', 'clients', 'deliverables', 'posts', 'projects', 'runs', 'users']
+2026-01-10 22:15:46 - backend.utils.auth - WARNING - No primary secret found in SecretManager, using settings.SECRET_KEY
+2026-01-10 22:15:46 - backend.utils.auth - WARNING - No primary secret found in SecretManager, using settings.SECRET_KEY
+2026-01-10 22:15:46 - backend.utils.auth - WARNING - No active secrets found in SecretManager, using settings.SECRET_KEY
+2026-01-10 22:15:46 - backend - INFO - Sanitized brief content for project proj-e36f9ad27e59
+FAILED
+
+================================== FAILURES ===================================
+C:\Users\mrskw\AppData\Roaming\Python\Python312\site-packages\sqlalchemy\engine\default.py:922: sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: briefs
+============================== warnings summary ===============================
+backend\config.py:27
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\config.py:27: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+backend\database.py:102
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\database.py:102: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+src\config\settings.py:11
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\config\settings.py:11: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+backend\models\brief_import.py:31
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\models\brief_import.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ParsedBriefResponse(BaseModel):
+
+..\..\..\..\..\Users\mrskw\AppData\Roaming\Python\Python312\site-packages\pydantic\_internal\_config.py:383
+  C:\Users\mrskw\AppData\Roaming\Python\Python312\site-packages\pydantic\_internal\_config.py:383: UserWarning: Valid config keys have changed in V2:
+  * 'schema_extra' has been renamed to 'json_schema_extra'
+    warnings.warn(message, UserWarning)
+
+backend\models\brief_import.py:85
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\models\brief_import.py:85: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ParseError(BaseModel):
+
+backend\utils\pagination.py:32
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\utils\pagination.py:32: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class PaginatedResponse(BaseModel, Generic[T]):
+
+src\models\audience_research_models.py:110
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\audience_research_models.py:110: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class AudienceResearch(BaseModel):
+
+src\models\competitive_analysis_models.py:94
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\competitive_analysis_models.py:94: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CompetitiveAnalysis(BaseModel):
+
+src\models\content_audit_models.py:135
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\content_audit_models.py:135: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ContentAuditAnalysis(BaseModel):
+
+src\models\content_calendar_models.py:98
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\content_calendar_models.py:98: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CalendarStrategy(BaseModel):
+
+src\models\content_gap_models.py:93
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\content_gap_models.py:93: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ContentGapAnalysis(BaseModel):
+
+src\models\market_trends_models.py:79
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\market_trends_models.py:79: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TrendReport(BaseModel):
+
+src\models\platform_strategy_models.py:120
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\platform_strategy_models.py:120: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class PlatformStrategyAnalysis(BaseModel):
+
+src\models\seo_models.py:66
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\seo_models.py:66: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class KeywordStrategy(BaseModel):
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\utils\auth.py:63: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\utils\auth.py:91: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\tests\fixtures\model_factories.py:94: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "created_at": datetime.utcnow(),
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\tests\fixtures\model_factories.py:137: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "created_at": datetime.utcnow(),
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\tests\fixtures\model_factories.py:138: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "updated_at": datetime.utcnow(),
+
+tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+  C:\Users\mrskw\AppData\Roaming\Python\Python312\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.12.6-final-0 -----------
+Name                                           Stmts   Miss Branch BrPart  Cover
+--------------------------------------------------------------------------------
+backend\__init__.py                                0      0      0      0   100%
+backend\apply_missing_indexes.py                  24     24      6      0     0%
+backend\apply_performance_updates.py              79     79     23      0     0%
+backend\benchmark_queries.py                     162    162     36      0     0%
+backend\celery_app.py                              8      8      2      0     0%
+backend\config.py                                 77      6     14      2    91%
+backend\create_demo_files.py                      42     42     10      0     0%
+backend\database.py                              169    148     56      1    10%
+backend\generate_secret_key.py                     1      1      0      0     0%
+backend\init_db.py                                22     22      2      0     0%
+backend\main.py                                  153     74     46      5    50%
+backend\middleware\__init__.py                     0      0      0      0   100%
+backend\middleware\auth_dependency.py             43     14     12      5    62%
+backend\middleware\authorization.py              113     96     54      0    10%
+backend\models\__init__.py                         8      0      0      0   100%
+backend\models\brief.py                           14      0      0      0   100%
+backend\models\brief_import.py                    19      0      0      0   100%
+backend\models\client.py                          22      0      0      0   100%
+backend\models\deliverable.py                     22      0      0      0   100%
+backend\models\post.py                            23      0      0      0   100%
+backend\models\project.py                         28      0      0      0   100%
+backend\models\run.py                             17      0      0      0   100%
+backend\models\user.py                            14      0      0      0   100%
+backend\routers\__init__.py                        0      0      0      0   100%
+backend\routers\admin_users.py                    85     62     30      0    30%
+backend\routers\assistant.py                      98     51     30      0    51%
+backend\routers\auth.py                           55     30     34      3    52%
+backend\routers\briefs.py                        149    104     72      3    33%
+backend\routers\clients.py                        66     37     48      0    52%
+backend\routers\database.py                       85     66     28      0    22%
+backend\routers\deliverables.py                   63     34     42      0    56%
+backend\routers\generator.py                     123     84     38      0    35%
+backend\routers\health.py                         77     45     30      0    50%
+backend\routers\posts.py                          80     58     56      0    29%
+backend\routers\pricing.py                        52     15     32      0    80%
+backend\routers\projects.py                       73     44     50      0    50%
+backend\routers\research.py                      138     98     72      0    25%
+backend\routers\runs.py                           39     21     18      0    46%
+backend\schemas\__init__.py                        9      0      0      0   100%
+backend\schemas\auth.py                           72     17     48      2    72%
+backend\schemas\brief.py                          18      0      2      0   100%
+backend\schemas\client.py                         30      0      2      0   100%
+backend\schemas\deliverable.py                    69     10     20      0    80%
+backend\schemas\enums.py                          25     25      0      0     0%
+backend\schemas\post.py                           28      0      2      0   100%
+backend\schemas\project.py                        87     31     58      0    66%
+backend\schemas\research_schemas.py              180     98    138      0    47%
+backend\schemas\run.py                            42     13     20      0    60%
+backend\seed_demo_data.py                        112    112      8      0     0%
+backend\seed_users.py                             24     24      6      0     0%
+backend\services\__init__.py                       0      0      0      0   100%
+backend\services\crud.py                         252    200     92      0    19%
+backend\services\deliverable_service.py           66     54     26      0    13%
+backend\services\generator_service.py            168    146     28      0    11%
+backend\services\research_service.py              90     49     26      2    37%
+backend\tasks\__init__.py                          0      0      0      0   100%
+backend\tasks\generation.py                       68     68     18      0     0%
+backend\temp_db_query.py                          25     25      8      0     0%
+backend\tmp_versions.py                            6      6      4      0     0%
+backend\utils\__init__.py                          0      0      0      0   100%
+backend\utils\auth.py                             66     11     16      6    77%
+backend\utils\caching.py                          69     48     28      0    24%
+backend\utils\cli_executor.py                     71     56     26      0    15%
+backend\utils\db_monitor.py                       58     49     28      0    10%
+backend\utils\file_utils.py                       24     24     10      0     0%
+backend\utils\http_rate_limiter.py                19      3      4      2    78%
+backend\utils\input_validators.py                109     97     82      0     6%
+backend\utils\logger.py                           21      0      2      1    96%
+backend\utils\pagination.py                       89     61     24      0    25%
+backend\utils\query_cache.py                      79     36     30      3    44%
+backend\utils\query_profiler.py                  125     80     56      1    30%
+backend\utils\rate_limiter.py                     66     37     28      0    33%
+backend\utils\secret_rotation.py                 116     71     34      3    35%
+src\__init__.py                                    2      0      0      0   100%
+src\agents\__init__.py                             0      0      0      0   100%
+src\agents\brief_enhancer.py                      95     95     36      0     0%
+src\agents\brief_parser.py                        75     75      8      0     0%
+src\agents\brief_quality_checker.py              122    122     63      0     0%
+src\agents\client_classifier.py                   44     44     24      0     0%
+src\agents\content_generator.py                  513    513    203      0     0%
+src\agents\coordinator.py                        225    225     88      0     0%
+src\agents\keyword_agent.py                       96     96     32      0     0%
+src\agents\keyword_refiner.py                     64     64     18      0     0%
+src\agents\memory_learning_agent.py              161    161    104      0     0%
+src\agents\post_regenerator.py                   119    119     50      0     0%
+src\agents\qa_agent.py                            52     52     16      0     0%
+src\agents\question_generator.py                  77     77     32      0     0%
+src\agents\revision_agent.py                     123    123     58      0     0%
+src\agents\voice_analyzer.py                     230    230    101      0     0%
+src\cli\__init__.py                                0      0      0      0   100%
+src\cli\interactive_mode.py                      278    278     95      0     0%
+src\config\__init__.py                             0      0      0      0   100%
+src\config\brand_frameworks.py                    34     34     20      0     0%
+src\config\constants.py                           42      0      0      0   100%
+src\config\platform_specs.py                      31     23     12      0    19%
+src\config\pricing.py                             39     10      8      0    70%
+src\config\prompts.py                             13      2      4      0    88%
+src\config\secrets_manager.py                    137    137     42      0     0%
+src\config\settings.py                            62      5     14      4    88%
+src\config\template_rules.py                      23     23      0      0     0%
+src\config\template_rules_expanded.py             23     23      0      0     0%
+src\config\template_rules_original_backup.py      11     11      0      0     0%
+src\database\__init__.py                           2      2      0      0     0%
+src\database\migrate_phase8b.py                   78     78      6      0     0%
+src\database\project_db.py                       444    444    154      0     0%
+src\exceptions.py                                 26     26      6      0     0%
+src\models\__init__.py                             0      0      0      0   100%
+src\models\audience_research_models.py            72      0      0      0   100%
+src\models\brief_quality.py                       31     31      4      0     0%
+src\models\client_brief.py                        72     20     22      0    64%
+src\models\client_memory.py                      160    160     56      0     0%
+src\models\competitive_analysis_models.py         61      0      0      0   100%
+src\models\content_audit_models.py               100      0      0      0   100%
+src\models\content_calendar_models.py             75      0      0      0   100%
+src\models\content_gap_models.py                  64      0      0      0   100%
+src\models\icp_workshop_models.py                 53      0      2      1    98%
+src\models\market_trends_models.py                57      0      0      0   100%
+src\models\platform_strategy_models.py            84      0      0      0   100%
+src\models\post.py                                51     23     20      0    51%
+src\models\posting_schedule.py                    94     94     24      0     0%
+src\models\project.py                            116    116     22      0     0%
+src\models\qa_report.py                          123    123     43      0     0%
+src\models\quality_profile.py                     54     54     20      0     0%
+src\models\question.py                            23     23      4      0     0%
+src\models\research_models.py                     94      0      0      0   100%
+src\models\seo_keyword.py                         51     51      0      0     0%
+src\models\seo_models.py                          45      0      0      0   100%
+src\models\story_mining_models.py                 69      0      2      1    99%
+src\models\template.py                            52     52     10      0     0%
+src\models\voice_guide.py                        147    147     76      0     0%
+src\models\voice_sample.py                       145    145     86      0     0%
+src\research\__init__.py                          12      0      0      0   100%
+src\research\audience_research.py                128    101     30      0    20%
+src\research\base.py                             154    119     46      0    20%
+src\research\brand_archetype.py                  155    120     56      0    18%
+src\research\competitive_analysis.py             265    233    110      0    10%
+src\research\content_audit.py                    242    204     80      0    13%
+src\research\content_calendar_strategy.py        294    264    116      0     8%
+src\research\content_gap_analysis.py             244    212     94      0    11%
+src\research\icp_workshop.py                     133    105     24      0    20%
+src\research\market_trends_research.py           237    206    128      0    10%
+src\research\platform_strategy.py                225    190     62      0    14%
+src\research\seo_keyword_research.py             230    201    106      0    10%
+src\research\story_mining.py                     149    118     16      0    21%
+src\research\validation_mixin.py                  28     19     10      0    24%
+src\research\voice_analysis.py                   315    269    136      0    11%
+src\utils\__init__.py                              0      0      0      0   100%
+src\utils\analytics_tracker.py                   109    109     30      0     0%
+src\utils\anthropic_client.py                    188    165     91      0     8%
+src\utils\cost_dashboard.py                      146    146     30      0     0%
+src\utils\cost_tracker.py                        154    107     28      0    28%
+src\utils\docx_generator.py                      198    198     68      0     0%
+src\utils\enhanced_response_cache.py             167    167     58      0     0%
+src\utils\file_parser.py                         116    116     64      0     0%
+src\utils\logger.py                               40     13      2      1    67%
+src\utils\output_formatter.py                    238    238     54      0     0%
+src\utils\progress_stream.py                     121    121     38      0     0%
+src\utils\response_cache.py                      101     77     38      3    19%
+src\utils\schedule_generator.py                  112    112     42      0     0%
+src\utils\template_cache.py                       86     86     36      0     0%
+src\utils\template_loader.py                     156    156     54      0     0%
+src\utils\voice_matcher.py                       109    109     60      0     0%
+src\utils\voice_metrics.py                        91     91     50      0     0%
+src\validators\__init__.py                         5      0      0      0   100%
+src\validators\cta_validator.py                   60     46     24      0    17%
+src\validators\headline_validator.py              69     54     34      0    15%
+src\validators\hook_validator.py                 125    105     54      0    11%
+src\validators\keyword_validator.py               64     64     24      0     0%
+src\validators\length_validator.py                97     83     48      0    10%
+src\validators\prompt_injection_defense.py        96     39     48      6    49%
+src\validators\research_input_validator.py       132    114     80      0     8%
+--------------------------------------------------------------------------------
+TOTAL                                          15251  11884   5369     55    19%
+Coverage HTML written to dir htmlcov/backend
+Coverage JSON written to file coverage-backend.json
+
+FAIL Required test coverage of 90% not reached. Total coverage: 19.47%
+=========================== short test summary info ===========================
+FAILED tests/integration/test_router_briefs.py::TestCreateBriefEndpoint::test_create_brief_success
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+======================= 1 failed, 21 warnings in 5.10s ========================

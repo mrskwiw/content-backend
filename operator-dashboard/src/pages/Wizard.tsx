@@ -217,7 +217,7 @@ export default function Wizard() {
         try {
           const client = await createClientMutation.mutateAsync({
             name: brief.companyName,
-            email: undefined, // Can be added to form later
+            // email field excluded - can be added to form later
             businessDescription: brief.businessDescription,
             idealCustomer: brief.idealCustomer,
             mainProblemSolved: brief.mainProblemSolved,

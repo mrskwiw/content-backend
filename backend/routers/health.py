@@ -62,6 +62,62 @@ async def health_check():
         "status": "healthy",
         "service": "Content Jumpstart API",
         "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat(),
+        "environment": "production",
+    }
+
+
+@router.get("/health/ready")
+@router.get("/ready")
+async def readiness_check():
+    """
+    Kubernetes readiness probe endpoint.
+
+    Checks if the application is ready to serve traffic.
+    Should verify database connectivity and critical dependencies.
+
+    Returns:
+        200 OK if ready, 503 if not ready
+    """
+    from fastapi import HTTPException, status
+    from backend.database import engine
+    from sqlalchemy import text
+
+    try:
+        # Test database connection
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+
+        return {
+            "status": "ready",
+            "database": "ok",
+            "checks": [
+                {"name": "database", "status": "ok"},
+            ],
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "not_ready", "error": str(e)},
+        )
+
+
+@router.get("/health/live")
+@router.get("/live")
+async def liveness_check():
+    """
+    Kubernetes liveness probe endpoint.
+
+    Checks if the application is alive and should not be restarted.
+    Should be a fast, simple check without heavy dependencies.
+
+    Returns:
+        200 OK always (if we can respond, we're alive)
+    """
+    return {
+        "status": "alive",
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 

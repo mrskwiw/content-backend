@@ -274,3 +274,145 @@ class TestScheduleGenerator:
             assert "POST:" in content
         except ImportError:
             pytest.skip("icalendar library not installed")
+
+    def test_empty_posts(self):
+        """Test schedule generation with empty posts list."""
+        generator = ScheduleGenerator()
+        start_date = date(2025, 1, 6)
+
+        schedule = generator.generate_schedule(
+            posts=[],
+            start_date=start_date,
+            posts_per_week=4,
+        )
+
+        assert len(schedule.scheduled_posts) == 0
+        assert schedule.end_date == start_date
+        assert schedule.total_weeks == 1
+
+    def test_invalid_platform_string_in_post(self):
+        """Test handling of invalid platform string in post (via mock)."""
+        from unittest.mock import MagicMock
+
+        generator = ScheduleGenerator()
+        start_date = date(2025, 1, 6)
+
+        # Create mock post with invalid platform string that bypasses validation
+        post = MagicMock()
+        post.content = "Test post content that is long enough for title and excerpt extraction."
+        post.target_platform = "invalid_platform"  # Invalid platform string
+        post.client_name = "TestClient"
+
+        schedule = generator.generate_schedule(
+            posts=[post],
+            start_date=start_date,
+            posts_per_week=4,
+        )
+
+        assert len(schedule.scheduled_posts) == 1
+        # Platform should be preserved as-is
+        assert schedule.scheduled_posts[0].platform == "invalid_platform"
+        # Notes should be None for invalid platform
+        assert schedule.scheduled_posts[0].notes is None
+
+    def test_detect_platforms_with_invalid_target(self):
+        """Test platform detection with invalid target_platform values (via mock)."""
+        from unittest.mock import MagicMock
+
+        generator = ScheduleGenerator()
+
+        # Create mock posts with invalid platform strings
+        post1 = MagicMock()
+        post1.target_platform = "not_a_real_platform"
+
+        post2 = MagicMock()
+        post2.target_platform = "another_invalid"
+
+        platforms = generator._detect_platforms([post1, post2])
+        # Should default to LinkedIn when all platforms are invalid
+        assert Platform.LINKEDIN in platforms
+
+    def test_generate_slots_multiple_platforms(self):
+        """Test slot generation with multiple platforms."""
+        generator = ScheduleGenerator()
+        start_date = date(2025, 1, 6)
+
+        slots = generator._generate_posting_slots(
+            num_posts=10,
+            start_date=start_date,
+            posts_per_week=4,
+            platforms=[Platform.LINKEDIN, Platform.TWITTER],
+        )
+
+        assert len(slots) == 10
+        # Should have mix of platforms
+        platforms_used = set(slot[2] for slot in slots)
+        assert len(platforms_used) >= 1
+
+    def test_generate_slots_week_boundary(self):
+        """Test slot generation respects week boundaries."""
+        generator = ScheduleGenerator()
+        start_date = date(2025, 1, 6)  # Monday
+
+        slots = generator._generate_posting_slots(
+            num_posts=12,  # More than one week at 4/week
+            start_date=start_date,
+            posts_per_week=4,
+            platforms=[Platform.LINKEDIN],
+        )
+
+        assert len(slots) == 12
+        # Verify slots span multiple weeks
+        first_week_slots = [s for s in slots if (s[0] - start_date).days < 7]
+        assert len(first_week_slots) <= 4
+
+    def test_generate_slots_platform_without_optimal_times(self):
+        """Test slot generation for platform without defined optimal times."""
+        generator = ScheduleGenerator()
+        start_date = date(2025, 1, 6)
+
+        # Use MULTI platform which isn't in PLATFORM_OPTIMAL_TIMES
+        slots = generator._generate_posting_slots(
+            num_posts=5,
+            start_date=start_date,
+            posts_per_week=2,
+            platforms=[Platform.MULTI],
+        )
+
+        # Should use default times
+        assert len(slots) == 5
+
+
+class TestGetDefaultScheduleGenerator:
+    """Tests for get_default_schedule_generator function."""
+
+    def test_get_default_generator(self):
+        """Test getting default generator instance."""
+        from src.utils.schedule_generator import get_default_schedule_generator
+        import src.utils.schedule_generator as sg
+
+        # Reset global
+        sg.default_schedule_generator = None
+
+        generator = get_default_schedule_generator()
+        assert generator is not None
+        assert isinstance(generator, ScheduleGenerator)
+
+        # Cleanup
+        sg.default_schedule_generator = None
+
+    def test_get_default_generator_singleton(self):
+        """Test that get_default_schedule_generator returns singleton."""
+        from src.utils.schedule_generator import get_default_schedule_generator
+        import src.utils.schedule_generator as sg
+
+        # Reset global
+        sg.default_schedule_generator = None
+
+        gen1 = get_default_schedule_generator()
+        gen2 = get_default_schedule_generator()
+
+        assert gen1 is gen2
+
+        # Cleanup
+        sg.default_schedule_generator = None

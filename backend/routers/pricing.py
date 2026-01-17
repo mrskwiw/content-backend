@@ -7,9 +7,9 @@ for the operator dashboard and external integrations.
 
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Query, HTTPException, Request, status
+from fastapi import APIRouter, Query, HTTPException, Request, status, Body
 from pydantic import BaseModel
 
 # Add project root to path to import from src
@@ -138,20 +138,27 @@ async def get_package_by_tier(request: Request, tier: PackageTier) -> PresetPack
 
 
 @router.get("/calculate", response_model=CalculatePriceResponse)
+@router.post("/calculate", response_model=CalculatePriceResponse)
 @lenient_limiter.limit("1000/hour")  # TR-004: Cheap operation (calculation only)
 async def calculate_custom_price(
     request: Request,
-    num_posts: int = Query(..., ge=1, description="Number of posts to generate"),
+    num_posts: int = Query(None, ge=1, description="Number of posts to generate"),
     research: bool = Query(False, description="Include research add-on"),
+    body: Optional[dict] = Body(None),
 ) -> CalculatePriceResponse:
     """
     Calculate price for custom configuration.
 
     Rate limit: 1000/hour (cheap calculation operation)
 
+    Supports both GET (query params) and POST (JSON body):
+    - GET: /api/pricing/calculate?num_posts=30&research=true
+    - POST: /api/pricing/calculate with {"template_quantities": {"1": 5}}
+
     Args:
-        num_posts: Number of posts (must be >= 1)
-        research: Whether to include research add-on
+        num_posts: Number of posts (must be >= 1) - for GET requests
+        research: Whether to include research add-on - for GET requests
+        body: JSON body for POST requests with template_quantities
 
     Returns:
         Price calculation breakdown
@@ -168,6 +175,36 @@ async def calculate_custom_price(
     ```
     """
     config = PricingConfig()
+
+    # Handle POST with template_quantities
+    if body and "template_quantities" in body:
+        # Calculate total posts from template quantities
+        template_quantities: Dict[str, int] = body["template_quantities"]
+        calculated_num_posts = sum(template_quantities.values())
+        research_requested = body.get("research", False)
+
+        price = calculate_price(
+            num_posts=calculated_num_posts,
+            research_per_post=research_requested,
+            price_per_post=config.PRICE_PER_POST,
+            research_price=config.RESEARCH_PRICE_PER_POST,
+        )
+
+        return CalculatePriceResponse(
+            numPosts=calculated_num_posts,
+            researchIncluded=research_requested,
+            pricePerPost=config.PRICE_PER_POST,
+            researchPricePerPost=config.RESEARCH_PRICE_PER_POST if research_requested else 0.0,
+            totalPrice=price,
+        )
+
+    # Handle GET with query params
+    if num_posts is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="num_posts query parameter is required for GET requests",
+        )
+
     price = calculate_price(
         num_posts=num_posts,
         research_per_post=research,

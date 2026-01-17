@@ -52,7 +52,7 @@ def test_calculate_cost(tracker):
     # Test basic input/output cost
     cost = tracker.calculate_cost(model=model, input_tokens=1000, output_tokens=500)
 
-    expected_cost = (1000 / 1_000_000 * 0.003) + (500 / 1_000_000 * 0.015)
+    expected_cost = (1000 / 1_000_000 * 3.0) + (500 / 1_000_000 * 15.0)
     assert cost == pytest.approx(expected_cost, rel=1e-6)
 
 
@@ -69,10 +69,10 @@ def test_calculate_cost_with_cache(tracker):
     )
 
     expected_cost = (
-        (1000 / 1_000_000 * 0.003)
-        + (500 / 1_000_000 * 0.015)  # Input
-        + (2000 / 1_000_000 * 0.00375)  # Output
-        + (5000 / 1_000_000 * 0.0003)  # Cache write  # Cache read
+        (1000 / 1_000_000 * 3.0)  # Input
+        + (500 / 1_000_000 * 15.0)  # Output
+        + (2000 / 1_000_000 * 3.75)  # Cache write
+        + (5000 / 1_000_000 * 0.3)  # Cache read
     )
 
     assert cost == pytest.approx(expected_cost, rel=1e-6)
@@ -308,8 +308,95 @@ def test_unknown_model_uses_default(tracker):
     cost = tracker.calculate_cost(model="unknown-model", input_tokens=1000, output_tokens=500)
 
     # Should use Sonnet pricing
-    expected_cost = (1000 / 1_000_000 * 0.003) + (500 / 1_000_000 * 0.015)
+    expected_cost = (1000 / 1_000_000 * 3.0) + (500 / 1_000_000 * 15.0)
     assert cost == pytest.approx(expected_cost, rel=1e-6)
+
+
+def test_get_total_costs_with_start_date(tracker):
+    """Test get_total_costs with start_date filter (lines 420-421)."""
+    from datetime import datetime, timedelta
+
+    # Track calls
+    tracker.track_api_call(
+        project_id="Project1",
+        operation="call",
+        model="claude-3-5-sonnet-20241022",
+        input_tokens=1000,
+        output_tokens=500,
+    )
+
+    # Get stats with start_date in the past (should include all calls)
+    yesterday = datetime.now() - timedelta(days=1)
+    stats = tracker.get_total_costs(start_date=yesterday)
+
+    assert stats["total_calls"] >= 1
+    assert stats["total_input_tokens"] >= 1000
+
+
+def test_get_total_costs_with_end_date(tracker):
+    """Test get_total_costs with end_date filter (lines 423-424)."""
+    from datetime import datetime, timedelta
+
+    # Track calls
+    tracker.track_api_call(
+        project_id="Project1",
+        operation="call",
+        model="claude-3-5-sonnet-20241022",
+        input_tokens=1000,
+        output_tokens=500,
+    )
+
+    # Get stats with end_date in the future (should include all calls)
+    tomorrow = datetime.now() + timedelta(days=1)
+    stats = tracker.get_total_costs(end_date=tomorrow)
+
+    assert stats["total_calls"] >= 1
+
+
+def test_get_total_costs_with_date_range(tracker):
+    """Test get_total_costs with both start and end date."""
+    from datetime import datetime, timedelta
+
+    # Track calls
+    tracker.track_api_call(
+        project_id="Project1",
+        operation="call",
+        model="claude-3-5-sonnet-20241022",
+        input_tokens=1000,
+        output_tokens=500,
+    )
+
+    # Get stats with date range that includes today
+    yesterday = datetime.now() - timedelta(days=1)
+    tomorrow = datetime.now() + timedelta(days=1)
+    stats = tracker.get_total_costs(start_date=yesterday, end_date=tomorrow)
+
+    assert stats["total_calls"] >= 1
+    assert stats["total_input_tokens"] >= 1000
+    assert stats["total_output_tokens"] >= 500
+    assert stats["total_cost"] > 0
+
+
+def test_get_total_costs_no_results(tracker):
+    """Test get_total_costs with date range that excludes all calls."""
+    from datetime import datetime, timedelta
+
+    # Track calls
+    tracker.track_api_call(
+        project_id="Project1",
+        operation="call",
+        model="claude-3-5-sonnet-20241022",
+        input_tokens=1000,
+        output_tokens=500,
+    )
+
+    # Get stats with date range in the past (should exclude all calls)
+    week_ago = datetime.now() - timedelta(days=7)
+    six_days_ago = datetime.now() - timedelta(days=6)
+    stats = tracker.get_total_costs(start_date=week_ago, end_date=six_days_ago)
+
+    assert stats["total_calls"] == 0
+    assert stats["total_input_tokens"] == 0
 
 
 if __name__ == "__main__":

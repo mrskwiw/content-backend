@@ -3,7 +3,6 @@ Test research tool name mapping between router and service
 
 Critical bug fix: RESEARCH_TOOL_MAP keys must match actual tool names
 """
-import pytest
 
 
 def test_research_tool_map_keys_match_tool_names():
@@ -56,23 +55,31 @@ def test_research_tool_map_keys_match_tool_names():
 
 
 def test_research_tool_map_has_all_available_tools():
-    """Verify all 6 implemented tools are in the map"""
+    """Verify all 12 implemented tools are in the map"""
     from backend.services.research_service import RESEARCH_TOOL_MAP
 
     expected_tools = {
+        # Original 6 tools
         "voice_analysis",
         "brand_archetype",
         "seo_keyword_research",  # NOT "seo_keyword"
         "competitive_analysis",
         "content_gap_analysis",  # NOT "content_gap"
         "market_trends_research",  # NOT "market_trends"
+        # Additional 6 tools
+        "audience_research",
+        "content_calendar",
+        "platform_strategy",
+        "icp_workshop",
+        "content_audit",
+        "story_mining",
     }
 
     actual_tools = set(RESEARCH_TOOL_MAP.keys())
 
-    assert actual_tools == expected_tools, (
-        f"Tool map mismatch. Expected: {expected_tools}, Got: {actual_tools}"
-    )
+    assert (
+        actual_tools == expected_tools
+    ), f"Tool map mismatch. Expected: {expected_tools}, Got: {actual_tools}"
 
 
 def test_router_tool_names_exist_in_map():
@@ -106,6 +113,7 @@ def test_prepare_inputs_tool_name_branches():
     - Result: Input preparation skipped, validation fails
     """
     from backend.services.research_service import research_service
+
     # from backend.models import Project, Client  # Not needed, using mocks
 
     # Create mock models

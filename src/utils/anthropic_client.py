@@ -1,7 +1,13 @@
-"""Wrapper for Anthropic API calls with error handling and retry logic"""
+"""Wrapper for Anthropic API calls with error handling and retry logic.
+
+Provides comprehensive error detection, diagnostics, and reporting for
+connection issues with the Anthropic API.
+"""
 
 import asyncio
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -15,9 +21,43 @@ from ..config.constants import (
 )
 from ..config.prompts import SystemPrompts
 from ..config.settings import settings
+from .connection_diagnostics import (
+    ConnectionDiagnostics,
+    check_anthropic_connectivity,
+    diagnose_connection_error,
+)
 from .cost_tracker import get_default_tracker
 from .logger import log_api_call, log_error, logger
 from .response_cache import ResponseCache
+
+
+@dataclass
+class APIErrorReport:
+    """Structured error report for API failures."""
+
+    timestamp: datetime = field(default_factory=datetime.now)
+    operation: str = ""
+    model: str = ""
+    attempt: int = 1
+    max_attempts: int = 3
+    error_type: str = ""
+    error_message: str = ""
+    diagnostics: Optional[ConnectionDiagnostics] = None
+    recovery_action: str = ""
+
+    def to_log_message(self) -> str:
+        """Generate log message for this error."""
+        lines = [
+            f"API Error Report [{self.timestamp.strftime('%H:%M:%S')}]",
+            f"  Operation: {self.operation}",
+            f"  Model: {self.model}",
+            f"  Attempt: {self.attempt}/{self.max_attempts}",
+            f"  Error Type: {self.error_type}",
+            f"  Message: {self.error_message[:200]}",
+        ]
+        if self.recovery_action:
+            lines.append(f"  Recovery: {self.recovery_action}")
+        return "\n".join(lines)
 
 
 class AnthropicClient:
@@ -68,6 +108,168 @@ class AnthropicClient:
 
         # Initialize cost tracker
         self.cost_tracker = get_default_tracker()
+
+        # Error tracking for diagnostics
+        self.error_history: List[APIErrorReport] = []
+        self.consecutive_failures: int = 0
+        self.last_successful_call: Optional[datetime] = None
+        self.connection_verified: bool = False
+
+    def check_connection_health(self) -> ConnectionDiagnostics:
+        """Check connectivity to Anthropic API.
+
+        Runs comprehensive diagnostics including DNS resolution,
+        port connectivity, and SSL certificate validation.
+
+        Returns:
+            ConnectionDiagnostics with current health status.
+        """
+        logger.info("Running Anthropic API connection health check...")
+        diagnostics = check_anthropic_connectivity()
+
+        # Log results
+        if diagnostics.dns_resolved and diagnostics.port_open and diagnostics.ssl_valid:
+            logger.info(
+                f"Connection health check PASSED - "
+                f"DNS: {diagnostics.dns_resolution_time_ms:.1f}ms, "
+                f"Connection: {diagnostics.connection_time_ms:.1f}ms, "
+                f"SSL: {diagnostics.ssl_handshake_time_ms:.1f}ms"
+            )
+            self.connection_verified = True
+        else:
+            logger.warning(
+                f"Connection health check FAILED - "
+                f"DNS: {'OK' if diagnostics.dns_resolved else 'FAILED'}, "
+                f"Port: {'OK' if diagnostics.port_open else 'FAILED'}, "
+                f"SSL: {'OK' if diagnostics.ssl_valid else 'FAILED'}"
+            )
+            # Log detailed report
+            logger.warning(diagnostics.to_report())
+            self.connection_verified = False
+
+        return diagnostics
+
+    def get_error_summary(self) -> Dict[str, Any]:
+        """Get summary of recent API errors.
+
+        Returns:
+            Dictionary with error statistics and recent failures.
+        """
+        if not self.error_history:
+            return {
+                "total_errors": 0,
+                "consecutive_failures": self.consecutive_failures,
+                "last_successful_call": (
+                    self.last_successful_call.isoformat() if self.last_successful_call else None
+                ),
+                "connection_verified": self.connection_verified,
+                "error_types": {},
+                "recent_errors": [],
+            }
+
+        # Count error types
+        error_types: Dict[str, int] = {}
+        for error in self.error_history:
+            error_types[error.error_type] = error_types.get(error.error_type, 0) + 1
+
+        # Get last 5 errors
+        recent = self.error_history[-5:]
+
+        return {
+            "total_errors": len(self.error_history),
+            "consecutive_failures": self.consecutive_failures,
+            "last_successful_call": (
+                self.last_successful_call.isoformat() if self.last_successful_call else None
+            ),
+            "connection_verified": self.connection_verified,
+            "error_types": error_types,
+            "recent_errors": [
+                {
+                    "timestamp": e.timestamp.isoformat(),
+                    "operation": e.operation,
+                    "error_type": e.error_type,
+                    "message": e.error_message[:100],
+                }
+                for e in recent
+            ],
+        }
+
+    def _record_error(
+        self,
+        exception: Exception,
+        operation: str,
+        attempt: int,
+        max_attempts: int,
+        run_diagnostics: bool = True,
+    ) -> APIErrorReport:
+        """Record an API error with diagnostics.
+
+        Args:
+            exception: The exception that occurred.
+            operation: Name of the operation that failed.
+            attempt: Current attempt number.
+            max_attempts: Maximum retry attempts.
+            run_diagnostics: Whether to run full connection diagnostics.
+
+        Returns:
+            APIErrorReport with error details.
+        """
+        # Determine error type and recovery action
+        error_type = type(exception).__name__
+        recovery_action = ""
+
+        if isinstance(exception, RateLimitError):
+            error_type = "RateLimitError"
+            recovery_action = "Waiting with exponential backoff"
+        elif isinstance(exception, APIConnectionError):
+            error_type = "APIConnectionError"
+            recovery_action = "Retrying connection"
+        elif isinstance(exception, APIError):
+            error_type = f"APIError ({getattr(exception, 'status_code', 'unknown')})"
+            recovery_action = "No retry - non-retryable error"
+
+        # Run diagnostics for connection errors
+        diagnostics = None
+        if run_diagnostics and isinstance(exception, APIConnectionError):
+            wait_time = self.retry_delay * (2 ** (attempt - 1))
+            diagnostics = diagnose_connection_error(
+                exception=exception,
+                endpoint="https://api.anthropic.com",
+                attempt=attempt,
+                max_attempts=max_attempts,
+                retry_delay=wait_time,
+            )
+            # Log detailed diagnostic report
+            logger.error(diagnostics.to_report())
+
+        report = APIErrorReport(
+            operation=operation,
+            model=self.model,
+            attempt=attempt,
+            max_attempts=max_attempts,
+            error_type=error_type,
+            error_message=str(exception),
+            diagnostics=diagnostics,
+            recovery_action=recovery_action,
+        )
+
+        # Track error
+        self.error_history.append(report)
+        self.consecutive_failures += 1
+
+        # Keep only last 50 errors
+        if len(self.error_history) > 50:
+            self.error_history = self.error_history[-50:]
+
+        # Log structured error
+        logger.error(report.to_log_message())
+
+        return report
+
+    def _record_success(self) -> None:
+        """Record a successful API call."""
+        self.consecutive_failures = 0
+        self.last_successful_call = datetime.now()
 
     def create_message(
         self,
@@ -174,6 +376,9 @@ class AnthropicClient:
                     if use_cache and self.response_cache:
                         self.response_cache.put(messages, system or "", temperature, response_text)
 
+                    # Record success
+                    self._record_success()
+
                     return response_text
                 else:
                     raise RuntimeError("Empty response from API")
@@ -181,29 +386,85 @@ class AnthropicClient:
             except RateLimitError as e:
                 last_exception = e
                 wait_time = self.retry_delay * (2**attempt)  # Exponential backoff
+
+                # Record error with context (no full diagnostics for rate limits)
+                self._record_error(
+                    exception=e,
+                    operation=operation,
+                    attempt=attempt + 1,
+                    max_attempts=self.max_retries,
+                    run_diagnostics=False,  # Rate limits aren't connection issues
+                )
+
                 logger.warning(
                     f"Rate limit hit (attempt {attempt + 1}/{self.max_retries}), "
-                    f"waiting {wait_time}s before retry"
+                    f"waiting {wait_time}s before retry. "
+                    f"Consecutive failures: {self.consecutive_failures}"
                 )
                 time.sleep(wait_time)
 
             except APIConnectionError as e:
                 last_exception = e
                 wait_time = self.retry_delay * (2**attempt)
+
+                # Record error with full connection diagnostics
+                error_report = self._record_error(
+                    exception=e,
+                    operation=operation,
+                    attempt=attempt + 1,
+                    max_attempts=self.max_retries,
+                    run_diagnostics=True,  # Run full diagnostics for connection errors
+                )
+
+                # Log additional context
                 logger.warning(
                     f"Connection error (attempt {attempt + 1}/{self.max_retries}), "
-                    f"waiting {wait_time}s before retry"
+                    f"waiting {wait_time}s before retry. "
+                    f"Error type: {error_report.diagnostics.error_type.value if error_report.diagnostics else 'unknown'}"
                 )
+
+                # Log suggestions if available
+                if error_report.diagnostics and error_report.diagnostics.suggestions:
+                    logger.info("Troubleshooting suggestions:")
+                    for suggestion in error_report.diagnostics.suggestions[:3]:
+                        logger.info(f"  - {suggestion}")
+
                 time.sleep(wait_time)
 
             except APIError as e:
                 last_exception = e
+
+                # Record error (no diagnostics for API errors)
+                self._record_error(
+                    exception=e,
+                    operation=operation,
+                    attempt=attempt + 1,
+                    max_attempts=self.max_retries,
+                    run_diagnostics=False,
+                )
+
                 # Don't retry on non-retryable errors
                 log_error(f"API error: {str(e)}", exc_info=True)
                 raise
 
-        # If we get here, all retries failed
+        # If we get here, all retries failed - generate final diagnostic report
         log_error(f"All {self.max_retries} retries failed", exc_info=True)
+
+        # Run final diagnostics
+        if isinstance(last_exception, APIConnectionError):
+            logger.error("=" * 60)
+            logger.error("FINAL CONNECTION FAILURE - DETAILED DIAGNOSTICS")
+            logger.error("=" * 60)
+            final_diagnostics = diagnose_connection_error(
+                exception=last_exception,
+                endpoint="https://api.anthropic.com",
+                attempt=self.max_retries,
+                max_attempts=self.max_retries,
+                retry_delay=0,
+            )
+            logger.error(final_diagnostics.to_report())
+            logger.error("=" * 60)
+
         if last_exception is not None:
             raise last_exception
         else:
@@ -314,6 +575,9 @@ class AnthropicClient:
                     if use_cache and self.response_cache:
                         self.response_cache.put(messages, system or "", temperature, response_text)
 
+                    # Record success
+                    self._record_success()
+
                     return response_text
                 else:
                     raise RuntimeError("Empty response from API")
@@ -321,29 +585,85 @@ class AnthropicClient:
             except RateLimitError as e:
                 last_exception = e
                 wait_time = self.retry_delay * (2**attempt)  # Exponential backoff
+
+                # Record error with context (no full diagnostics for rate limits)
+                self._record_error(
+                    exception=e,
+                    operation=operation,
+                    attempt=attempt + 1,
+                    max_attempts=self.max_retries,
+                    run_diagnostics=False,
+                )
+
                 logger.warning(
                     f"Rate limit hit (attempt {attempt + 1}/{self.max_retries}), "
-                    f"waiting {wait_time}s before retry"
+                    f"waiting {wait_time}s before retry. "
+                    f"Consecutive failures: {self.consecutive_failures}"
                 )
                 await asyncio.sleep(wait_time)
 
             except APIConnectionError as e:
                 last_exception = e
                 wait_time = self.retry_delay * (2**attempt)
+
+                # Record error with full connection diagnostics
+                error_report = self._record_error(
+                    exception=e,
+                    operation=operation,
+                    attempt=attempt + 1,
+                    max_attempts=self.max_retries,
+                    run_diagnostics=True,
+                )
+
+                # Log additional context
                 logger.warning(
                     f"Connection error (attempt {attempt + 1}/{self.max_retries}), "
-                    f"waiting {wait_time}s before retry"
+                    f"waiting {wait_time}s before retry. "
+                    f"Error type: {error_report.diagnostics.error_type.value if error_report.diagnostics else 'unknown'}"
                 )
+
+                # Log suggestions if available
+                if error_report.diagnostics and error_report.diagnostics.suggestions:
+                    logger.info("Troubleshooting suggestions:")
+                    for suggestion in error_report.diagnostics.suggestions[:3]:
+                        logger.info(f"  - {suggestion}")
+
                 await asyncio.sleep(wait_time)
 
             except APIError as e:
                 last_exception = e
+
+                # Record error (no diagnostics for API errors)
+                self._record_error(
+                    exception=e,
+                    operation=operation,
+                    attempt=attempt + 1,
+                    max_attempts=self.max_retries,
+                    run_diagnostics=False,
+                )
+
                 # Don't retry on non-retryable errors
                 log_error(f"API error: {str(e)}", exc_info=True)
                 raise
 
-        # If we get here, all retries failed
+        # If we get here, all retries failed - generate final diagnostic report
         log_error(f"All {self.max_retries} retries failed", exc_info=True)
+
+        # Run final diagnostics
+        if isinstance(last_exception, APIConnectionError):
+            logger.error("=" * 60)
+            logger.error("FINAL CONNECTION FAILURE - DETAILED DIAGNOSTICS")
+            logger.error("=" * 60)
+            final_diagnostics = diagnose_connection_error(
+                exception=last_exception,
+                endpoint="https://api.anthropic.com",
+                attempt=self.max_retries,
+                max_attempts=self.max_retries,
+                retry_delay=0,
+            )
+            logger.error(final_diagnostics.to_report())
+            logger.error("=" * 60)
+
         if last_exception is not None:
             raise last_exception
         else:

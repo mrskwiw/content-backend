@@ -18,5 +18,27 @@ module.exports = {
     '^@/utils/env$': '<rootDir>/src/utils/__mocks__/env.ts',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/tests/e2e/'],
+
+  // Coverage configuration
+  collectCoverage: true,
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
+    '!src/**/*.test.{ts,tsx}',
+    '!src/**/*.spec.{ts,tsx}',
+    '!src/main.tsx',
+    '!src/vite-env.d.ts',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['html', 'text', 'json', 'lcov'],
+  coverageThresholds: {
+    global: {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+  },
 };

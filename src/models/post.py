@@ -1,4 +1,5 @@
 """Post data model with metadata and quality tracking"""
+
 from datetime import datetime
 from typing import Any, Optional
 
@@ -54,9 +55,15 @@ class Post(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         """Calculate fields after initialization"""
         if self.content:
-            self.word_count = len(self.content.split())
-            self.character_count = len(self.content)
-            self.has_cta = self._detect_cta(self.content)
+            # Only auto-calculate if not explicitly set
+            if self.word_count == 0:
+                self.word_count = len(self.content.split())
+            if self.character_count == 0:
+                self.character_count = len(self.content)
+            # Only auto-detect CTA if has_cta is False (default)
+            # This preserves explicitly set has_cta=True values
+            if not self.has_cta:
+                self.has_cta = self._detect_cta(self.content)
 
     @staticmethod
     def _detect_cta(content: str) -> bool:

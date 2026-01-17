@@ -156,8 +156,9 @@ class CoordinatorAgent:
 
             # Load templates for regeneration
             from ..utils.template_loader import TemplateLoader
+
             template_loader = TemplateLoader()
-            all_templates = template_loader.load_templates()
+            all_templates = template_loader.get_all_templates()
 
             # Create simple system prompt for regeneration
             system_prompt = (
@@ -405,9 +406,12 @@ class CoordinatorAgent:
             "witty": TonePreference.WITTY,
             "data_driven": TonePreference.DATA_DRIVEN,
             "data-driven": TonePreference.DATA_DRIVEN,
-            "empathetic": TonePreference.EMPATHETIC,
-            "bold": TonePreference.BOLD,
-            "thoughtful": TonePreference.THOUGHTFUL,
+            "empathetic": TonePreference.VULNERABLE,  # Maps to vulnerable (similar meaning)
+            "bold": TonePreference.AUTHORITATIVE,  # Maps to authoritative (similar meaning)
+            "thoughtful": TonePreference.CONVERSATIONAL,  # Maps to conversational
+            "authoritative": TonePreference.AUTHORITATIVE,
+            "vulnerable": TonePreference.VULNERABLE,
+            "conversational": TonePreference.CONVERSATIONAL,
         }
 
         tones = []
@@ -473,12 +477,13 @@ class CoordinatorAgent:
             posting_frequency = "3-4x weekly"
 
         # Data usage
-        print("\nData Usage Preference (none, light, moderate, heavy): ")
+        print("\nData Usage Preference (minimal, moderate, heavy): ")
         data_usage_input = input("  Data usage: ").strip().lower()
 
         data_usage_map = {
-            "none": DataUsagePreference.NONE,
-            "light": DataUsagePreference.LIGHT,
+            "none": DataUsagePreference.MINIMAL,  # Maps to minimal
+            "light": DataUsagePreference.MINIMAL,  # Maps to minimal
+            "minimal": DataUsagePreference.MINIMAL,
             "moderate": DataUsagePreference.MODERATE,
             "heavy": DataUsagePreference.HEAVY,
         }

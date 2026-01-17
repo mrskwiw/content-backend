@@ -36,28 +36,28 @@ from ..utils.logger import logger
 # Source: https://www.anthropic.com/pricing
 MODEL_PRICING = {
     "claude-3-5-sonnet-20241022": {
-        "input": 0.003,  # $3 per million input tokens
-        "output": 0.015,  # $15 per million output tokens
-        "cache_write": 0.00375,  # $3.75 per million cache write tokens
-        "cache_read": 0.0003,  # $0.30 per million cache read tokens
+        "input": 3.0,  # $3 per million input tokens
+        "output": 15.0,  # $15 per million output tokens
+        "cache_write": 3.75,  # $3.75 per million cache write tokens
+        "cache_read": 0.3,  # $0.30 per million cache read tokens
     },
     "claude-3-5-sonnet-latest": {
-        "input": 0.003,
-        "output": 0.015,
-        "cache_write": 0.00375,
-        "cache_read": 0.0003,
+        "input": 3.0,
+        "output": 15.0,
+        "cache_write": 3.75,
+        "cache_read": 0.3,
     },
     "claude-3-opus-20240229": {
-        "input": 0.015,
-        "output": 0.075,
-        "cache_write": 0.01875,
-        "cache_read": 0.0015,
+        "input": 15.0,
+        "output": 75.0,
+        "cache_write": 18.75,
+        "cache_read": 1.5,
     },
     "claude-3-haiku-20240307": {
-        "input": 0.00025,
-        "output": 0.00125,
-        "cache_write": 0.0003,
-        "cache_read": 0.00003,
+        "input": 0.25,
+        "output": 1.25,
+        "cache_write": 0.3,
+        "cache_read": 0.03,
     },
 }
 

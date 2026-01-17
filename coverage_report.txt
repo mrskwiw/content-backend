@@ -1,0 +1,240 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.6, pytest-7.4.4, pluggy-1.5.0
+SuperClaude: 4.1.9
+rootdir: C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project
+configfile: pyproject.toml
+plugins: anyio-4.7.0, Faker-19.3.1, asyncio-0.23.3, cov-4.1.0, env-1.1.1, html-4.1.1, metadata-3.1.1, mock-3.12.0, timeout-2.2.0, xdist-3.5.0, superclaude-4.1.9
+asyncio: mode=Mode.STRICT
+collected 1511 items
+
+tests\unit\test_analytics_tracker.py ...................                 [  1%]
+tests\unit\test_anthropic_client.py ...................................  [  3%]
+tests\unit\test_config_modules.py ............................           [  5%]
+tests\unit\test_content_generator.py ............................        [  7%]
+tests\unit\test_coordinator.py .........................                 [  8%]
+tests\unit\test_cost_tracker.py .............                            [  9%]
+tests\unit\test_cta_validator.py .....................................   [ 12%]
+tests\unit\test_docx_generator.py ......................                 [ 13%]
+tests\unit\test_enhanced_response_cache.py ......sssss.s..s..s...s       [ 15%]
+tests\unit\test_file_parser.py ......................................... [ 17%]
+.....                                                                    [ 18%]
+tests\unit\test_headline_validator.py .................................. [ 20%]
+...........                                                              [ 21%]
+tests\unit\test_hook_validator.py .......................s.............. [ 23%]
+                                                                         [ 23%]
+tests\unit\test_hook_validator_optimized.py ......ss.....s               [ 24%]
+tests\unit\test_hook_validator_platform.py ..................            [ 25%]
+tests\unit\test_jwt_rotation.py ........                                 [ 26%]
+tests\unit\test_keyword_validator.py ..............................      [ 28%]
+tests\unit\test_length_validator.py .................................... [ 30%]
+.                                                                        [ 30%]
+tests\unit\test_length_validator_platform.py .................           [ 31%]
+tests\unit\test_memory_learning_agent.py ...............                 [ 32%]
+tests\unit\test_new_modules.py .......................                   [ 34%]
+tests\unit\test_output_formatter.py .................................... [ 36%]
+.                                                                        [ 36%]
+tests\unit\test_password_security.py .....................               [ 38%]
+tests\unit\test_platform_aware_prompts.py ..............                 [ 39%]
+tests\unit\test_post_platform_enum.py ...............                    [ 40%]
+tests\unit\test_pricing_calculations.py ................................ [ 42%]
+                                                                         [ 42%]
+tests\unit\test_prompt_injection_defense.py ............................ [ 44%]
+...                                                                      [ 44%]
+tests\unit\test_prompt_injection_research.py ................            [ 45%]
+tests\unit\test_quality_validators_platform.py .....                     [ 45%]
+tests\unit\test_react_hook_dependencies.py ..................            [ 46%]
+tests\unit\test_react_purity_violations.py ..............                [ 47%]
+tests\unit\test_research_base_utilities.py ........................      [ 49%]
+tests\unit\test_research_tool_mapping.py ....                            [ 49%]
+tests\unit\test_research_validation.py ................................. [ 51%]
+........                                                                 [ 52%]
+tests\unit\test_response_cache.py ..............                         [ 53%]
+tests\unit\test_revision_agent.py ...........................            [ 55%]
+tests\unit\test_schedule_generator.py .............                      [ 56%]
+tests\unit\test_sql_injection_prevention.py ..............               [ 56%]
+tests\unit\test_template_loader.py ..................................... [ 59%]
+..                                                                       [ 59%]
+tests\unit\test_template_quantities_generation.py ...........            [ 60%]
+tests\unit\test_voice_analyzer.py .........                              [ 60%]
+tests\unit\test_voice_matcher.py ..............................          [ 62%]
+tests\unit\test_voice_metrics.py .............................           [ 64%]
+tests\unit\agents\test_brief_enhancer.py ...........................     [ 66%]
+tests\unit\agents\test_brief_parser.py .............................     [ 68%]
+tests\unit\agents\test_brief_quality_checker.py ........................ [ 70%]
+...............                                                          [ 71%]
+tests\unit\agents\test_content_generator.py .....................        [ 72%]
+tests\unit\agents\test_keyword_agent.py ..............................   [ 74%]
+tests\unit\agents\test_keyword_refiner.py .....................          [ 75%]
+tests\unit\agents\test_post_regenerator.py ............................. [ 77%]
+.....                                                                    [ 78%]
+tests\unit\agents\test_qa_agent.py ..................                    [ 79%]
+tests\unit\agents\test_question_generator.py ........................... [ 81%]
+..                                                                       [ 81%]
+tests\unit\cli\test_interactive_mode.py ..............................   [ 83%]
+tests\unit\models\test_brief_quality.py ..................               [ 84%]
+tests\unit\models\test_post.py ........................................  [ 87%]
+tests\unit\models\test_qa_report.py ................                     [ 88%]
+tests\unit\models\test_question.py ...................                   [ 89%]
+tests\unit\models\test_voice_sample.py ................................. [ 91%]
+.........                                                                [ 92%]
+tests\unit\utils\test_cost_dashboard.py .........................        [ 93%]
+tests\unit\utils\test_progress_stream.py ............................    [ 95%]
+tests\unit\validators\test_research_input_validator.py ................. [ 96%]
+.................................................                        [100%]
+
+============================== warnings summary ===============================
+src\config\settings.py:11
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\config\settings.py:11: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+src\models\quality_profile.py:66
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\quality_profile.py:66: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    @validator("max_readability")
+
+src\models\quality_profile.py:75
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\quality_profile.py:75: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    @validator("max_words")
+
+src\models\quality_profile.py:11
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\quality_profile.py:11: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class QualityProfile(BaseModel):
+
+backend\config.py:27
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\config.py:27: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+backend\database.py:102
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\database.py:102: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+src\models\audience_research_models.py:110
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\audience_research_models.py:110: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class AudienceResearch(BaseModel):
+
+src\models\competitive_analysis_models.py:94
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\competitive_analysis_models.py:94: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CompetitiveAnalysis(BaseModel):
+
+src\models\content_audit_models.py:135
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\content_audit_models.py:135: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ContentAuditAnalysis(BaseModel):
+
+src\models\content_calendar_models.py:98
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\content_calendar_models.py:98: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CalendarStrategy(BaseModel):
+
+src\models\content_gap_models.py:93
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\content_gap_models.py:93: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ContentGapAnalysis(BaseModel):
+
+src\models\market_trends_models.py:79
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\market_trends_models.py:79: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TrendReport(BaseModel):
+
+src\models\platform_strategy_models.py:120
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\platform_strategy_models.py:120: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class PlatformStrategyAnalysis(BaseModel):
+
+src\models\seo_models.py:66
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\src\models\seo_models.py:66: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class KeywordStrategy(BaseModel):
+
+tests/unit/test_jwt_rotation.py::test_create_token_with_primary_secret
+tests/unit/test_jwt_rotation.py::test_decode_with_multiple_active_secrets
+tests/unit/test_jwt_rotation.py::test_decode_with_multiple_active_secrets
+tests/unit/test_jwt_rotation.py::test_fallback_to_settings_secret_key
+tests/unit/test_jwt_rotation.py::test_deprecated_secret_warning
+tests/unit/test_jwt_rotation.py::test_rotation_workflow_end_to_end
+tests/unit/test_jwt_rotation.py::test_rotation_workflow_end_to_end
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\utils\auth.py:63: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+tests/unit/test_jwt_rotation.py: 10 warnings
+  C:\Users\mrskw\AppData\Roaming\Python\Python312\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+tests/unit/test_jwt_rotation.py::test_create_refresh_token_with_primary_secret
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\utils\auth.py:91: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+tests/unit/test_jwt_rotation.py::test_token_expiry_respected
+  C:\git\project\CONTENT MARKETING\30 Day Content Jumpstart\project\backend\utils\auth.py:61: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + expires_delta
+
+tests/unit/cli/test_interactive_mode.py::TestLoadInitialBrief::test_load_initial_brief_failure_fallback
+  C:\Python312\Lib\site-packages\rich\live.py:231: UserWarning: install "ipywidgets" for Jupyter support
+    warnings.warn('install "ipywidgets" for Jupyter support')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.12.6-final-0 -----------
+Name                                           Stmts   Miss Branch BrPart  Cover
+--------------------------------------------------------------------------------
+src\agents\brief_enhancer.py                      95      1     36      4    96%
+src\agents\brief_parser.py                        75      4      8      1    94%
+src\agents\brief_quality_checker.py              122      1     63      1    99%
+src\agents\client_classifier.py                   44     14     24      6    68%
+src\agents\content_generator.py                  512    128    203     23    72%
+src\agents\coordinator.py                        225      5     88     11    95%
+src\agents\keyword_agent.py                       96      7     32      3    89%
+src\agents\keyword_refiner.py                     64      1     18      1    98%
+src\agents\memory_learning_agent.py              161     24    104     21    78%
+src\agents\post_regenerator.py                   119      6     50      6    93%
+src\agents\qa_agent.py                            52      0     16      1    99%
+src\agents\question_generator.py                  77      1     32      5    94%
+src\agents\revision_agent.py                     123      9     58      8    90%
+src\agents\voice_analyzer.py                     230     55    101     13    76%
+src\cli\interactive_mode.py                      278     42     95     15    83%
+src\config\brand_frameworks.py                    34     15     20      5    48%
+src\config\platform_specs.py                      31     17     12      1    35%
+src\config\pricing.py                             39      1      8      1    96%
+src\config\secrets_manager.py                    137    137     42      0     0%
+src\config\settings.py                            62      5     14      4    88%
+src\config\template_rules_expanded.py             23     23      0      0     0%
+src\config\template_rules_original_backup.py      11     11      0      0     0%
+src\database\migrate_phase8b.py                   78     78      6      0     0%
+src\database\project_db.py                       444    260    154      5    39%
+src\models\client_brief.py                        72     11     22      1    79%
+src\models\client_memory.py                      160     48     56     11    64%
+src\models\icp_workshop_models.py                 53      0      2      1    98%
+src\models\post.py                                54      0     26      2    98%
+src\models\posting_schedule.py                    94      2     24      4    95%
+src\models\project.py                            116     34     22      0    68%
+src\models\qa_report.py                          123      4     43      2    95%
+src\models\quality_profile.py                     54     24     20      3    53%
+src\models\seo_keyword.py                         51      3      0      0    94%
+src\models\story_mining_models.py                 69      0      2      1    99%
+src\models\template.py                            52     10     10      2    71%
+src\models\voice_guide.py                        147     15     76     21    79%
+src\models\voice_sample.py                       145      0     86      3    99%
+src\utils\analytics_tracker.py                   109      2     30      3    96%
+src\utils\anthropic_client.py                    188     20     91     16    86%
+src\utils\cost_dashboard.py                      146      0     30      1    99%
+src\utils\cost_tracker.py                        154      8     28      4    92%
+src\utils\docx_generator.py                      198      6     68     10    93%
+src\utils\enhanced_response_cache.py             169     70     58      6    52%
+src\utils\file_parser.py                         116      2     64      5    96%
+src\utils\logger.py                               40     10      2      1    74%
+src\utils\output_formatter.py                    238     30     54      7    87%
+src\utils\progress_stream.py                     121      1     38      7    95%
+src\utils\response_cache.py                      101     23     38      7    78%
+src\utils\schedule_generator.py                  112     13     42      3    88%
+src\utils\template_cache.py                       86     23     36      5    69%
+src\utils\template_loader.py                     156     11     54      6    92%
+src\utils\voice_matcher.py                       109      2     60      7    95%
+src\utils\voice_metrics.py                        91      3     50      3    96%
+src\validators\cta_validator.py                   60      2     24      0    98%
+src\validators\headline_validator.py              69      2     34      0    98%
+src\validators\hook_validator.py                 125     34     54      2    70%
+src\validators\length_validator.py                97      2     48      2    97%
+src\validators\prompt_injection_defense.py        96      4     48      4    93%
+src\validators\research_input_validator.py       132      0     80      3    99%
+--------------------------------------------------------------------------------
+TOTAL                                           7918   1264   2646    288    82%
+
+24 files skipped due to complete coverage.
+Coverage HTML written to dir htmlcov
+Coverage JSON written to file coverage.json
+
+FAIL Required test coverage of 90% not reached. Total coverage: 81.62%
+========== 1498 passed, 13 skipped, 34 warnings in 129.23s (0:02:09) ==========

@@ -38,17 +38,20 @@ export const clientsApi = {
 
   async create(input: CreateClientInput) {
     // Convert camelCase to snake_case for backend compatibility
-    const backendInput = {
+    // Exclude undefined values to prevent validation errors
+    const backendInput: Record<string, string | string[] | Platform[] | undefined> = {
       name: input.name,
-      email: input.email,
-      business_description: input.businessDescription,
-      ideal_customer: input.idealCustomer,
-      main_problem_solved: input.mainProblemSolved,
-      tone_preference: input.tonePreference,
-      platforms: input.platforms,
-      customer_pain_points: input.customerPainPoints,
-      customer_questions: input.customerQuestions,
     };
+
+    if (input.email !== undefined) backendInput.email = input.email;
+    if (input.businessDescription !== undefined) backendInput.business_description = input.businessDescription;
+    if (input.idealCustomer !== undefined) backendInput.ideal_customer = input.idealCustomer;
+    if (input.mainProblemSolved !== undefined) backendInput.main_problem_solved = input.mainProblemSolved;
+    if (input.tonePreference !== undefined) backendInput.tone_preference = input.tonePreference;
+    if (input.platforms !== undefined) backendInput.platforms = input.platforms;
+    if (input.customerPainPoints !== undefined) backendInput.customer_pain_points = input.customerPainPoints;
+    if (input.customerQuestions !== undefined) backendInput.customer_questions = input.customerQuestions;
+
     const { data } = await apiClient.post<Client>('/api/clients/', backendInput);
     return data;
   },

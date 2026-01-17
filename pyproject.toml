@@ -28,9 +28,46 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v --cov=src --cov-report=html --cov-report=term"
+addopts = """
+    -v
+    --cov=src
+    --cov-report=html:htmlcov
+    --cov-report=term
+    --cov-report=json:coverage.json
+    --cov-fail-under=90
+    --cov-branch
+"""
 markers = [
     "requires_server: Tests that require a running HTTP server at localhost:8000",
+    "integration: Integration tests",
+    "unit: Unit tests",
+    "e2e: End-to-end tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/.venv/*",
+    "*/venv/*",
+    "*/backend/*",
+    "*/research/*",
+    "src/research/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.mypy]

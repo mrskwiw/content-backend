@@ -256,7 +256,7 @@ async def parse_brief_file(
         # Calculate metadata
         parse_time_ms = int((time.time() - start_time) * 1000)
         fields_extracted = sum(
-            1 for field in fields_with_confidence.values() if field["confidence"] != "low"
+            1 for field in fields_with_confidence.values() if field.confidence != "low"
         )
         fields_total = len(fields_with_confidence)
 
@@ -294,8 +294,16 @@ def _add_confidence_scores(parsed_brief, original_text: str) -> dict:
         "businessDescription": parsed_brief.business_description,
         "idealCustomer": parsed_brief.ideal_customer,
         "mainProblemSolved": parsed_brief.main_problem_solved,
-        "tonePreference": parsed_brief.tone_preference,
-        "platforms": parsed_brief.platforms,
+        "tonePreference": (
+            [t.value for t in parsed_brief.brand_personality]
+            if parsed_brief.brand_personality
+            else []
+        ),
+        "platforms": (
+            [p.value for p in parsed_brief.target_platforms]
+            if parsed_brief.target_platforms
+            else []
+        ),
         "customerPainPoints": parsed_brief.customer_pain_points,
         "customerQuestions": parsed_brief.customer_questions,
     }
@@ -351,14 +359,16 @@ def _generate_warnings(fields: dict) -> list:
 
     for field_name in required_fields:
         field = fields.get(field_name)
-        if not field or field["confidence"] == "low":
+        if not field or field.confidence == "low":
             warnings.append(f"{field_name} not found or low confidence - may need manual entry")
 
     # Optional fields with defaults
-    if fields.get("tonePreference", {}).get("confidence") == "low":
+    tone_field = fields.get("tonePreference")
+    if tone_field and tone_field.confidence == "low":
         warnings.append("tonePreference not found, defaulting to 'professional'")
 
-    if fields.get("platforms", {}).get("confidence") == "low":
+    platforms_field = fields.get("platforms")
+    if platforms_field and platforms_field.confidence == "low":
         warnings.append("No platforms specified - will need to select manually")
 
     return warnings

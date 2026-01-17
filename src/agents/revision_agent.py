@@ -263,12 +263,12 @@ CRITICAL: This is a REVISION based on client feedback.
         Returns:
             System prompt
         """
-        return f"""You are a professional content writer revising social media posts based on client feedback.
+        return f"""You are a professional content writer providing revision support for social media posts based on client feedback.
 
 **Client Context:**
 - Company: {client_brief.company_name}
 - Business: {client_brief.business_description}
-- Voice: {", ".join(client_brief.brand_voice_traits)}
+- Voice: {", ".join([t.value for t in client_brief.brand_personality])}
 
 **Your Task:**
 Generate a revised version of the post that addresses the client's specific feedback while maintaining the overall quality and structure.
@@ -293,8 +293,8 @@ Generate a revised version of the post that addresses the client's specific feed
         elif content.startswith("'") and content.endswith("'"):
             content = content[1:-1]
 
-        # Remove markdown headers
-        content = content.replace("# ", "").replace("## ", "")
+        # Remove markdown headers (e.g., # Heading, ## Heading, etc.)
+        content = re.sub(r"^#{1,6}\s+", "", content, flags=re.MULTILINE)
 
         # Normalize line breaks (max 2 consecutive)
         content = re.sub(r"\n{3,}", "\n\n", content)

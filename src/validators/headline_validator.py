@@ -55,9 +55,10 @@ class HeadlineValidator:
         "exclusive",
         "breakthrough",
         "revolutionary",
+        "revolutionized",  # verb form
         "game-changing",
         "transformative",
-        "essential",
+        "transformed",  # verb form
         "crucial",
         "vital",
         "important",

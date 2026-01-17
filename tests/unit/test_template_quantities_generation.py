@@ -4,8 +4,9 @@ Unit tests for template quantities generation functionality.
 Tests the new template_quantities feature in ContentGeneratorAgent that allows
 generating exact quantities of posts from specific templates instead of equal distribution.
 """
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from src.agents.content_generator import ContentGeneratorAgent
 from src.models.client_brief import ClientBrief, Platform
 from src.models.post import Post
@@ -72,15 +73,21 @@ class TestTemplateQuantitiesSync:
         """Test basic template quantities generation"""
         generator = ContentGeneratorAgent(template_loader=mock_template_loader)
 
-        # Mock _generate_single_post to return dummy posts
-        mock_posts = []
-        for i in range(10):
-            mock_post = Mock(spec=Post)
-            mock_post.content = f"Test post {i+1}"
-            mock_post.word_count = 150
-            mock_posts.append(mock_post)
+        # Mock _generate_single_post to return real Post instances
+        counter = {"count": 0}
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        def mock_generate(template, client_brief, variant=1, **kwargs):
+            counter["count"] += 1
+            return Post(
+                content=f"Test post {counter['count']} with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
+
+        with patch.object(generator, "_generate_single_post", side_effect=mock_generate):
             template_quantities = {1: 3, 2: 5, 9: 2}  # 10 total posts
 
             posts = generator.generate_posts(
@@ -102,14 +109,20 @@ class TestTemplateQuantitiesSync:
         """Test that template_quantities takes priority over num_posts"""
         generator = ContentGeneratorAgent(template_loader=mock_template_loader)
 
-        mock_posts = []
-        for i in range(5):
-            mock_post = Mock(spec=Post)
-            mock_post.content = f"Test post {i+1}"
-            mock_post.word_count = 150
-            mock_posts.append(mock_post)
+        counter = {"count": 0}
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        def mock_generate(template, client_brief, variant=1, **kwargs):
+            counter["count"] += 1
+            return Post(
+                content=f"Test post {counter['count']} with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
+
+        with patch.object(generator, "_generate_single_post", side_effect=mock_generate):
             template_quantities = {1: 3, 2: 2}  # 5 total posts
 
             # Even though num_posts=30, template_quantities should take priority
@@ -127,15 +140,20 @@ class TestTemplateQuantitiesSync:
         """Test handling of invalid template IDs"""
         generator = ContentGeneratorAgent(template_loader=mock_template_loader)
 
-        # Valid templates
-        mock_posts = []
-        for i in range(3):
-            mock_post = Mock(spec=Post)
-            mock_post.content = f"Test post {i+1}"
-            mock_post.word_count = 150
-            mock_posts.append(mock_post)
+        counter = {"count": 0}
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        def mock_generate(template, client_brief, variant=1, **kwargs):
+            counter["count"] += 1
+            return Post(
+                content=f"Test post {counter['count']} with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
+
+        with patch.object(generator, "_generate_single_post", side_effect=mock_generate):
             template_quantities = {1: 3, 999: 5}  # 999 is invalid
 
             posts = generator.generate_posts(
@@ -151,15 +169,20 @@ class TestTemplateQuantitiesSync:
         """Test that randomization works with template quantities"""
         generator = ContentGeneratorAgent(template_loader=mock_template_loader)
 
-        # Create posts with identifiable content
-        mock_posts = []
-        for i in range(10):
-            mock_post = Mock(spec=Post)
-            mock_post.content = f"Post {i}"
-            mock_post.word_count = 150
-            mock_posts.append(mock_post)
+        counter1 = {"count": 0}
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        def mock_generate_1(template, client_brief, variant=1, **kwargs):
+            counter1["count"] += 1
+            return Post(
+                content=f"Post {counter1['count']} with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
+
+        with patch.object(generator, "_generate_single_post", side_effect=mock_generate_1):
             template_quantities = {1: 5, 2: 5}
 
             posts_no_random = generator.generate_posts(
@@ -168,15 +191,21 @@ class TestTemplateQuantitiesSync:
                 randomize=False,
             )
 
-            # Generate again with randomization
-            mock_posts_2 = []
-            for i in range(10):
-                mock_post = Mock(spec=Post)
-                mock_post.content = f"Post {i}"
-                mock_post.word_count = 150
-                mock_posts_2.append(mock_post)
+        # Generate again with randomization
+        counter2 = {"count": 0}
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts_2):
+        def mock_generate_2(template, client_brief, variant=1, **kwargs):
+            counter2["count"] += 1
+            return Post(
+                content=f"Post {counter2['count']} with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
+
+        with patch.object(generator, "_generate_single_post", side_effect=mock_generate_2):
             posts_randomized = generator.generate_posts(
                 client_brief=sample_brief,
                 template_quantities=template_quantities,
@@ -198,14 +227,20 @@ class TestTemplateQuantitiesAsync:
         """Test async template quantities generation"""
         generator = ContentGeneratorAgent(template_loader=mock_template_loader)
 
-        # Mock async _generate_single_post_async
+        # Mock async _generate_single_post_async to return real Post instances
         async def mock_generate_single(template, client_brief, variant, post_number, **kwargs):
-            mock_post = Mock(spec=Post)
-            mock_post.content = f"Post {post_number}"
-            mock_post.word_count = 150
-            return mock_post
+            return Post(
+                content=f"Post {post_number} content with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
 
-        with patch.object(generator, '_generate_single_post_async', side_effect=mock_generate_single):
+        with patch.object(
+            generator, "_generate_single_post_async", side_effect=mock_generate_single
+        ):
             template_quantities = {1: 3, 2: 5, 9: 2}  # 10 total
 
             posts = await generator.generate_posts_async(
@@ -227,13 +262,21 @@ class TestTemplateQuantitiesAsync:
         async def mock_generate_with_delay(template, client_brief, variant, post_number, **kwargs):
             import asyncio
             import time
+
             call_times.append(time.time())
             await asyncio.sleep(0.01)  # Simulate API call
-            mock_post = Mock(spec=Post)
-            mock_post.content = f"Post {post_number}"
-            return mock_post
+            return Post(
+                content=f"Post {post_number} content with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
 
-        with patch.object(generator, '_generate_single_post_async', side_effect=mock_generate_with_delay):
+        with patch.object(
+            generator, "_generate_single_post_async", side_effect=mock_generate_with_delay
+        ):
             template_quantities = {1: 10}  # 10 posts
 
             posts = await generator.generate_posts_async(
@@ -253,10 +296,16 @@ class TestTemplateQuantitiesAsync:
         generator = ContentGeneratorAgent(template_loader=mock_template_loader)
 
         async def mock_generate(template, client_brief, variant, post_number, **kwargs):
-            mock_post = Mock(spec=Post)
-            return mock_post
+            return Post(
+                content=f"Post {post_number} content with question?",
+                template_id=template.template_id,
+                template_name=template.name,
+                client_name=client_brief.company_name,
+                word_count=150,
+                variant=variant,
+            )
 
-        with patch.object(generator, '_generate_single_post_async', side_effect=mock_generate):
+        with patch.object(generator, "_generate_single_post_async", side_effect=mock_generate):
             template_quantities = {1: 5}
 
             posts = await generator.generate_posts_async(
@@ -299,7 +348,7 @@ class TestTemplateQuantitiesEdgeCases:
             mock_post.word_count = 150
             mock_posts.append(mock_post)
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        with patch.object(generator, "_generate_single_post", side_effect=mock_posts):
             template_quantities = {1: 5, 2: 0}  # Template 2 has 0
 
             posts = generator.generate_posts(
@@ -322,7 +371,7 @@ class TestTemplateQuantitiesEdgeCases:
             mock_post.word_count = 150
             mock_posts.append(mock_post)
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        with patch.object(generator, "_generate_single_post", side_effect=mock_posts):
             template_quantities = {1: 100}
 
             posts = generator.generate_posts(
@@ -351,7 +400,7 @@ class TestTemplateQuantitiesEdgeCases:
             mock_post.word_count = 150
             mock_posts.append(mock_post)
 
-        with patch.object(generator, '_generate_single_post', side_effect=mock_posts):
+        with patch.object(generator, "_generate_single_post", side_effect=mock_posts):
             # Old API: no template_quantities parameter
             posts = generator.generate_posts(
                 client_brief=sample_brief,

@@ -1,0 +1,207 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: O
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: Operator Dashboard
+          - paragraph [ref=e10]: Content Jumpstart
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - button "Light theme" [ref=e13] [cursor=pointer]:
+            - img [ref=e14]
+          - button "System theme" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+          - button "Dark theme" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+        - generic [ref=e26]:
+          - paragraph [ref=e27]: Primary User
+          - paragraph [ref=e28]: operator
+        - button "Logout" [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Logout
+  - generic [ref=e33]:
+    - complementary [ref=e34]:
+      - navigation [ref=e35]:
+        - link "Overview" [ref=e36] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e37]
+          - text: Overview
+        - link "Projects" [ref=e39] [cursor=pointer]:
+          - /url: /dashboard/projects
+          - img [ref=e40]
+          - text: Projects
+        - link "Clients" [ref=e43] [cursor=pointer]:
+          - /url: /dashboard/clients
+          - img [ref=e44]
+          - text: Clients
+        - link "Deliverables" [ref=e49] [cursor=pointer]:
+          - /url: /dashboard/deliverables
+          - img [ref=e50]
+          - text: Deliverables
+        - link "Wizard / QA" [ref=e54] [cursor=pointer]:
+          - /url: /dashboard/wizard
+          - img [ref=e55]
+          - text: Wizard / QA
+        - link "Settings" [ref=e60] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img [ref=e61]
+          - text: Settings
+    - main [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - heading "Project Wizard" [level=1] [ref=e67]
+          - paragraph [ref=e68]: Multi-step flow for client profile → templates → generation → quality gate → export.
+        - generic [ref=e69]:
+          - button "1 Client Profile" [ref=e70] [cursor=pointer]:
+            - generic [ref=e71]: "1"
+            - text: Client Profile
+          - button "2 Research" [disabled] [ref=e72]:
+            - generic [ref=e73]: "2"
+            - text: Research
+          - button "3 Templates" [disabled] [ref=e74]:
+            - generic [ref=e75]: "3"
+            - text: Templates
+          - button "4 Quality Gate" [disabled] [ref=e76]:
+            - generic [ref=e77]: "4"
+            - text: Quality Gate
+          - button "5 Export" [disabled] [ref=e78]:
+            - generic [ref=e79]: "5"
+            - text: Export
+        - generic [ref=e80]:
+          - generic [ref=e82]:
+            - heading "Select Client" [level=3] [ref=e83]
+            - generic [ref=e84]:
+              - button "Create New Client" [ref=e85] [cursor=pointer]
+              - button "Use Existing Client" [ref=e86] [cursor=pointer]
+            - paragraph [ref=e87]: A new client will be created from the company name in the profile below.
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - img [ref=e90]
+              - heading "Client Profile" [level=3] [ref=e94]
+            - paragraph [ref=e95]: Gather essential information about the client, their business, and their target audience.
+            - button "📁 Import Client Brief +" [ref=e97] [cursor=pointer]:
+              - generic [ref=e98]: 📁 Import Client Brief
+              - generic [ref=e99]: +
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e102]:
+                  - img [ref=e103]
+                  - text: Company Name
+                - textbox "Acme Corp" [ref=e106]
+              - generic [ref=e107]:
+                - generic [ref=e108]:
+                  - generic [ref=e109]:
+                    - img [ref=e110]
+                    - text: Business Description
+                    - generic [ref=e114]: "*"
+                  - generic [ref=e115]: 0/70 characters
+                - textbox "We provide cloud-based project management software for small teams..." [ref=e116]
+                - paragraph [ref=e117]: Required for research tools. Describe what your business does and what makes it unique.
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - generic [ref=e120]:
+                    - img [ref=e121]
+                    - text: Target Audience
+                    - generic [ref=e125]: "*"
+                  - generic [ref=e126]: 0/20 characters
+                - textbox "Small business owners with 5-20 employees who struggle with team coordination..." [ref=e127]
+                - paragraph [ref=e128]: Required for research tools. Who is your ideal customer or target audience?
+              - generic [ref=e129]:
+                - generic [ref=e130]:
+                  - generic [ref=e131]:
+                    - img [ref=e132]
+                    - text: Main Problem Solved
+                  - generic [ref=e134]: 0/30 characters
+                - textbox "We eliminate the chaos of scattered communication and missed deadlines..." [ref=e135]
+              - generic [ref=e136]:
+                - generic [ref=e137]:
+                  - img [ref=e138]
+                  - text: Tone Preference
+                - combobox [ref=e140]:
+                  - option "Professional" [selected]
+                  - option "Conversational"
+                  - option "Authoritative"
+                  - option "Friendly"
+                  - option "Innovative"
+                  - option "Educational"
+              - generic [ref=e141]:
+                - generic [ref=e142]: Platforms
+                - generic [ref=e143]:
+                  - button "LinkedIn" [ref=e144] [cursor=pointer]
+                  - button "Twitter" [ref=e145] [cursor=pointer]
+                  - button "Blog" [ref=e146] [cursor=pointer]
+                  - button "Email" [ref=e147] [cursor=pointer]
+                  - button "Generic" [ref=e148] [cursor=pointer]
+              - generic [ref=e149]:
+                - generic [ref=e150]: Customer Pain Points
+                - generic [ref=e151]:
+                  - textbox "Add a pain point..." [ref=e152]
+                  - button "Add" [ref=e153] [cursor=pointer]
+              - generic [ref=e154]:
+                - generic [ref=e155]: Common Customer Questions & Answers
+                - generic [ref=e156]:
+                  - 'textbox "Question: What do customers ask?" [ref=e157]'
+                  - generic [ref=e158]:
+                    - 'textbox "Answer: Your response to this question..." [ref=e159]'
+                    - button "Add" [disabled] [ref=e160]
+              - button "Save Profile" [ref=e162] [cursor=pointer]:
+                - img [ref=e163]
+                - text: Save Profile
+        - generic [ref=e167]:
+          - heading "Wizard Status" [level=3] [ref=e168]
+          - generic [ref=e169]:
+            - paragraph [ref=e170]:
+              - strong [ref=e171]: "Project:"
+              - text: Not created
+            - paragraph [ref=e172]:
+              - strong [ref=e173]: "Client Brief:"
+              - text: Not set
+            - paragraph [ref=e174]:
+              - strong [ref=e175]: "Templates:"
+              - text: Not selected
+            - paragraph [ref=e176]:
+              - strong [ref=e177]: "Total Posts:"
+              - text: "0"
+            - paragraph [ref=e178]:
+              - strong [ref=e179]: "Research:"
+              - text: "No"
+            - paragraph [ref=e180]:
+              - strong [ref=e181]: "Total Price:"
+              - text: Not calculated
+            - paragraph [ref=e182]:
+              - strong [ref=e183]: "Generated:"
+              - text: 0 posts
+            - paragraph [ref=e184]:
+              - strong [ref=e185]: "Flagged:"
+              - text: "0"
+            - paragraph [ref=e186]:
+              - strong [ref=e187]: "Runs:"
+              - text: "0"
+  - button "Toggle AI Assistant" [ref=e188] [cursor=pointer]:
+    - img [ref=e189]
+  - generic [ref=e193]:
+    - generic [ref=e194]:
+      - generic [ref=e195]:
+        - generic [ref=e196]:
+          - img [ref=e197]
+          - heading "AI Assistant" [level=2] [ref=e200]
+        - generic [ref=e201]:
+          - button "Reset conversation" [ref=e202] [cursor=pointer]:
+            - img [ref=e203]
+          - button [ref=e206] [cursor=pointer]:
+            - img [ref=e207]
+      - paragraph [ref=e210]: Wizard Page
+    - generic [ref=e212]:
+      - img [ref=e213]
+      - paragraph [ref=e216]: Hi! I'm your AI assistant. How can I help you today?
+    - generic [ref=e217]:
+      - generic [ref=e218]:
+        - textbox "Ask me anything..." [ref=e219]
+        - button [disabled] [ref=e220]:
+          - img [ref=e221]
+      - paragraph [ref=e224]: Press Enter to send • Shift+Enter for new line
+```

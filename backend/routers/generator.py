@@ -13,10 +13,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db, SessionLocal
 from backend.middleware.auth_dependency import get_current_user
-from backend.middleware.authorization import (
-    verify_project_ownership,
-)  # TR-021: Authorization
-from backend.models import Project, User
+from backend.models import User
 from backend.schemas.run import RunResponse, LogEntry
 from backend.schemas.deliverable import DeliverableResponse
 from backend.services import crud
@@ -141,9 +138,6 @@ async def generate_all(
     request: Request,
     background_tasks: BackgroundTasks,
     input: GenerateAllInput,
-    project: Project = Depends(
-        verify_project_ownership
-    ),  # TR-021: Authorization check (using project_id from input)
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -160,8 +154,7 @@ async def generate_all(
 
     Prevents HTTP timeouts by running generation asynchronously.
     """
-    # TR-021: project already verified by dependency (verify_project_ownership uses project_id from path/query)
-    # Note: We need to manually verify since project_id comes from request body, not path
+    # TR-021: Manual authorization check (project_id comes from request body)
     project = crud.get_project(db, input.project_id)
     if not project:
         raise HTTPException(

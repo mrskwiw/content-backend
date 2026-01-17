@@ -23,6 +23,9 @@ try:
     MINHASH_AVAILABLE = True
 except ImportError:
     MINHASH_AVAILABLE = False
+    # Define dummy types for type hints
+    MinHash = None  # type: ignore
+    MinHashLSH = None  # type: ignore
     logger.warning("datasketch not available - similarity caching disabled")
 
 
@@ -71,12 +74,12 @@ class CacheStatistics:
                 "misses": self.misses,
                 "total_hits": total_hits,
                 "hit_rate": hit_rate,
-                "exact_hit_rate": self.exact_hits / self.total_requests
-                if self.total_requests > 0
-                else 0.0,
-                "similarity_hit_rate": self.similarity_hits / self.total_requests
-                if self.total_requests > 0
-                else 0.0,
+                "exact_hit_rate": (
+                    self.exact_hits / self.total_requests if self.total_requests > 0 else 0.0
+                ),
+                "similarity_hit_rate": (
+                    self.similarity_hits / self.total_requests if self.total_requests > 0 else 0.0
+                ),
                 "tokens_saved_exact": self.tokens_saved_exact,
                 "tokens_saved_similarity": self.tokens_saved_similarity,
                 "total_tokens_saved": self.tokens_saved_exact + self.tokens_saved_similarity,

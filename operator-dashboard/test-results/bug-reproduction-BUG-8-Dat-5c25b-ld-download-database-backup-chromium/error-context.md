@@ -1,0 +1,135 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: O
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: Operator Dashboard
+          - paragraph [ref=e10]: Content Jumpstart
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - button "Light theme" [ref=e13] [cursor=pointer]:
+            - img [ref=e14]
+          - button "System theme" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+          - button "Dark theme" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+        - generic [ref=e26]:
+          - paragraph [ref=e27]: Primary User
+          - paragraph [ref=e28]: operator
+        - button "Logout" [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Logout
+  - generic [ref=e33]:
+    - complementary [ref=e34]:
+      - navigation [ref=e35]:
+        - link "Overview" [ref=e36] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e37]
+          - text: Overview
+        - link "Projects" [ref=e39] [cursor=pointer]:
+          - /url: /dashboard/projects
+          - img [ref=e40]
+          - text: Projects
+        - link "Clients" [ref=e43] [cursor=pointer]:
+          - /url: /dashboard/clients
+          - img [ref=e44]
+          - text: Clients
+        - link "Deliverables" [ref=e49] [cursor=pointer]:
+          - /url: /dashboard/deliverables
+          - img [ref=e50]
+          - text: Deliverables
+        - link "Wizard / QA" [ref=e54] [cursor=pointer]:
+          - /url: /dashboard/wizard
+          - img [ref=e55]
+          - text: Wizard / QA
+        - link "Settings" [ref=e60] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img [ref=e61]
+          - text: Settings
+    - main [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - heading "Advanced Settings" [level=1] [ref=e67]
+          - paragraph [ref=e68]: Manage integrations, API keys, workflows, and system preferences
+        - generic [ref=e70]:
+          - button "Integrations" [ref=e71] [cursor=pointer]:
+            - img [ref=e72]
+            - text: Integrations
+          - button "Workflows" [ref=e75] [cursor=pointer]:
+            - img [ref=e76]
+            - text: Workflows
+          - button "Notifications" [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
+            - text: Notifications
+          - button "Preferences" [ref=e82] [cursor=pointer]:
+            - img [ref=e83]
+            - text: Preferences
+          - button "Security" [ref=e86] [cursor=pointer]:
+            - img [ref=e87]
+            - text: Security
+          - button "Database" [ref=e89] [cursor=pointer]:
+            - img [ref=e90]
+            - text: Database
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - heading "Database Backup" [level=3] [ref=e94]
+            - paragraph [ref=e95]: Download a complete backup of your database. This includes all clients, projects, posts, runs, and deliverables.
+            - button "Download Database Backup" [ref=e96] [cursor=pointer]:
+              - img [ref=e97]
+              - text: Download Database Backup
+          - generic [ref=e100]:
+            - heading "Database Restore" [level=3] [ref=e101]
+            - generic [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e106]:
+                - strong [ref=e107]: "Warning:"
+                - text: Restoring a database backup will replace all current data. A backup of the current database will be created automatically before restore.
+            - generic [ref=e108]:
+              - generic [ref=e109]:
+                - generic [ref=e110]: Select Backup File (.db)
+                - button "Choose File" [ref=e111] [cursor=pointer]
+              - button "Restore Database from Backup" [disabled] [ref=e112]:
+                - img [ref=e113]
+                - text: Restore Database from Backup
+          - generic [ref=e116]:
+            - heading "Database Information" [level=3] [ref=e117]
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - generic [ref=e120]: "Database Type:"
+                - generic [ref=e121]: SQLite
+              - generic [ref=e122]:
+                - generic [ref=e123]: "Backup Location:"
+                - generic [ref=e124]: data/backups/
+        - generic [ref=e125]:
+          - button "Reset to Defaults" [ref=e126] [cursor=pointer]
+          - button "Save Changes" [ref=e127] [cursor=pointer]:
+            - img [ref=e128]
+            - text: Save Changes
+  - button "Toggle AI Assistant" [ref=e132] [cursor=pointer]:
+    - img [ref=e133]
+  - generic [ref=e137]:
+    - generic [ref=e138]:
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - img [ref=e141]
+          - heading "AI Assistant" [level=2] [ref=e144]
+        - generic [ref=e145]:
+          - button "Reset conversation" [ref=e146] [cursor=pointer]:
+            - img [ref=e147]
+          - button [ref=e150] [cursor=pointer]:
+            - img [ref=e151]
+      - paragraph [ref=e154]: Settings Page
+    - generic [ref=e156]:
+      - img [ref=e157]
+      - paragraph [ref=e160]: Hi! I'm your AI assistant. How can I help you today?
+    - generic [ref=e161]:
+      - generic [ref=e162]:
+        - textbox "Ask me anything..." [ref=e163]
+        - button [disabled] [ref=e164]:
+          - img [ref=e165]
+      - paragraph [ref=e168]: Press Enter to send • Shift+Enter for new line
+```

@@ -650,7 +650,7 @@ def get_run(db: Session, run_id: str):
     Performance: Uses eager loading for project relationship
     to prevent N+1 query problem.
     """
-    from models import Run
+    from backend.models import Run
 
     return db.query(Run).options(joinedload(Run.project)).filter(Run.id == run_id).first()
 
@@ -668,7 +668,7 @@ def get_runs(
     Performance: Uses eager loading for project relationship
     to prevent N+1 query problem.
     """
-    from models import Run
+    from backend.models import Run
 
     # Eager load project relationship
     query = db.query(Run).options(joinedload(Run.project))
@@ -683,7 +683,7 @@ def get_runs(
 
 def create_run(db: Session, project_id: str, is_batch: bool = False):
     """Create new run"""
-    from models import Run
+    from backend.models import Run
 
     db_run = Run(
         id=f"run-{uuid.uuid4().hex[:12]}",

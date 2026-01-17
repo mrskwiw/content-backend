@@ -960,13 +960,13 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
                 {
                     "post": post,
                     "quality_score": quality_score,
-                    "has_flags": len(post.flags) > 0 if post.flags else False,
+                    "has_flags": post.needs_review,
                     "attempt_number": attempt + 1,
                 }
             )
 
             # If post has no quality flags, it's adequate - return immediately
-            if not post.flags or len(post.flags) == 0:
+            if not post.needs_review:
                 logger.info(
                     f"Post {post_number} passed quality check on attempt {attempt + 1}/{max_attempts} "
                     f"(quality score: {quality_score:.2%})"
@@ -975,7 +975,7 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
 
             # Log retry
             logger.info(
-                f"Post {post_number} attempt {attempt + 1}/{max_attempts} has quality issues: {post.flags}. "
+                f"Post {post_number} attempt {attempt + 1}/{max_attempts} has quality issues: {post.review_reason}. "
                 f"Retrying..."
                 if attempt < max_attempts - 1
                 else "Max attempts reached."
@@ -986,7 +986,7 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
         logger.warning(
             f"Post {post_number} did not meet quality standards after {max_attempts} attempts. "
             f"Returning best attempt (#{best['attempt_number']}, quality score: {best['quality_score']:.2%}, "
-            f"flags: {best['post'].flags if best['post'].flags else 'none'})"
+            f"review reason: {best['post'].review_reason if best['post'].review_reason else 'none'})"
         )
 
         return best["post"]
@@ -1001,10 +1001,9 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
         """
         score = 1.0
 
-        # Penalize for each flag (0.2 per flag, max 3 flags considered)
-        if post.flags:
-            flag_penalty = min(len(post.flags) * 0.2, 0.6)
-            score -= flag_penalty
+        # Penalize if post needs review (0.2 penalty)
+        if post.needs_review:
+            score -= 0.2
 
         # Reward for appropriate word count (within target range)
         if post.word_count:
