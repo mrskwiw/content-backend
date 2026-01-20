@@ -10,6 +10,7 @@ from ..config.brand_frameworks import (
     get_archetype_guidance,
     get_writing_principles_guidance,
 )
+from ..config.hook_frameworks import build_hook_guidance
 from ..config.constants import AI_TELL_PHRASES, MAX_POST_WORD_COUNT, MIN_POST_WORD_COUNT
 from ..config.platform_specs import get_platform_prompt_guidance, get_platform_target_length
 from ..config.prompts import SystemPrompts
@@ -1412,6 +1413,16 @@ If your draft is under 1500 words after Section 4, you MUST:
         writing_principles = get_writing_principles_guidance()
         prompt += f"\n{writing_principles}"
 
+        # NEW: Add hook copywriting frameworks (from hook-creator skill)
+        # Infer template type from context for framework selection
+        template_type = self._infer_template_type_for_hooks(client_brief)
+        hook_guidance = build_hook_guidance(
+            template_type=template_type,
+            platform=platform.value,
+            include_examples=True,
+        )
+        prompt += hook_guidance
+
         # NEW: Add content-creator skill guidance if available
         skill_guidance = self._build_skill_guidance(platform)
         if skill_guidance:
@@ -1571,6 +1582,61 @@ If your draft is under 1500 words after Section 4, you MUST:
         # Default: Guide (safe, versatile archetype)
         logger.info("No clear archetype signals - defaulting to 'Guide'")
         return "Guide"
+
+    def _infer_template_type_for_hooks(self, client_brief: ClientBrief) -> str:
+        """
+        Infer a template type for hook framework selection.
+
+        This method analyzes the client brief to determine which hook frameworks
+        would be most appropriate. Returns a template type that maps to
+        recommended hook frameworks.
+
+        Args:
+            client_brief: Client brief with context
+
+        Returns:
+            Template type string (e.g., "problem_recognition", "how_to")
+        """
+        business_desc = client_brief.business_description.lower()
+        pain_points = (
+            " ".join(client_brief.customer_pain_points).lower()
+            if client_brief.customer_pain_points
+            else ""
+        )
+
+        # Check for problem-focused content
+        if any(
+            word in business_desc or word in pain_points
+            for word in ["problem", "struggle", "challenge", "pain"]
+        ):
+            return "problem_recognition"
+
+        # Check for how-to content
+        if any(word in business_desc for word in ["how to", "guide", "step", "process", "method"]):
+            return "how_to"
+
+        # Check for comparison/competitive content
+        if any(
+            word in business_desc
+            for word in ["vs", "versus", "compare", "alternative", "better than"]
+        ):
+            return "comparison"
+
+        # Check for innovation/future content
+        if any(
+            word in business_desc for word in ["innovate", "future", "trend", "next", "transform"]
+        ):
+            return "future_thinking"
+
+        # Check for data-driven content
+        if any(
+            word in business_desc
+            for word in ["data", "analytics", "metric", "measure", "roi", "percent"]
+        ):
+            return "statistic_insight"
+
+        # Default to problem recognition (most versatile)
+        return "problem_recognition"
 
     def _clean_post_content(self, content: str) -> str:
         """Clean and normalize post content"""

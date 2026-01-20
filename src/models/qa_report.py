@@ -31,6 +31,9 @@ class QAReport(BaseModel):
     keyword_validation: Optional[Dict[str, Any]] = Field(
         None, description="SEO keyword usage results"
     )
+    seo_validation: Optional[Dict[str, Any]] = Field(
+        None, description="SEO optimization results for blog posts"
+    )
 
     # Summary
     total_issues: int = Field(0, description="Total number of issues found")
@@ -160,6 +163,26 @@ class QAReport(BaseModel):
                     lines.append(f"- {issue}")
             lines.append("")
             lines.append("*Note: Keywords should be integrated naturally, not forced*")
+            lines.append("")
+
+        # SEO Validation for Blog Posts (if available)
+        if self.seo_validation and not self.seo_validation.get("skipped", False):
+            lines.append("## SEO Optimization (Blog Posts)")
+            lines.append("")
+            seo_status = "[PASS] PASSED" if self.seo_validation["passed"] else "[FAIL] FAILED"
+            lines.append(f"**Status:** {seo_status}")
+            lines.append(f"**Average SEO Score:** {self.seo_validation['average_score']}/100")
+            lines.append(f"**Metric:** {self.seo_validation['metric']}")
+            if self.seo_validation.get("recommendations"):
+                lines.append("")
+                lines.append("**SEO Recommendations:**")
+                for rec in self.seo_validation["recommendations"][:5]:  # Top 5
+                    lines.append(f"- {rec}")
+            if self.seo_validation["issues"]:
+                lines.append("")
+                lines.append("**Issues:**")
+                for issue in self.seo_validation["issues"]:
+                    lines.append(f"- {issue}")
             lines.append("")
 
         # Recommendations

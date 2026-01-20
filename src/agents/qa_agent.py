@@ -11,6 +11,7 @@ from ..validators.headline_validator import HeadlineValidator
 from ..validators.hook_validator import HookValidator
 from ..validators.keyword_validator import KeywordValidator
 from ..validators.length_validator import LengthValidator
+from ..validators.seo_validator import SEOValidator
 
 
 class QAAgent:
@@ -34,6 +35,9 @@ class QAAgent:
         self.keyword_validator = None
         if keyword_strategy:
             self.keyword_validator = KeywordValidator(keyword_strategy)
+
+        # SEO validator for blog posts (uses same keyword strategy if available)
+        self.seo_validator = SEOValidator(keyword_strategy=keyword_strategy)
 
     def validate_posts(self, posts: List[Post], client_name: str) -> QAReport:
         """
@@ -59,6 +63,9 @@ class QAAgent:
         if self.keyword_validator:
             keyword_results = self.keyword_validator.validate(posts)
 
+        # Run SEO validation for blog posts
+        seo_results = self.seo_validator.validate(posts)
+
         # Collect all issues
         all_issues = []
         all_issues.extend(hook_results.get("issues", []))
@@ -67,6 +74,8 @@ class QAAgent:
         all_issues.extend(headline_results.get("issues", []))
         if keyword_results:
             all_issues.extend(keyword_results.get("issues", []))
+        if seo_results and not seo_results.get("skipped", False):
+            all_issues.extend(seo_results.get("issues", []))
 
         # Calculate overall quality score (average of all validator scores)
         scores = []
@@ -86,6 +95,9 @@ class QAAgent:
         # Keyword score: primary keyword usage ratio
         if keyword_results and "primary_usage_ratio" in keyword_results:
             scores.append(keyword_results["primary_usage_ratio"])
+        # SEO score: normalized from 0-100 to 0-1
+        if seo_results and not seo_results.get("skipped", False) and "average_score" in seo_results:
+            scores.append(seo_results["average_score"] / 100.0)
 
         quality_score = sum(scores) / len(scores) if scores else 0.0
 
@@ -96,6 +108,11 @@ class QAAgent:
             and length_results.get("passed", True)
             and headline_results.get("passed", True)
             and (keyword_results.get("passed", True) if keyword_results else True)
+            and (
+                seo_results.get("passed", True)
+                if seo_results and not seo_results.get("skipped", False)
+                else True
+            )
         )
 
         # Create report
@@ -109,6 +126,7 @@ class QAAgent:
             length_validation=length_results,
             headline_validation=headline_results,
             keyword_validation=keyword_results,
+            seo_validation=seo_results if not seo_results.get("skipped", False) else None,
             total_issues=len(all_issues),
             all_issues=all_issues,
         )

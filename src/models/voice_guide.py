@@ -100,6 +100,36 @@ class EnhancedVoiceGuide(BaseModel):
         default_factory=list, description="Industry-specific terms identified"
     )
 
+    # NEW: Voice Spectrum (from brand-voice-guide skill)
+    voice_spectrum: Optional[Dict[str, str]] = Field(
+        None,
+        description="Voice spectrum positioning: formal/casual, serious/playful, authoritative/collaborative, technical/simple, traditional/innovative",
+    )
+
+    # NEW: Language Guidelines (from brand-voice-guide skill)
+    words_to_use: List[str] = Field(
+        default_factory=list, description="Words and phrases encouraged"
+    )
+    words_to_avoid: List[str] = Field(
+        default_factory=list, description="Words and phrases to avoid"
+    )
+    punctuation_style: Optional[str] = Field(
+        None,
+        description="Punctuation preferences (e.g., 'Oxford comma, exclamation marks sparingly')",
+    )
+
+    # NEW: Tone by Channel (from brand-voice-guide skill)
+    tone_by_channel: Optional[Dict[str, str]] = Field(
+        None,
+        description="Tone adjustments by channel: linkedin, twitter, email, blog",
+    )
+
+    # NEW: Voice Consistency Checklist (from brand-voice-guide skill)
+    consistency_checklist: List[str] = Field(
+        default_factory=list,
+        description="Checklist items for maintaining voice consistency",
+    )
+
     def to_markdown(self) -> str:
         """Export voice guide as formatted markdown"""
         lines = []
@@ -233,9 +263,56 @@ class EnhancedVoiceGuide(BaseModel):
         else:
             lines.append("\n**Insight:** You write detailed posts (>250 words)\n")
 
+        # NEW: Voice Spectrum Section
+        if self.voice_spectrum:
+            lines.append("\n---\n")
+            lines.append("\n## Voice Spectrum\n\n")
+            lines.append("Position your brand on these spectrums:\n\n")
+            spectrum_labels = {
+                "formal_casual": ("Formal", "Casual"),
+                "serious_playful": ("Serious", "Playful"),
+                "authoritative_collaborative": ("Authoritative", "Collaborative"),
+                "technical_simple": ("Technical", "Simple"),
+                "traditional_innovative": ("Traditional", "Innovative"),
+            }
+            for key, (left, right) in spectrum_labels.items():
+                if key in self.voice_spectrum:
+                    position = self.voice_spectrum[key]
+                    lines.append(f"- **{left} ←→ {right}:** {position}\n")
+
+        # NEW: Tone by Channel Section
+        if self.tone_by_channel:
+            lines.append("\n---\n")
+            lines.append("\n## Tone Variations by Channel\n\n")
+            channel_emoji = {
+                "linkedin": "💼",
+                "twitter": "🐦",
+                "email": "📧",
+                "blog": "📝",
+                "facebook": "👥",
+            }
+            for channel, tone_desc in self.tone_by_channel.items():
+                emoji = channel_emoji.get(channel.lower(), "📱")
+                lines.append(f"### {emoji} {channel.title()}\n")
+                lines.append(f"{tone_desc}\n\n")
+
         # Writing Guidelines
         lines.append("\n---\n")
         lines.append("\n## Writing Guidelines\n")
+
+        # NEW: Words to Use/Avoid
+        if self.words_to_use:
+            lines.append("\n### 💬 Words & Phrases to USE:\n\n")
+            for word in self.words_to_use[:10]:
+                lines.append(f'- "{word}"\n')
+
+        if self.words_to_avoid:
+            lines.append("\n### 🚫 Words & Phrases to AVOID:\n\n")
+            for word in self.words_to_avoid[:10]:
+                lines.append(f'- "{word}"\n')
+
+        if self.punctuation_style:
+            lines.append(f"\n**Punctuation Style:** {self.punctuation_style}\n")
 
         if self.dos:
             lines.append("\n### ✅ DO:\n\n")
@@ -252,6 +329,14 @@ class EnhancedVoiceGuide(BaseModel):
             lines.append("\n## Strong Examples\n")
             for example in self.examples:
                 lines.append(f"\n**Example:**\n> {example}\n")
+
+        # NEW: Voice Consistency Checklist
+        if self.consistency_checklist:
+            lines.append("\n---\n")
+            lines.append("\n## Voice Consistency Checklist\n\n")
+            lines.append("Before publishing, verify:\n\n")
+            for item in self.consistency_checklist:
+                lines.append(f"- [ ] {item}\n")
 
         lines.append("\n---\n")
         lines.append(

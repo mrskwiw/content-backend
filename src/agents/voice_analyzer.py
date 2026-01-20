@@ -72,6 +72,12 @@ class VoiceAnalyzer:
             f"Voice analysis complete - Archetype: {archetype}, Readability: {readability_score:.1f}"
         )
 
+        # NEW: Generate enhanced voice guide fields from brand-voice-guide skill
+        voice_spectrum = self._generate_voice_spectrum(voice_dimensions, readability_score)
+        words_to_use, words_to_avoid = self._generate_word_guidelines(all_text, key_phrases)
+        tone_by_channel = self._generate_tone_by_channel(archetype, voice_dimensions)
+        consistency_checklist = self._generate_consistency_checklist(archetype, dominant_tones)
+
         return EnhancedVoiceGuide(
             company_name=client_brief.company_name,
             generated_from_posts=len(posts),
@@ -92,6 +98,12 @@ class VoiceAnalyzer:
             voice_dimensions=voice_dimensions,
             sentence_variety=sentence_analysis["variety"],
             voice_archetype=archetype,
+            # NEW: Brand-voice-guide skill fields
+            voice_spectrum=voice_spectrum,
+            words_to_use=words_to_use,
+            words_to_avoid=words_to_avoid,
+            tone_by_channel=tone_by_channel,
+            consistency_checklist=consistency_checklist,
         )
 
     def analyze_voice_samples(
@@ -539,3 +551,178 @@ class VoiceAnalyzer:
         )
 
         return archetype
+
+    def _generate_voice_spectrum(
+        self, voice_dimensions: Dict, readability_score: float
+    ) -> Dict[str, str]:
+        """
+        Generate voice spectrum positioning based on voice dimensions.
+
+        Returns dictionary with positions on key spectrums.
+        """
+        spectrum = {}
+
+        # Formal ←→ Casual
+        formality = voice_dimensions.get("formality", {}).get("dominant", "conversational")
+        if formality == "formal":
+            spectrum["formal_casual"] = "Leans formal - professional tone maintained"
+        elif formality == "conversational":
+            spectrum["formal_casual"] = "Center-casual - approachable but professional"
+        else:
+            spectrum["formal_casual"] = "Casual - friendly, conversational style"
+
+        # Serious ←→ Playful (based on tone)
+        tone = voice_dimensions.get("tone", {}).get("dominant", "friendly")
+        if tone in ["authoritative", "urgent"]:
+            spectrum["serious_playful"] = "Leans serious - focused, purposeful"
+        elif tone in ["friendly", "enthusiastic"]:
+            spectrum["serious_playful"] = "Center - warm but not overly casual"
+        else:
+            spectrum["serious_playful"] = "Leans playful - energetic, engaging"
+
+        # Authoritative ←→ Collaborative
+        perspective = voice_dimensions.get("perspective", {}).get("dominant", "collaborative")
+        if perspective == "expert":
+            spectrum["authoritative_collaborative"] = "Authoritative - positions as expert"
+        elif perspective == "collaborative":
+            spectrum["authoritative_collaborative"] = "Collaborative - partner approach"
+        else:
+            spectrum["authoritative_collaborative"] = "Center - guides without preaching"
+
+        # Technical ←→ Simple (based on readability)
+        if readability_score < 50:
+            spectrum["technical_simple"] = "Leans technical - advanced vocabulary"
+        elif readability_score > 70:
+            spectrum["technical_simple"] = "Simple - accessible to all readers"
+        else:
+            spectrum["technical_simple"] = "Center - technical when needed, simple by default"
+
+        # Traditional ←→ Innovative (inferred from tone and perspective)
+        if tone in ["authoritative", "urgent"] and perspective == "expert":
+            spectrum["traditional_innovative"] = "Traditional - established, proven approaches"
+        elif tone in ["enthusiastic", "friendly"]:
+            spectrum["traditional_innovative"] = "Innovative - fresh perspectives, new ideas"
+        else:
+            spectrum["traditional_innovative"] = "Center - respects tradition, embraces innovation"
+
+        return spectrum
+
+    def _generate_word_guidelines(
+        self, all_text: str, key_phrases: List[str]
+    ) -> tuple[List[str], List[str]]:
+        """
+        Generate lists of words to use and avoid based on analysis.
+
+        Returns tuple of (words_to_use, words_to_avoid).
+        """
+        # Words to use - extracted from successful patterns
+        words_to_use = []
+
+        # Add key phrases that work well
+        for phrase in key_phrases[:5]:
+            words_to_use.append(phrase)
+
+        # Add common power words found in text
+        power_words = ["discover", "proven", "simple", "transform", "achieve", "build"]
+        text_lower = all_text.lower()
+        for word in power_words:
+            if word in text_lower:
+                words_to_use.append(word)
+
+        # Words to avoid - common weak/corporate words
+        words_to_avoid = [
+            "synergy",
+            "leverage",
+            "utilize",
+            "best-in-class",
+            "disrupt",
+            "paradigm shift",
+            "circle back",
+            "low-hanging fruit",
+        ]
+
+        # Filter to words NOT found in successful content
+        words_to_avoid = [w for w in words_to_avoid if w.lower() not in text_lower][:8]
+
+        return words_to_use[:10], words_to_avoid
+
+    def _generate_tone_by_channel(self, archetype: str, voice_dimensions: Dict) -> Dict[str, str]:
+        """
+        Generate tone guidance for different channels based on archetype.
+        """
+        tone_guidance = {}
+
+        formality = voice_dimensions.get("formality", {}).get("dominant", "conversational")
+
+        # LinkedIn
+        if archetype == "Expert":
+            tone_guidance["linkedin"] = (
+                "Professional thought leadership. Share insights, data, and industry analysis. Be direct and authoritative."
+            )
+        elif archetype == "Friend":
+            tone_guidance["linkedin"] = (
+                "Warm but professional. Share stories and engage conversationally while maintaining credibility."
+            )
+        else:
+            tone_guidance["linkedin"] = (
+                "Balanced professional tone. Mix insights with relatable examples."
+            )
+
+        # Twitter
+        tone_guidance["twitter"] = (
+            "Punchy and engaging. Lead with hooks. Use threads for longer content. More casual than LinkedIn."
+        )
+
+        # Email
+        if formality == "formal":
+            tone_guidance["email"] = (
+                "Respectful but direct. Clear subject lines. Value-first approach."
+            )
+        else:
+            tone_guidance["email"] = (
+                "Conversational and personal. Write like you're speaking to one person."
+            )
+
+        # Blog
+        tone_guidance["blog"] = (
+            "Can be longer-form. Maintain voice consistency but allow for more depth and examples."
+        )
+
+        return tone_guidance
+
+    def _generate_consistency_checklist(
+        self, archetype: str, dominant_tones: List[str]
+    ) -> List[str]:
+        """
+        Generate voice consistency checklist for content review.
+        """
+        checklist = [
+            "Opening hook grabs attention immediately",
+            "Tone matches brand personality throughout",
+            "Content provides clear value to reader",
+            "Call-to-action is clear and relevant",
+            "Line breaks used for readability",
+        ]
+
+        # Add archetype-specific checks
+        if archetype == "Expert":
+            checklist.append("Data or evidence supports key claims")
+            checklist.append("Maintains authoritative but accessible tone")
+        elif archetype == "Friend":
+            checklist.append("Includes relatable examples or stories")
+            checklist.append("Language feels warm and genuine")
+        elif archetype == "Innovator":
+            checklist.append("Offers fresh perspective or new angle")
+            checklist.append("Challenges conventional thinking appropriately")
+        elif archetype == "Guide":
+            checklist.append("Actionable advice is clear and specific")
+            checklist.append("Reader knows what to do next")
+        elif archetype == "Motivator":
+            checklist.append("Inspires action or positive change")
+            checklist.append("Energy level matches brand personality")
+
+        # Add tone-specific checks
+        if "conversational" in [t.lower() for t in dominant_tones]:
+            checklist.append("Reads naturally when spoken aloud")
+
+        return checklist

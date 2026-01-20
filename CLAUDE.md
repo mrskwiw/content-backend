@@ -301,6 +301,37 @@ Environment config in `src/config/settings.py`: ANTHROPIC_API_KEY (required), AN
 - `tests/integration/` - End-to-end workflow tests
 - `tests/fixtures/sample_brief.txt` - Test client brief
 
+### Skill Integrations
+
+The system integrates external skills from `~/.claude/skills/` to enhance content generation:
+
+**Hook Copywriting Frameworks** (`src/config/hook_frameworks.py`)
+- 15 proven copywriting frameworks (Curiosity Gap, PAS, Benefit-Driven, etc.)
+- Template-to-framework mapping for contextual hook suggestions
+- Power words organized by emotion (urgency, exclusivity, value, curiosity, trust)
+- Automatically included in system prompts during content generation
+
+**SEO Validation** (`src/validators/seo_validator.py`)
+- Blog-specific SEO optimization scoring
+- Keyword density analysis (1-3% optimal)
+- Content structure validation (headings, paragraphs, links)
+- Readability scoring with recommendations
+- Integrated into QA pipeline for blog posts
+
+**Enhanced Voice Guide** (`src/models/voice_guide.py`, `src/agents/voice_analyzer.py`)
+- Voice spectrum analysis (formal/casual, serious/playful, etc.)
+- Tone-by-channel recommendations (LinkedIn, Twitter, Email, Blog)
+- Words to use/avoid lists
+- Voice consistency checklist for content review
+
+**Calendar Optimization** (`src/utils/schedule_generator.py`)
+- Content mix strategy (40% educational, 30% engagement, 20% promotional, 10% personal)
+- Template-to-content-category mapping
+- Post order optimization for variety
+- Content pillar balance analysis
+
+**Integration Tests:** `tests/unit/test_skill_integrations.py` (24 tests)
+
 ## Important Implementation Details
 
 **UTF-8 Encoding (Windows):** Lines 13-15 of 03_post_generator.py force UTF-8 (never remove - fixes Windows console errors).

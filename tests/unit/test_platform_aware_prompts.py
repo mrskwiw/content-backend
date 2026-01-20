@@ -300,7 +300,9 @@ class TestPlatformAwarePrompts:
                     len(prompt) < 10000
                 )  # Still reasonable (updated from 8000 to accommodate expanded blog requirements)
             else:
-                assert len(prompt) < 5000  # Not too long for other platforms
+                assert (
+                    len(prompt) < 6000
+                )  # Not too long for other platforms (increased for hook frameworks)
 
 
 if __name__ == "__main__":

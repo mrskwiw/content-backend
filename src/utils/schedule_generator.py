@@ -52,6 +52,34 @@ class ScheduleGenerator:
         Platform.EMAIL: "Personalize subject line. Preview text matters.",
     }
 
+    # NEW: Content mix strategy from social-media-calendar skill
+    # Default content distribution ratios
+    CONTENT_MIX_STRATEGY = {
+        "educational": 0.40,  # How-tos, tips, insights (templates 1, 2, 7, 9)
+        "engagement": 0.30,  # Questions, polls, conversations (templates 5, 14)
+        "promotional": 0.20,  # Products, services, offers (templates 6, 15)
+        "personal": 0.10,  # Behind-the-scenes, humanize brand (templates 8, 12)
+    }
+
+    # Map templates to content categories
+    TEMPLATE_CONTENT_CATEGORIES = {
+        1: "educational",  # Problem Recognition
+        2: "educational",  # Statistic + Insight
+        3: "engagement",  # Contrarian Take
+        4: "educational",  # What Changed
+        5: "engagement",  # Question Post
+        6: "personal",  # Personal Story
+        7: "educational",  # Myth Busting
+        8: "personal",  # Things I Got Wrong
+        9: "educational",  # How-To
+        10: "educational",  # Comparison
+        11: "personal",  # What I Learned From
+        12: "personal",  # Inside Look
+        13: "educational",  # Future Thinking
+        14: "engagement",  # Reader Q Response
+        15: "promotional",  # Milestone
+    }
+
     def __init__(self):
         """Initialize schedule generator"""
 
@@ -196,6 +224,141 @@ class ScheduleGenerator:
         logger.info(f"Schedule generated: {len(scheduled_posts)} posts over {total_weeks} weeks")
 
         return schedule
+
+    def analyze_content_mix(self, posts: List[Post]) -> dict:
+        """
+        Analyze content mix distribution and provide recommendations.
+
+        Based on social-media-calendar skill's content mix strategy:
+        - 40% Educational (how-tos, tips, insights)
+        - 30% Engagement (questions, polls, conversations)
+        - 20% Promotional (products, services, offers)
+        - 10% Personal (behind-the-scenes, humanize brand)
+
+        Args:
+            posts: List of Post objects
+
+        Returns:
+            Dictionary with content mix analysis and recommendations
+        """
+        # Count posts by category
+        category_counts = {
+            "educational": 0,
+            "engagement": 0,
+            "promotional": 0,
+            "personal": 0,
+        }
+
+        for post in posts:
+            category = self.TEMPLATE_CONTENT_CATEGORIES.get(post.template_id, "educational")
+            category_counts[category] += 1
+
+        total_posts = len(posts)
+        if total_posts == 0:
+            return {
+                "distribution": category_counts,
+                "percentages": {},
+                "recommendations": ["No posts to analyze"],
+                "balanced": True,
+            }
+
+        # Calculate actual percentages
+        actual_percentages = {
+            category: count / total_posts for category, count in category_counts.items()
+        }
+
+        # Compare with ideal mix
+        recommendations = []
+        for category, ideal_ratio in self.CONTENT_MIX_STRATEGY.items():
+            actual_ratio = actual_percentages.get(category, 0)
+            diff = actual_ratio - ideal_ratio
+
+            if diff < -0.10:  # Under by more than 10%
+                recommendations.append(
+                    f"Consider adding more {category} content "
+                    f"(currently {actual_ratio:.0%}, ideal: {ideal_ratio:.0%})"
+                )
+            elif diff > 0.15:  # Over by more than 15%
+                recommendations.append(
+                    f"Consider reducing {category} content "
+                    f"(currently {actual_ratio:.0%}, ideal: {ideal_ratio:.0%})"
+                )
+
+        # Check for balance
+        balanced = len(recommendations) == 0
+
+        if not recommendations:
+            recommendations.append("Content mix is well-balanced!")
+
+        return {
+            "distribution": category_counts,
+            "percentages": {
+                category: f"{ratio:.0%}" for category, ratio in actual_percentages.items()
+            },
+            "ideal_percentages": {
+                category: f"{ratio:.0%}" for category, ratio in self.CONTENT_MIX_STRATEGY.items()
+            },
+            "recommendations": recommendations,
+            "balanced": balanced,
+        }
+
+    def optimize_post_order(self, posts: List[Post]) -> List[Post]:
+        """
+        Reorder posts for optimal content variety throughout the schedule.
+
+        Strategy:
+        - Alternate between content categories
+        - Avoid consecutive posts of same type
+        - Start with educational/engagement, end with promotional
+
+        Args:
+            posts: List of Post objects
+
+        Returns:
+            Reordered list of posts
+        """
+        # Group posts by category
+        categorized: dict[str, list[Post]] = {
+            "educational": [],
+            "engagement": [],
+            "promotional": [],
+            "personal": [],
+        }
+
+        for post in posts:
+            category = self.TEMPLATE_CONTENT_CATEGORIES.get(post.template_id, "educational")
+            categorized[category].append(post)
+
+        # Interleave posts from different categories
+        optimized: List[Post] = []
+        category_order = [
+            "educational",
+            "engagement",
+            "educational",
+            "personal",
+            "educational",
+            "promotional",
+            "engagement",
+            "personal",
+        ]
+
+        index = 0
+        max_iterations = len(posts) * 2  # Safety limit
+        iterations = 0
+
+        while len(optimized) < len(posts) and iterations < max_iterations:
+            category = category_order[index % len(category_order)]
+            if categorized[category]:
+                optimized.append(categorized[category].pop(0))
+            index += 1
+            iterations += 1
+
+        # Add any remaining posts
+        for category in ["educational", "engagement", "promotional", "personal"]:
+            optimized.extend(categorized[category])
+
+        logger.info(f"Optimized post order for {len(optimized)} posts")
+        return optimized
 
     def _detect_platforms(self, posts: List[Post]) -> List[Platform]:
         """Auto-detect platforms from posts"""
