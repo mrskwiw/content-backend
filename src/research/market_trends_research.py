@@ -428,9 +428,10 @@ topic, timing, description, preparation_timeline"""
             )
 
         # Seasonal trends
-        for trend in seasonal[:3]:
+        seasonal_trend: SeasonalTrend
+        for seasonal_trend in seasonal[:3]:
             opportunities.append(
-                f"Plan for {trend.topic} ({trend.timing}) - start {trend.preparation_timeline}"
+                f"Plan for {seasonal_trend.topic} ({seasonal_trend.timing}) - start {seasonal_trend.preparation_timeline}"
             )
 
         return opportunities[:5]  # Max 5

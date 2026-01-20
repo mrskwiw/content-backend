@@ -550,7 +550,7 @@ Return as JSON array."""
 
     def _count_by_type(self, content_pieces: List[ContentPiece]) -> dict:
         """Count content by type"""
-        counts = {}
+        counts: dict[str, int] = {}
         for piece in content_pieces:
             type_name = piece.content_type.value
             counts[type_name] = counts.get(type_name, 0) + 1
@@ -558,7 +558,7 @@ Return as JSON array."""
 
     def _count_by_health(self, content_pieces: List[ContentPiece]) -> dict:
         """Count content by health status"""
-        counts = {}
+        counts: dict[str, int] = {}
         for piece in content_pieces:
             health = piece.health_status.value
             counts[health] = counts.get(health, 0) + 1
@@ -566,7 +566,7 @@ Return as JSON array."""
 
     def _count_by_performance(self, content_pieces: List[ContentPiece]) -> dict:
         """Count content by performance level"""
-        counts = {}
+        counts: dict[str, int] = {}
         for piece in content_pieces:
             perf = piece.performance_level.value
             counts[perf] = counts.get(perf, 0) + 1
@@ -775,13 +775,13 @@ RECOMMENDATION: Focus on refreshing existing high-potential content before creat
 ## Repurposing Opportunities ({len(analysis.repurpose_opportunities)})
 
 """
-        opp: RepurposeOpportunity
-        for opp in analysis.repurpose_opportunities:
+        repurpose_opp: RepurposeOpportunity
+        for repurpose_opp in analysis.repurpose_opportunities:
             md += f"""
-### {opp.source_content}
-→ **{opp.repurpose_into}** on {opp.target_platform}
-- **Why:** {opp.why_repurpose}
-- **Estimated Reach:** {opp.estimated_reach}
+### {repurpose_opp.source_content}
+→ **{repurpose_opp.repurpose_into}** on {repurpose_opp.target_platform}
+- **Why:** {repurpose_opp.why_repurpose}
+- **Estimated Reach:** {repurpose_opp.estimated_reach}
 """
 
         md += f"""

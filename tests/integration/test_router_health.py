@@ -66,7 +66,7 @@ class TestHealthEndpoint:
         response = client.get("/api/health")
 
         assert response.status_code == 200
-        data = response.json()
+        _data = response.json()
         # Version might be included
         # Exact field depends on implementation
 
@@ -75,7 +75,7 @@ class TestHealthEndpoint:
         response = client.get("/api/health")
 
         assert response.status_code == 200
-        data = response.json()
+        _data = response.json()
         # Timestamp might be included
         # Exact field depends on implementation
 
@@ -115,7 +115,7 @@ class TestReadinessEndpoint:
         response = client.get("/api/health/ready")
 
         assert response.status_code == 200
-        data = response.json()
+        _data = response.json()
 
         # Might include checks for various services
         # Database, external APIs, etc.
@@ -159,7 +159,7 @@ class TestHealthMetrics:
         response = client.get("/api/health")
 
         assert response.status_code == 200
-        data = response.json()
+        _data = response.json()
         # Uptime might be included
         # Exact field depends on implementation
 
@@ -168,7 +168,7 @@ class TestHealthMetrics:
         response = client.get("/api/health")
 
         assert response.status_code == 200
-        data = response.json()
+        _data = response.json()
         # Environment (dev/staging/prod) might be included
         # Exact field depends on implementation
 

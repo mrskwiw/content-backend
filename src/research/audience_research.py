@@ -160,9 +160,10 @@ Return ONLY valid JSON:
 }}"""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
-        return self._call_claude_api(
+        result = self._call_claude_api(
             prompt, max_tokens=4000, extract_json=True, fallback_on_error={}
         )
+        return dict(result) if isinstance(result, dict) else {}
 
     def _analyze_behaviors_pain_points(
         self, business_desc: str, target_audience: str, industry: str
@@ -217,9 +218,10 @@ Return ONLY valid JSON:
 }}"""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
-        return self._call_claude_api(
+        result = self._call_claude_api(
             prompt, max_tokens=3500, extract_json=True, fallback_on_error={}
         )
+        return dict(result) if isinstance(result, dict) else {}
 
     def _identify_segments(
         self,
@@ -262,9 +264,10 @@ Return ONLY valid JSON array:
 ]"""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
-        return self._call_claude_api(
+        result = self._call_claude_api(
             prompt, max_tokens=3000, extract_json=True, fallback_on_error=[]
         )
+        return list(result) if isinstance(result, list) else []
 
     def _generate_strategy(
         self,
@@ -309,9 +312,10 @@ Return ONLY valid JSON:
 }}"""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
-        return self._call_claude_api(
+        result = self._call_claude_api(
             prompt, max_tokens=3000, extract_json=True, fallback_on_error={}
         )
+        return dict(result) if isinstance(result, dict) else {}
 
     def _compile_research(
         self,

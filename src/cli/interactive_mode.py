@@ -36,6 +36,13 @@ class InteractiveMode:
         self.client_brief: Optional[ClientBrief] = None
         self.iteration_count = 0
 
+    @property
+    def brief(self) -> ClientBrief:
+        """Type-narrowing accessor for client_brief. Raises if not initialized."""
+        if self.client_brief is None:
+            raise RuntimeError("Client brief not initialized")
+        return self.client_brief
+
     def run(self, initial_brief_file: Optional[str] = None):
         """
         Main interactive loop
@@ -91,7 +98,7 @@ class InteractiveMode:
                 console=console,
             ) as progress:
                 progress.add_task(description="Parsing brief...", total=None)
-                client_brief = self.parser.parse_brief(brief_text)
+                client_brief: ClientBrief = self.parser.parse_brief(brief_text)
 
             console.print(
                 f"[green]✓[/green] Loaded brief for [bold]{client_brief.company_name}[/bold]\n"
@@ -212,7 +219,9 @@ class InteractiveMode:
     def _ask_single_question(self, question: Question, index: int, total: int):
         """Ask a single question and process the answer"""
         # Display question header
-        priority_emoji = "🔴" if question.priority == 1 else "🟡" if question.priority == 2 else "🟢"
+        priority_emoji = (
+            "🔴" if question.priority == 1 else "🟡" if question.priority == 2 else "🟢"
+        )
         console.print(f"\n{priority_emoji} [bold]Question {index}/{total}:[/bold]")
 
         if question.context:
@@ -261,7 +270,7 @@ class InteractiveMode:
             append: If True, append to existing value instead of replacing
         """
         try:
-            current_data = self.client_brief.model_dump()
+            current_data = self.brief.model_dump()
             current_value = current_data.get(field_name)
 
             # Determine how to update based on field type
@@ -357,7 +366,7 @@ class InteractiveMode:
         if not proceed:
             console.print("\n[cyan]Great! Let's make it even better...[/cyan]\n")
 
-        return proceed
+        return bool(proceed)
 
     def _apply_final_enhancements(self):
         """Apply AI enhancements to improve brief quality"""
@@ -391,7 +400,7 @@ class InteractiveMode:
             output_dir = Path("data/briefs")
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            safe_name = self.client_brief.company_name.replace(" ", "_").replace("/", "_")
+            safe_name = self.brief.company_name.replace(" ", "_").replace("/", "_")
             filename = f"{safe_name}_wip.json"
             filepath = output_dir / filename
 
@@ -408,7 +417,7 @@ class InteractiveMode:
         output_dir = Path("data/briefs")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        safe_name = self.client_brief.company_name.replace(" ", "_").replace("/", "_")
+        safe_name = self.brief.company_name.replace(" ", "_").replace("/", "_")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{safe_name}_{timestamp}_complete.txt"
         filepath = output_dir / filename
@@ -425,37 +434,37 @@ class InteractiveMode:
     def _format_brief_as_text(self) -> str:
         """Format brief as human-readable text"""
         lines = [
-            "# Client Brief - " + self.client_brief.company_name,
+            "# Client Brief - " + self.brief.company_name,
             "",
             "## Basic Information",
-            f"Company: {self.client_brief.company_name}",
+            f"Company: {self.brief.company_name}",
         ]
 
-        if self.client_brief.founder_name:
-            lines.append(f"Founder: {self.client_brief.founder_name}")
+        if self.brief.founder_name:
+            lines.append(f"Founder: {self.brief.founder_name}")
 
-        if self.client_brief.website:
-            lines.append(f"Website: {self.client_brief.website}")
+        if self.brief.website:
+            lines.append(f"Website: {self.brief.website}")
 
         lines.extend(
             [
-                f"Business: {self.client_brief.business_description}",
-                f"Ideal Customer: {self.client_brief.ideal_customer}",
-                f"Problem Solved: {self.client_brief.main_problem_solved}",
+                f"Business: {self.brief.business_description}",
+                f"Ideal Customer: {self.brief.ideal_customer}",
+                f"Problem Solved: {self.brief.main_problem_solved}",
                 "",
                 "## Brand Voice",
             ]
         )
 
-        if self.client_brief.brand_personality:
-            personalities = ", ".join([p.value for p in self.client_brief.brand_personality])
+        if self.brief.brand_personality:
+            personalities = ", ".join([p.value for p in self.brief.brand_personality])
             lines.append(f"Personality: {personalities}")
 
-        if self.client_brief.key_phrases:
-            lines.append(f"Key Phrases: {', '.join(self.client_brief.key_phrases)}")
+        if self.brief.key_phrases:
+            lines.append(f"Key Phrases: {', '.join(self.brief.key_phrases)}")
 
-        if self.client_brief.tone_to_avoid:
-            lines.append(f"Tone to Avoid: {self.client_brief.tone_to_avoid}")
+        if self.brief.tone_to_avoid:
+            lines.append(f"Tone to Avoid: {self.brief.tone_to_avoid}")
 
         lines.extend(
             [
@@ -464,32 +473,32 @@ class InteractiveMode:
             ]
         )
 
-        if self.client_brief.customer_pain_points:
+        if self.brief.customer_pain_points:
             lines.append("Pain Points:")
-            for pp in self.client_brief.customer_pain_points:
+            for pp in self.brief.customer_pain_points:
                 lines.append(f"- {pp}")
 
-        if self.client_brief.customer_questions:
+        if self.brief.customer_questions:
             lines.append("")
             lines.append("Customer Questions:")
-            for q in self.client_brief.customer_questions:
+            for q in self.brief.customer_questions:
                 lines.append(f"- {q}")
 
-        if self.client_brief.misconceptions:
+        if self.brief.misconceptions:
             lines.append("")
             lines.append("Misconceptions to Correct:")
-            for m in self.client_brief.misconceptions:
+            for m in self.brief.misconceptions:
                 lines.append(f"- {m}")
 
-        if self.client_brief.stories:
+        if self.brief.stories:
             lines.append("")
             lines.append("Stories:")
-            for story in self.client_brief.stories:
+            for story in self.brief.stories:
                 lines.append(f"- {story}")
 
-        if self.client_brief.main_cta:
+        if self.brief.main_cta:
             lines.append("")
-            lines.append(f"Main CTA: {self.client_brief.main_cta}")
+            lines.append(f"Main CTA: {self.brief.main_cta}")
 
         return "\n".join(lines)
 
@@ -506,7 +515,7 @@ class InteractiveMode:
         stats_table.add_column(style="bold")
         stats_table.add_column(style="cyan")
 
-        stats_table.add_row("Company:", self.client_brief.company_name)
+        stats_table.add_row("Company:", self.brief.company_name)
         stats_table.add_row("Final Quality:", f"{quality_report.overall_score:.0%}")
         stats_table.add_row(
             "Fields Filled:", f"{quality_report.filled_fields}/{quality_report.total_fields}"
@@ -521,7 +530,7 @@ class InteractiveMode:
         console.print("Generate content with this command:\n")
         console.print(
             f"  [yellow]python 03_post_generator.py generate {filepath} "
-            f'-c "{self.client_brief.company_name}"[/yellow]\n'
+            f'-c "{self.brief.company_name}"[/yellow]\n'
         )
 
         if quality_report.overall_score < 0.75:

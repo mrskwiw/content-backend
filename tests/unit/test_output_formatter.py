@@ -156,7 +156,7 @@ class TestOutputFormatterInit:
     def test_init_creates_directory(self, tmp_path):
         """Test initialization creates directory if it doesn't exist"""
         new_dir = tmp_path / "nonexistent" / "nested"
-        formatter = OutputFormatter(output_dir=new_dir)
+        OutputFormatter(output_dir=new_dir)
         assert new_dir.exists()
 
     def test_init_with_default_dir(self):
@@ -489,7 +489,7 @@ class TestSaveCompletePackage:
         mock_voice_analyzer.return_value = mock_analyzer_instance
 
         formatter = OutputFormatter(output_dir=temp_output_dir)
-        saved_files = formatter.save_complete_package(
+        formatter.save_complete_package(
             posts=sample_posts,
             client_brief=sample_client_brief,
             client_name="TestClient",
@@ -515,7 +515,7 @@ class TestSaveCompletePackage:
         mock_schedule_gen.return_value = mock_gen_instance
 
         formatter = OutputFormatter(output_dir=temp_output_dir)
-        saved_files = formatter.save_complete_package(
+        formatter.save_complete_package(
             posts=sample_posts,
             client_brief=sample_client_brief,
             client_name="TestClient",

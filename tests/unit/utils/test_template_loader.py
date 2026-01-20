@@ -412,7 +412,7 @@ class TestSelectTemplatesForClient:
 
         # Template 1 should be deprioritized (only added as last resort)
         # With 3 templates total and avoiding 1, should prefer others first
-        template_ids = [t.template_id for t in selected]
+        [t.template_id for t in selected]
         if len(selected) == 3:
             # If all 3 selected, avoided template should be last or not present
             # (It may or may not be included depending on fillability check)
@@ -429,7 +429,7 @@ class TestCaching:
             cache_mgr.get.return_value = None  # No cache initially
             mock_cache.return_value = cache_mgr
 
-            loader = TemplateLoader(template_file=mock_template_file)
+            TemplateLoader(template_file=mock_template_file)
 
             # Should have called put to save to cache
             cache_mgr.put.assert_called_once()

@@ -171,7 +171,7 @@ def test_enhanced_cache_init_without_similarity(tmp_path):
         enable_similarity=False,
     )
 
-    assert cache.enable_similarity == False
+    assert not cache.enable_similarity
     assert cache.exact_cache is not None
 
 
@@ -184,7 +184,7 @@ def test_enhanced_cache_init_with_similarity(tmp_path):
         similarity_threshold=0.85,
     )
 
-    assert cache.enable_similarity == True
+    assert cache.enable_similarity
     assert cache.similarity_index is not None
 
 
@@ -269,7 +269,7 @@ def test_enhanced_cache_get_statistics(tmp_path):
     assert stats["total_requests"] == 2
     assert stats["exact_hits"] == 1
     assert stats["misses"] == 1
-    assert stats["similarity_enabled"] == False
+    assert not stats["similarity_enabled"]
 
 
 @pytest.mark.skipif(not MINHASH_AVAILABLE, reason="datasketch not available")
@@ -463,7 +463,7 @@ class TestEnhancedCacheGetWithExpiredTTL:
 
         # Similar message should not get expired entry
         similar_messages = [{"role": "user", "content": "test message content variation"}]
-        result = cache.get(similar_messages, "system", 0.7)
+        cache.get(similar_messages, "system", 0.7)
 
         # Should be None due to TTL expiration
         # Note: Exact match also expired, so this is a miss

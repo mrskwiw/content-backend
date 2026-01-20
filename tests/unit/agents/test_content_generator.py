@@ -154,7 +154,7 @@ class TestContentGeneratorAgent:
             patch("src.agents.content_generator.TemplateLoader") as MockLoader,
         ):
 
-            generator = ContentGeneratorAgent()
+            _generator = ContentGeneratorAgent()
 
             MockClient.assert_called_once()
             MockLoader.assert_called_once()

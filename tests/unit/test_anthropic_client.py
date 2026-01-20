@@ -53,7 +53,7 @@ class TestAnthropicClientInit:
     def test_init_with_api_key(self, mock_settings):
         """Test initialization with explicit API key"""
         client = AnthropicClient(api_key="custom_key")  # pragma: allowlist secret
-        assert client.api_key == "custom_key"
+        assert client.api_key == "custom_key"  # pragma: allowlist secret
 
     def test_init_with_settings_api_key(self, mock_settings):
         """Test initialization uses settings API key by default"""
@@ -491,7 +491,7 @@ class TestResponseCache:
 
         mock_settings.ENABLE_RESPONSE_CACHE = True
 
-        with patch("src.utils.anthropic_client.Anthropic") as mock_anthropic_class:
+        with patch("src.utils.anthropic_client.Anthropic"):
             client = AnthropicClient(enable_response_cache=True)
             messages = [{"role": "user", "content": "Test"}]
             result = client.create_message(messages, system="System")
@@ -519,7 +519,7 @@ class TestResponseCache:
 
             client = AnthropicClient(enable_response_cache=True)
             messages = [{"role": "user", "content": "Test"}]
-            result = client.create_message(messages)
+            _result = client.create_message(messages)
 
             # Should store in cache after API call
             mock_cache_instance.put.assert_called_once()

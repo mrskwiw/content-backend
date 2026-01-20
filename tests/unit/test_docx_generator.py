@@ -302,7 +302,7 @@ def test_create_deliverable_docx_creates_directory(tmp_path, sample_client_brief
         # Path with non-existent parent directory
         output_path = tmp_path / "subdir" / "nested" / "deliverable.docx"
 
-        result = generator.create_deliverable_docx(
+        generator.create_deliverable_docx(
             posts=sample_posts,
             client_brief=sample_client_brief,
             output_path=output_path,
@@ -545,7 +545,7 @@ def test_add_schedule_parses_tree_structure():
 
 def test_add_qa_summary_section_passed(sample_qa_report):
     """Test QA summary appendix for passed report"""
-    with patch("docx.shared.RGBColor") as mock_rgb:
+    with patch("docx.shared.RGBColor"):
         generator = DOCXGenerator()
         mock_doc = MockDocument()
 

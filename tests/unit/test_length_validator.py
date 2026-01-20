@@ -252,7 +252,7 @@ class TestTooShortDetection:
             ),
         ]
         validator = LengthValidator()
-        result = validator.validate(posts)
+        validator.validate(posts)
 
         # Twitter has lower minimum, might pass
         # At minimum, should mention Twitter in metric
@@ -289,7 +289,7 @@ class TestTooLongDetection:
             ),
         ]
         validator = LengthValidator()
-        result = validator.validate(posts)
+        validator.validate(posts)
 
         # Should be OK for LinkedIn (max 300)
 
@@ -487,7 +487,7 @@ class TestIssuesReporting:
             ),
         ]
         validator = LengthValidator()
-        result = validator.validate(posts)
+        validator.validate(posts)
 
         # If there are issues, they should mention Twitter
 

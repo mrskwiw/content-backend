@@ -235,7 +235,7 @@ Percentages should add up to 100."""
             prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
 
-        return data
+        return list(data) if isinstance(data, list) else []
 
     def _create_quarterly_themes(
         self,
@@ -596,7 +596,7 @@ Return JSON:
         )
 
         data = self._extract_json_from_response(response)
-        return data
+        return dict(data) if isinstance(data, dict) else {}
 
     def _compile_calendar_strategy(
         self,
@@ -622,7 +622,7 @@ Return JSON:
             "thought leadership": ContentGoal.THOUGHT_LEADERSHIP,
         }
 
-        primary_goals = []
+        primary_goals: list[ContentGoal] = []
         goals_lower = content_goals.lower()
         for keyword, goal in goal_keywords.items():
             if keyword in goals_lower and len(primary_goals) < 3:

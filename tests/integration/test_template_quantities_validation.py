@@ -17,7 +17,7 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent.parent / "backend"
 sys.path.insert(0, str(backend_dir))
 
-from schemas.project import ProjectCreate
+from schemas.project import ProjectCreate  # noqa: E402
 
 
 class TestTemplateQuantitiesValidation:

@@ -516,7 +516,7 @@ def test_build_revision_prompt(sample_post, sample_client_brief, sample_template
         template=sample_template,
     )
 
-    assert context["revision_mode"] == True
+    assert context["revision_mode"]
     assert context["original_content"] == sample_post.content
     assert context["client_feedback"] == "Make it better"
     assert "variant_guidance" in context

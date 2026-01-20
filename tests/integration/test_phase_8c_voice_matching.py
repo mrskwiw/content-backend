@@ -1,6 +1,7 @@
 """
 Integration tests for Phase 8C: Voice Sample Upload & Matching
 """
+
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -217,7 +218,7 @@ class TestVoiceMatcher:
         # Test readability comparison
         from src.models.voice_guide import EnhancedVoiceGuide
 
-        voice_guide = EnhancedVoiceGuide(
+        _voice_guide = EnhancedVoiceGuide(
             company_name="Test",
             generated_from_posts=1,
             average_readability_score=70.0,

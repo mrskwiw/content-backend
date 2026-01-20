@@ -8,6 +8,7 @@ Tests verify that:
 4. Twitter/Facebook get critical length warnings
 5. Platform-specific guidelines are included
 """
+
 import pytest
 
 from src.agents.content_generator import ContentGeneratorAgent
@@ -45,7 +46,10 @@ class TestPlatformAwarePrompts:
         assert "Aim for 150-250 words" not in base_prompt
 
         # Should defer to platform-specific targets
-        assert "Follow platform-specific length targets" in base_prompt or "will be specified" in base_prompt
+        assert (
+            "Follow platform-specific length targets" in base_prompt
+            or "will be specified" in base_prompt
+        )
 
     def test_linkedin_prompt_construction(self, generator, sample_brief):
         """Test LinkedIn prompt includes correct specifications"""
@@ -292,7 +296,9 @@ class TestPlatformAwarePrompts:
 
             # Blog can be longer due to enhanced structure requirements (6-section format)
             if platform == Platform.BLOG:
-                assert len(prompt) < 8000  # Still reasonable (updated from 6000 to accommodate detailed structure)
+                assert (
+                    len(prompt) < 10000
+                )  # Still reasonable (updated from 8000 to accommodate expanded blog requirements)
             else:
                 assert len(prompt) < 5000  # Not too long for other platforms
 

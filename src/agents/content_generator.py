@@ -21,6 +21,7 @@ from ..models.template import Template
 from ..models.voice_sample import VoiceMatchReport
 from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import log_post_generated, logger
+from ..utils.skill_loader import load_skill, Skill
 from ..utils.template_loader import TemplateLoader
 from ..validators.prompt_injection_defense import (
     sanitize_prompt_input,
@@ -46,6 +47,7 @@ class ContentGeneratorAgent:
         template_loader: Optional[TemplateLoader] = None,
         keyword_strategy: Optional[KeywordStrategy] = None,
         db: Optional["ProjectDatabase"] = None,
+        use_content_skill: bool = True,
     ):
         """
         Initialize Content Generator Agent
@@ -55,11 +57,25 @@ class ContentGeneratorAgent:
             template_loader: Template loader instance
             keyword_strategy: Optional SEO keyword strategy for keyword-aware generation
             db: Optional ProjectDatabase instance for client memory integration
+            use_content_skill: Whether to load and use the content-creator skill (default True)
         """
         self.client = client or AnthropicClient()
         self.template_loader = template_loader or TemplateLoader()
         self.keyword_strategy = keyword_strategy
         self.db = db
+
+        # Load content-creator skill for enhanced guidance
+        self.content_skill: Optional[Skill] = None
+        if use_content_skill:
+            try:
+                self.content_skill = load_skill("content-creator")
+                if self.content_skill:
+                    logger.info(
+                        f"Loaded content-creator skill v{self.content_skill.metadata.version} "
+                        f"with {len(self.content_skill.references)} references"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not load content-creator skill: {e}")
 
     def generate_posts(
         self,
@@ -1396,7 +1412,79 @@ If your draft is under 1500 words after Section 4, you MUST:
         writing_principles = get_writing_principles_guidance()
         prompt += f"\n{writing_principles}"
 
+        # NEW: Add content-creator skill guidance if available
+        skill_guidance = self._build_skill_guidance(platform)
+        if skill_guidance:
+            prompt += skill_guidance
+
         return prompt
+
+    def _build_skill_guidance(self, platform: Platform = Platform.LINKEDIN) -> str:
+        """
+        Build guidance from the content-creator skill's reference materials.
+
+        Extracts relevant sections from brand guidelines, content frameworks,
+        and social media optimization references.
+
+        Args:
+            platform: Target platform for content generation
+
+        Returns:
+            Skill-based guidance string, or empty string if skill not loaded
+        """
+        if not self.content_skill:
+            return ""
+
+        lines = ["\n\n" + "=" * 60]
+        lines.append("PROFESSIONAL CONTENT CREATION GUIDELINES (from content-creator skill)")
+        lines.append("=" * 60)
+
+        # Extract brand guidelines summary
+        brand_guide = self.content_skill.get_reference("brand_guidelines")
+        if brand_guide:
+            # Extract key sections (first 500 chars of relevant sections)
+            lines.append("\n**BRAND VOICE BEST PRACTICES:**")
+            if "Voice Dimensions" in brand_guide:
+                # Extract a brief section
+                lines.append("- Consider formality level appropriate for audience")
+                lines.append("- Maintain consistent tone throughout")
+                lines.append("- Match perspective to brand personality")
+
+        # Extract content framework guidance based on platform
+        content_frameworks = self.content_skill.get_reference("content_frameworks")
+        if content_frameworks:
+            lines.append("\n**CONTENT STRUCTURE PRINCIPLES:**")
+            lines.append("- Hook first, value second, CTA last")
+            lines.append("- Use scannable formatting (bullets, short paragraphs)")
+            lines.append("- Include concrete examples and data points")
+
+        # Extract platform-specific optimization if available
+        social_opt = self.content_skill.get_reference("social_media_optimization")
+        if social_opt:
+            lines.append(f"\n**{platform.value.upper()} OPTIMIZATION (from skill):**")
+
+            if platform == Platform.LINKEDIN:
+                lines.append("- First line must hook (visible before 'see more')")
+                lines.append("- Use line breaks for readability")
+                lines.append("- End with engagement question or CTA")
+                lines.append("- Optimal posting: Tue-Thu 8-10am, 12pm, 5-6pm")
+            elif platform == Platform.TWITTER:
+                lines.append("- Front-load value in first sentence")
+                lines.append("- Use strong verbs, remove filler words")
+                lines.append("- Hashtags: 1-2 max, placed at end")
+            elif platform == Platform.FACEBOOK:
+                lines.append("- Visual-first approach (assume image accompanies)")
+                lines.append("- Emotional or curiosity-driven hooks")
+                lines.append("- Keep text brief, let visual do heavy lifting")
+            elif platform == Platform.BLOG:
+                lines.append("- SEO: Include primary keyword in first 100 words")
+                lines.append("- Structure: H2s every 300-400 words")
+                lines.append("- Internal/external links for authority")
+                lines.append("- Meta description: 150-160 chars with keyword")
+
+        lines.append("\n" + "-" * 40)
+
+        return "\n".join(lines)
 
     def _build_keyword_guidance(self) -> str:
         """Build SEO keyword guidance section for system prompt"""

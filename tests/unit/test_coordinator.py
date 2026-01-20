@@ -332,7 +332,7 @@ async def test_run_complete_workflow_with_voice_samples(
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             voice_samples=voice_samples,
             num_posts=5,
@@ -352,7 +352,7 @@ async def test_run_complete_workflow_with_template_quantities(
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             template_quantities=template_quantities,
             num_posts=30,
@@ -370,7 +370,7 @@ async def test_run_complete_workflow_sync_mode(coordinator_with_mocks, sample_cl
     with patch("src.agents.coordinator.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = False
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
         )
@@ -402,7 +402,7 @@ async def test_run_complete_workflow_with_auto_fix(
     with patch("src.agents.coordinator.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
             auto_fix=True,
@@ -420,7 +420,7 @@ async def test_run_complete_workflow_custom_start_date(coordinator_with_mocks, s
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
             start_date=custom_date,
@@ -437,7 +437,7 @@ async def test_run_complete_workflow_without_analytics(coordinator_with_mocks, s
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
             include_analytics=False,
@@ -445,7 +445,7 @@ async def test_run_complete_workflow_without_analytics(coordinator_with_mocks, s
 
         # Verify analytics flag was passed
         call_kwargs = coordinator_with_mocks.output_formatter.save_complete_package.call_args[1]
-        assert call_kwargs["include_analytics_tracker"] == False
+        assert not call_kwargs["include_analytics_tracker"]
 
 
 @pytest.mark.asyncio
@@ -454,7 +454,7 @@ async def test_run_complete_workflow_without_docx(coordinator_with_mocks, sample
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
             include_docx=False,
@@ -462,7 +462,7 @@ async def test_run_complete_workflow_without_docx(coordinator_with_mocks, sample
 
         # Verify docx flag was passed
         call_kwargs = coordinator_with_mocks.output_formatter.save_complete_package.call_args[1]
-        assert call_kwargs["include_docx"] == False
+        assert not call_kwargs["include_docx"]
 
 
 # ==================== Interactive Builder Tests ====================
@@ -599,7 +599,7 @@ async def test_workflow_with_twitter_platform(coordinator_with_mocks, sample_cli
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
             platform=Platform.TWITTER,
@@ -618,7 +618,7 @@ async def test_workflow_uses_brief_default_platform(coordinator_with_mocks, samp
     with patch("src.config.settings.settings") as mock_settings:
         mock_settings.PARALLEL_GENERATION = True
 
-        result = await coordinator_with_mocks.run_complete_workflow(
+        await coordinator_with_mocks.run_complete_workflow(
             brief_input=sample_client_brief,
             num_posts=5,
             platform=None,  # Use default from brief

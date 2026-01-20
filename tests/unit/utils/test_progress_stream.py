@@ -414,7 +414,7 @@ class TestBatchProgress:
         mock_progress = MagicMock()
         mock_progress_class.return_value.__enter__.return_value = mock_progress
 
-        with batch_progress("Batch Task", 30, show_cost=False, show_tokens=False) as progress:
+        with batch_progress("Batch Task", 30, show_cost=False, show_tokens=False):
             pass
 
         # Should pass flags through

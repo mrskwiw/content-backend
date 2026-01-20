@@ -390,7 +390,7 @@ class TestFindDuplicatesOptimized:
         hooks = validator._extract_hooks(sample_posts)
 
         # Call optimized method
-        duplicates = validator._find_duplicates_optimized(hooks, sample_posts)
+        validator._find_duplicates_optimized(hooks, sample_posts)
 
         # MinHashLSH should be initialized
         assert mock_lsh.called

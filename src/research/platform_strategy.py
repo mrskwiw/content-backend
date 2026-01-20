@@ -150,8 +150,8 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         quick_wins = self._generate_quick_wins(self.client, platform_mix, platform_recommendations)
 
         # Analyze current state if provided
-        current_strengths = []
-        current_gaps = []
+        current_strengths: list[str] = []
+        current_gaps: list[str] = []
         if current_platforms:
             print("[Analysis] Analyzing current platform strategy...")
             current_strengths, current_gaps = self._analyze_current_state(
@@ -161,7 +161,11 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         # Generate strategic insights
         print("[Strategy] Generating strategic insights...")
         key_insights, mistakes_to_avoid = self._generate_strategic_insights(
-            self.client, business_description, target_audience, platform_mix, platform_recommendations
+            self.client,
+            business_description,
+            target_audience,
+            platform_mix,
+            platform_recommendations,
         )
 
         # Create implementation plans
@@ -651,7 +655,7 @@ Summarize:
             messages=[{"role": "user", "content": prompt}], max_tokens=1000
         )
 
-        return response.strip()
+        return str(response).strip()
 
     def generate_reports(self, analysis: PlatformStrategyAnalysis) -> Dict[str, Path]:
         """Generate output files"""

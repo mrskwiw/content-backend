@@ -136,7 +136,7 @@ class HookValidator:
             if isinstance(target, Platform):
                 return target
             # If it's a string (edge case from mock or raw data), try to convert
-            if isinstance(target, str):
+            if isinstance(target, str):  # type: ignore[unreachable]
                 try:
                     return Platform(target)
                 except ValueError:

@@ -458,7 +458,8 @@ Rate each archetype 0.0 (no fit) to 1.0 (perfect fit) based on the brand's perso
 
             json_match = re.search(r"\{[^}]+\}", content, re.DOTALL)
             if json_match:
-                return json.loads(json_match.group())
+                result = json.loads(json_match.group())
+                return dict(result) if isinstance(result, dict) else {}
             else:
                 logger.warning("Claude didn't return valid JSON, using fallback")
                 return {}

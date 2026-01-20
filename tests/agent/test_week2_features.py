@@ -304,7 +304,7 @@ class TestTaskScheduler:
 
         # Verify cancellation (would need to reload from DB in real scenario)
         upcoming = self.scheduler.get_upcoming_tasks()
-        cancelled_task = next((t for t in upcoming if t.task_id == task.task_id), None)
+        _cancelled_task = next((t for t in upcoming if t.task_id == task.task_id), None)
         # Task may not appear in upcoming if status changed
 
 

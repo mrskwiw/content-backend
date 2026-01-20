@@ -538,7 +538,7 @@ class TestEdgeCases:
         validator = HeadlineValidator()
         # "Apple" at start shouldn't count (could be first word of sentence)
         # But this test verifies the regex pattern
-        details1 = validator._get_element_details("Apple is great")
+        validator._get_element_details("Apple is great")
         details2 = validator._get_element_details("Why Apple is great")
         # Second should have specificity (Apple not at absolute start)
         assert details2["has_specificity"] is True

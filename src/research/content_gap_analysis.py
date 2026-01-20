@@ -253,7 +253,7 @@ Return as JSON with these exact keys: coverage_areas, depth_assessment, formats,
         )
 
         try:
-            result: Dict[str, Any] = json.loads(response.content[0].text)
+            result: Dict[str, Any] = json.loads(response)
             return result
         except (json.JSONDecodeError, KeyError, IndexError, AttributeError):
             return {
@@ -295,7 +295,7 @@ Return as JSON with keys: content_strengths, popular_topics, formats_used, gaps_
             )
 
             try:
-                data = json.loads(response.content[0].text)
+                data = json.loads(response)
                 analyses.append(
                     CompetitorContentAnalysis(
                         competitor_name=competitor,
@@ -367,7 +367,7 @@ Return as JSON array of gap objects."""
         )
 
         try:
-            gaps_data = json.loads(response.content[0].text)
+            gaps_data = json.loads(response)
             if isinstance(gaps_data, dict) and "gaps" in gaps_data:
                 gaps_data = gaps_data["gaps"]
 
@@ -430,7 +430,7 @@ Return as JSON array of format gap objects."""
         )
 
         try:
-            gaps_data = json.loads(response.content[0].text)
+            gaps_data = json.loads(response)
             if isinstance(gaps_data, dict) and "formats" in gaps_data:
                 gaps_data = gaps_data["formats"]
 
@@ -474,7 +474,7 @@ Return as JSON array of buyer journey gap objects."""
         )
 
         try:
-            gaps_data = json.loads(response.content[0].text)
+            gaps_data = json.loads(response)
             if isinstance(gaps_data, dict) and "stages" in gaps_data:
                 gaps_data = gaps_data["stages"]
 

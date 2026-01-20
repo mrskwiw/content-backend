@@ -69,7 +69,7 @@ class TestBriefParserAgent:
     def test_initialization_without_client(self):
         """Test parser creates default client if none provided"""
         with patch("src.agents.brief_parser.AnthropicClient") as MockClient:
-            parser = BriefParserAgent()
+            _parser = BriefParserAgent()
             MockClient.assert_called_once()
 
     def test_parse_brief_success(

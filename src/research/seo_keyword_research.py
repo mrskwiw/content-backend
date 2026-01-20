@@ -664,8 +664,9 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
 Target these first for early SEO wins:
 
 """
-            for kw in strategy.quick_win_keywords:
-                md += f"- {kw}\n"
+            quick_win: str
+            for quick_win in strategy.quick_win_keywords:
+                md += f"- {quick_win}\n"
 
         if strategy.competitor_analysis:
             md += """
@@ -723,8 +724,9 @@ PRIMARY KEYWORDS ({len(strategy.primary_keywords)}):
 
         if strategy.quick_win_keywords:
             text += "\n\nQUICK WINS:\n"
-            for kw in strategy.quick_win_keywords:
-                text += f"- {kw}\n"
+            quick_win: str
+            for quick_win in strategy.quick_win_keywords:
+                text += f"- {quick_win}\n"
 
         text += "\n\nCONTENT PRIORITIES:\n"
         for i, priority in enumerate(strategy.content_priorities, 1):

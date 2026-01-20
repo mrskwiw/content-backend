@@ -484,7 +484,7 @@ Return JSON array of strings."""
         )
 
         data = self._extract_json_from_response(response)
-        return data
+        return list(data) if isinstance(data, list) else []
 
     def generate_reports(self, analysis: ICPWorkshopAnalysis) -> Dict[str, Path]:
         """Generate output files"""

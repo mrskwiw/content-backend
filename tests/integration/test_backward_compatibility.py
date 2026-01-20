@@ -7,15 +7,17 @@ refactor was implemented.
 
 Run with: pytest tests/integration/test_backward_compatibility.py -v
 """
+
 import pytest
 
 # Import schemas directly (no app imports to avoid SQLAlchemy issues)
 import sys
 from pathlib import Path
+
 backend_dir = Path(__file__).parent.parent.parent / "backend"
 sys.path.insert(0, str(backend_dir))
 
-from schemas.project import ProjectCreate, ProjectUpdate
+from schemas.project import ProjectCreate, ProjectUpdate  # noqa: E402
 
 
 class TestBackwardCompatibility:
