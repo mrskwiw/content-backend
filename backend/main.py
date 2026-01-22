@@ -16,6 +16,7 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, Response
@@ -44,8 +45,12 @@ from slowapi.errors import RateLimitExceeded
 import backend.models  # noqa: F401
 from backend.config import settings
 from backend.database import init_db
+from backend.middleware.csrf_protection import CSRFProtectionMiddleware
 from backend.utils.rate_limiter import rate_limiter
 from backend.utils.http_rate_limiter import limiter
+
+# Load .env file to make variables available to os.getenv() for admin seeding
+load_dotenv()
 
 
 @asynccontextmanager
@@ -89,7 +94,7 @@ async def lifespan(app: FastAPI):
     init_db()
     print(">> Database initialized")
 
-    # Auto-seed users if database is empty
+    # Auto-seed admin users if database is empty or forced reset
     from backend.database import SessionLocal
     from backend.models.user import User
     from backend.utils.auth import get_password_hash
@@ -98,18 +103,50 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         user_count = db.query(User).count()
-        if user_count == 0:
-            print(">> No users found - creating default users...")
-            users_to_create = [
-                {
-                    "email": "mrskwiw@gmail.com",
-                    "full_name": "Primary User",
-                },
-                {
-                    "email": "michele.vanhy@gmail.com",
-                    "full_name": "Secondary User",
-                },
-            ]
+
+        # Check if admin seeding is forced (useful for password reset)
+        force_admin_seed = os.getenv("FORCE_ADMIN_SEED", "false").lower() == "true"
+
+        if user_count == 0 or force_admin_seed:
+            if force_admin_seed and user_count > 0:
+                print(">> FORCE_ADMIN_SEED=true - Updating admin accounts...")
+            else:
+                print(">> No users found - creating admin users...")
+
+            # Load admin credentials from environment
+            # Format: ADMIN_USER_1_EMAIL, ADMIN_USER_1_NAME, ADMIN_USER_1_IS_SUPERUSER
+            # Or use default users if not specified
+            admin_users_config = []
+
+            # Check for configured admin users (ADMIN_USER_1, ADMIN_USER_2, etc.)
+            for i in range(1, 10):  # Support up to 9 admin users
+                email = os.getenv(f"ADMIN_USER_{i}_EMAIL")
+                if email:
+                    admin_users_config.append(
+                        {
+                            "email": email,
+                            "full_name": os.getenv(f"ADMIN_USER_{i}_NAME", f"Admin User {i}"),
+                            "is_superuser": os.getenv(
+                                f"ADMIN_USER_{i}_IS_SUPERUSER", "true"
+                            ).lower()
+                            == "true",
+                        }
+                    )
+
+            # Use defaults if no admin users configured in env
+            if not admin_users_config:
+                admin_users_config = [
+                    {
+                        "email": os.getenv("PRIMARY_ADMIN_EMAIL", "mrskwiw@gmail.com"),
+                        "full_name": os.getenv("PRIMARY_ADMIN_NAME", "Primary Admin"),
+                        "is_superuser": True,
+                    },
+                    {
+                        "email": os.getenv("SECONDARY_ADMIN_EMAIL", "michele.vanhy@gmail.com"),
+                        "full_name": os.getenv("SECONDARY_ADMIN_NAME", "Secondary Admin"),
+                        "is_superuser": True,
+                    },
+                ]
 
             # SECURITY FIX: Use environment variable for default password (TR-018)
             default_password = os.getenv("DEFAULT_USER_PASSWORD")
@@ -118,25 +155,54 @@ async def lifespan(app: FastAPI):
                 # Generate secure random password if not provided
                 default_password = secrets.token_urlsafe(16)
                 print(">> WARNING: No DEFAULT_USER_PASSWORD set in environment!")
-                print(f">> Generated random password for new users: {default_password}")
+                print(f">> Generated random password for admin users: {default_password}")
                 print(">> IMPORTANT: Save this password immediately - it won't be shown again!")
                 print(">> Set DEFAULT_USER_PASSWORD in .env to use a custom password")
             else:
                 print(">> Using DEFAULT_USER_PASSWORD from environment")
                 print(">> SECURITY: Password not displayed (using environment variable)")
 
-            for user_data in users_to_create:
-                user = User(
-                    id=f"user-{uuid.uuid4().hex[:12]}",
-                    email=user_data["email"],
-                    hashed_password=get_password_hash(default_password),
-                    full_name=user_data["full_name"],
-                    is_active=True,
-                )
-                db.add(user)
+            created_count = 0
+            updated_count = 0
+            for user_data in admin_users_config:
+                # Check if user already exists (for force_admin_seed mode)
+                existing_user = db.query(User).filter(User.email == user_data["email"]).first()
+
+                if existing_user:
+                    # Update existing user's password and superuser status
+                    existing_user.hashed_password = get_password_hash(default_password)
+                    existing_user.is_superuser = user_data["is_superuser"]
+                    existing_user.is_active = True
+                    updated_count += 1
+                    print(
+                        f">> Updated admin: {user_data['email']} (superuser={user_data['is_superuser']})"
+                    )
+                else:
+                    # Create new user
+                    user = User(
+                        id=f"user-{uuid.uuid4().hex[:12]}",
+                        email=user_data["email"],
+                        hashed_password=get_password_hash(default_password),
+                        full_name=user_data["full_name"],
+                        is_active=True,
+                        is_superuser=user_data["is_superuser"],
+                    )
+                    db.add(user)
+                    created_count += 1
+                    print(
+                        f">> Created admin: {user_data['email']} (superuser={user_data['is_superuser']})"
+                    )
 
             db.commit()
-            print(f">> Created {len(users_to_create)} default users")
+
+            if created_count > 0:
+                print(f">> Created {created_count} admin user(s)")
+            if updated_count > 0:
+                print(f">> Updated {updated_count} admin user(s)")
+
+            # Clear force flag reminder
+            if force_admin_seed:
+                print(">> NOTE: Set FORCE_ADMIN_SEED=false after admin accounts are configured")
         else:
             print(f">> Found {user_count} existing users")
     finally:
@@ -163,6 +229,10 @@ app.state.standard_limiter = standard_limiter  # For normal operations (projects
 app.state.lenient_limiter = lenient_limiter  # For cheap operations (posts, health)
 
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# TR-009: CSRF Protection middleware (validates Origin/Referer headers)
+app.add_middleware(CSRFProtectionMiddleware)
+
 
 # CORS middleware
 # Production: Restrict to specific origins, methods, and headers
@@ -260,6 +330,56 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
+# TR-011: Request body size limit middleware
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10MB default limit
+MAX_CONTENT_LENGTH_BRIEFS = 1 * 1024 * 1024  # 1MB for brief uploads
+MAX_CONTENT_LENGTH_VOICE = 5 * 1024 * 1024  # 5MB for voice samples
+
+
+@app.middleware("http")
+async def limit_request_size(request: Request, call_next):
+    """
+    TR-011: Limit request body size to prevent DoS attacks.
+
+    Limits:
+    - Default: 10MB
+    - Brief uploads: 1MB
+    - Voice samples: 5MB
+    - File uploads: 50MB (for DOCX exports)
+
+    Returns 413 Payload Too Large if exceeded.
+    """
+    content_length = request.headers.get("content-length")
+
+    if content_length:
+        content_length = int(content_length)
+
+        # Determine limit based on endpoint
+        path = request.url.path
+        if "/briefs" in path:
+            max_size = MAX_CONTENT_LENGTH_BRIEFS
+        elif "/voice" in path or "/samples" in path:
+            max_size = MAX_CONTENT_LENGTH_VOICE
+        elif "/deliverables" in path or "/export" in path:
+            max_size = 50 * 1024 * 1024  # 50MB for exports
+        else:
+            max_size = MAX_CONTENT_LENGTH
+
+        if content_length > max_size:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "success": False,
+                    "error": {
+                        "code": "PAYLOAD_TOO_LARGE",
+                        "message": f"Request body exceeds maximum size of {max_size // (1024 * 1024)}MB",
+                    },
+                },
+            )
+
+    return await call_next(request)
+
+
 # SPA routing middleware (handles frontend routes without breaking API)
 @app.middleware("http")
 async def spa_routing_middleware(request: Request, call_next):
@@ -337,35 +457,21 @@ async def health_check(request: Request):
 #     }
 
 
-# Global exception handler
+# Global exception handler (TR-010: Error sanitization)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Handle all unhandled exceptions"""
-    if settings.DEBUG_MODE:
-        # In debug mode, return full error details
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "error": {
-                    "code": "INTERNAL_SERVER_ERROR",
-                    "message": str(exc),
-                    "type": type(exc).__name__,
-                },
-            },
-        )
-    else:
-        # In production, return generic error
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "error": {
-                    "code": "INTERNAL_SERVER_ERROR",
-                    "message": "An unexpected error occurred",
-                },
-            },
-        )
+    """
+    Handle all unhandled exceptions with error sanitization.
+
+    TR-010: Prevents internal error details from leaking to clients.
+    Full error details are logged server-side for debugging.
+    """
+    from backend.utils.error_sanitizer import create_safe_error_response
+
+    # Create sanitized response (handles debug vs production mode internally)
+    error_response = create_safe_error_response(exc, status_code=500)
+
+    return JSONResponse(status_code=500, content=error_response)
 
 
 # Static file serving for React frontend (defined BEFORE including routers)
