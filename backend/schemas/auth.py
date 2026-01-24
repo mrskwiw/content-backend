@@ -164,3 +164,61 @@ class RefreshTokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class UserStatsResponse(BaseModel):
+    """Schema for user statistics response (admin only)"""
+
+    total: int
+    active: int
+    inactive: int
+    admins: int
+
+
+class AdminUserCreate(BaseModel):
+    """
+    Schema for admin creating a user.
+
+    Extends UserCreate to allow setting is_superuser.
+    Only admins can use this endpoint.
+    """
+
+    email: EmailStr
+    password: str
+    full_name: str
+    is_superuser: bool = False
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password strength"""
+        if not v or len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if len(v) > 200:
+            raise ValueError("Password too long (max 200 characters)")
+
+        has_upper = any(c.isupper() for c in v)
+        has_lower = any(c.islower() for c in v)
+        has_digit = any(c.isdigit() for c in v)
+
+        if not (has_upper and has_lower and has_digit):
+            raise ValueError(
+                "Password must contain at least one uppercase letter, "
+                "one lowercase letter, and one digit"
+            )
+
+        return v
+
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, v: str) -> str:
+        """Validate full name"""
+        return validate_string_field(v, field_name="full_name", min_length=2, max_length=100)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        """Normalize email to lowercase"""
+        return v.lower()

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import UsersTab from '@/components/settings/UsersTab';
 import {
   Settings as SettingsIcon,
   Server,
@@ -25,6 +27,7 @@ import {
   Download,
   Upload,
   HardDrive,
+  Users,
 } from 'lucide-react';
 
 // Interfaces
@@ -132,7 +135,9 @@ const mockWorkflowRules: WorkflowRule[] = [
 export default function Settings() {
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'integrations' | 'workflows' | 'notifications' | 'preferences' | 'security' | 'database'>('integrations');
+  const { user } = useAuth();
+  const isAdmin = user?.is_superuser || user?.role === 'admin';
+  const [activeTab, setActiveTab] = useState<'integrations' | 'workflows' | 'notifications' | 'preferences' | 'security' | 'database' | 'users'>('integrations');
   const [showNewApiKeyModal, setShowNewApiKeyModal] = useState(false);
   const [showKeyValue, setShowKeyValue] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -356,7 +361,8 @@ export default function Settings() {
             { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
             { id: 'security', label: 'Security', icon: Shield },
             { id: 'database', label: 'Database', icon: HardDrive },
-          ].map(tab => {
+            { id: 'users', label: 'Users', icon: Users, adminOnly: true },
+          ].filter(tab => !('adminOnly' in tab) || (tab.adminOnly && isAdmin)).map(tab => {
             const Icon = tab.icon;
             return (
               <button
@@ -863,6 +869,9 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* Users Tab (Admin Only) */}
+      {activeTab === 'users' && isAdmin && <UsersTab />}
 
       {/* Restore Confirmation Modal */}
       {showRestoreConfirm && uploadFile && (

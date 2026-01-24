@@ -48,7 +48,8 @@ class ExportInput(BaseModel):
     """Input for export endpoint"""
 
     project_id: str
-    format: str = "txt"  # txt, docx, pdf
+    format: str = "txt"  # txt, docx
+    include_audit_log: bool = False
 
 
 async def run_generation_background(
@@ -304,7 +305,8 @@ async def export_package(
 
     Authorization: TR-021 - User must own project
 
-    Creates a deliverable file (TXT/DOCX/PDF) from generated posts.
+    Creates a deliverable file (TXT/DOCX) from generated posts.
+    Supports format selection and optional audit log inclusion.
     """
     try:
         # Verify project exists
@@ -326,34 +328,69 @@ async def export_package(
                 detail="Access denied: You don't own this project",
             )
 
+        # Get client data
+        client = crud.get_client(db, project.client_id)
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Client {project.client_id} not found",
+            )
+
+        # Get posts for this project
+        from backend.models import Post as PostModel
+
+        posts = db.query(PostModel).filter(PostModel.project_id == input.project_id).all()
+
+        if not posts:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No posts found for this project. Generate content first.",
+            )
+
         logger.info(
-            f"Creating deliverable export for project {input.project_id} in format {input.format}"
+            f"Creating deliverable export for project {input.project_id} in format {input.format} "
+            f"with {len(posts)} posts (audit_log={input.include_audit_log})"
         )
 
-        # TODO: Implement actual file export logic
-        # For now, create a deliverable record with placeholder path
-        # Future: Generate actual file from posts in database
-
         from backend.models import Deliverable
+        from backend.services.export_service import generate_export_file
         import uuid
         from datetime import datetime
-        from backend.utils.file_utils import calculate_file_size
 
-        # Generate deliverable path based on project name and format
-        # Path is relative to data/ directory (download endpoint will prepend data/outputs/)
-        deliverable_path = f"{project.name}/deliverable_{input.format}"
+        # Generate actual file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{project.name}_{timestamp}_deliverable.{input.format}"
+        relative_path = f"{project.name}/{filename}"
 
-        # Calculate file size if file exists (use full path for file size calculation)
-        full_path = f"data/outputs/{deliverable_path}"
-        file_size = calculate_file_size(full_path)
+        # Generate the file using export service
+        file_path, file_size = await generate_export_file(
+            posts=posts,
+            client=client,
+            project=project,
+            format=input.format,
+            relative_path=relative_path,
+            include_audit_log=input.include_audit_log,
+            db=db,
+        )
+
+        # Get the latest run_id for this project (if any)
+        from backend.models import Run as RunModel
+
+        latest_run = (
+            db.query(RunModel)
+            .filter(RunModel.project_id == input.project_id)
+            .order_by(RunModel.started_at.desc())
+            .first()
+        )
 
         # Create deliverable record
         db_deliverable = Deliverable(
             id=f"del-{uuid.uuid4().hex[:12]}",
             project_id=input.project_id,
             client_id=project.client_id,
+            run_id=latest_run.id if latest_run else None,
             format=input.format,
-            path=deliverable_path,
+            path=relative_path,
             status="ready",
             created_at=datetime.utcnow(),
             file_size_bytes=file_size,
@@ -363,7 +400,7 @@ async def export_package(
         db.commit()
         db.refresh(db_deliverable)
 
-        logger.info(f"Deliverable created successfully: {db_deliverable.id}")
+        logger.info(f"Deliverable created successfully: {db_deliverable.id} at {file_path}")
         return db_deliverable
 
     except HTTPException:

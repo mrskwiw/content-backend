@@ -33,6 +33,14 @@ services:
       - PARALLEL_GENERATION=${PARALLEL_GENERATION:-true}
       - MAX_CONCURRENT_API_CALLS=${MAX_CONCURRENT_API_CALLS:-5}
 
+      # Admin user seeding (TR-018: Security - passwords from environment)
+      - DEFAULT_USER_PASSWORD=${DEFAULT_USER_PASSWORD}
+      - PRIMARY_ADMIN_EMAIL=${PRIMARY_ADMIN_EMAIL:-mrskwiw@gmail.com}
+      - PRIMARY_ADMIN_NAME=${PRIMARY_ADMIN_NAME:-Primary Admin}
+      - SECONDARY_ADMIN_EMAIL=${SECONDARY_ADMIN_EMAIL:-michele.vanhy@gmail.com}
+      - SECONDARY_ADMIN_NAME=${SECONDARY_ADMIN_NAME:-Secondary Admin}
+      - FORCE_ADMIN_SEED=${FORCE_ADMIN_SEED:-false}
+
       # Database pool settings (production)
       - DB_POOL_SIZE=${DB_POOL_SIZE:-20}
       - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-40}

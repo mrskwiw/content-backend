@@ -10,6 +10,8 @@ Provides admin capabilities for:
 All endpoints require admin (is_superuser=True) authentication.
 """
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -17,8 +19,9 @@ from typing import List
 from backend.database import get_db
 from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
-from backend.schemas.auth import UserResponse
+from backend.schemas.auth import AdminUserCreate, UserResponse, UserStatsResponse
 from backend.services import crud
+from backend.utils.auth import get_password_hash
 from backend.utils.logger import logger
 
 router = APIRouter()
@@ -319,7 +322,7 @@ async def list_inactive_users(
     """
     logger.debug(f"Admin {admin.email} listing inactive users (skip={skip}, limit={limit})")
 
-    users = db.query(User).filter(not User.is_active).offset(skip).limit(limit).all()
+    users = db.query(User).filter(User.is_active.is_(False)).offset(skip).limit(limit).all()
 
     return [
         UserResponse(
@@ -333,3 +336,101 @@ async def list_inactive_users(
         )
         for user in users
     ]
+
+
+@router.get("/users/stats", response_model=UserStatsResponse)
+async def get_user_stats(
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """
+    Admin endpoint to get user statistics.
+
+    Returns counts for total, active, inactive, and admin users.
+
+    Args:
+        admin: Current admin user (verified by require_admin dependency)
+
+    Returns:
+        User statistics
+
+    Raises:
+        403: Not an admin
+    """
+    logger.debug(f"Admin {admin.email} fetching user stats")
+
+    total = db.query(User).count()
+    active = db.query(User).filter(User.is_active.is_(True)).count()
+    inactive = db.query(User).filter(User.is_active.is_(False)).count()
+    admins = db.query(User).filter(User.is_superuser.is_(True)).count()
+
+    return UserStatsResponse(
+        total=total,
+        active=active,
+        inactive=inactive,
+        admins=admins,
+    )
+
+
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: AdminUserCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """
+    Admin endpoint to create a new user.
+
+    Creates a user with the specified email, password, name, and optionally
+    grants admin privileges.
+
+    Args:
+        user_data: User creation data (email, password, full_name, is_superuser)
+        admin: Current admin user (verified by require_admin dependency)
+
+    Returns:
+        Created user data
+
+    Raises:
+        403: Not an admin
+        400: Email already registered
+    """
+    logger.info(f"Admin {admin.email} creating new user: {user_data.email}")
+
+    # Check if email already exists
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        logger.warning(f"User creation failed: Email {user_data.email} already registered")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    # Create new user
+    new_user = User(
+        id=f"user-{uuid.uuid4().hex[:12]}",
+        email=user_data.email,
+        hashed_password=get_password_hash(user_data.password),
+        full_name=user_data.full_name,
+        is_active=True,
+        is_superuser=user_data.is_superuser,
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    logger.info(
+        f"User {new_user.email} created by admin {admin.email} "
+        f"(superuser={new_user.is_superuser})"
+    )
+
+    return UserResponse(
+        id=new_user.id,
+        email=new_user.email,
+        full_name=new_user.full_name,
+        is_active=new_user.is_active,
+        is_superuser=new_user.is_superuser,
+        created_at=new_user.created_at,
+        updated_at=new_user.updated_at,
+    )

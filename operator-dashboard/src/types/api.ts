@@ -2,7 +2,10 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  full_name?: string;
   role: 'admin' | 'operator' | 'qa_reviewer' | 'account_manager';
+  is_superuser?: boolean;
+  is_active?: boolean;
 }
 
 export interface AuthTokens {
