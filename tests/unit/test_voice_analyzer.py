@@ -298,3 +298,182 @@ class TestJargonAnalysis:
         # Single occurrences should not appear
         assert "ABC" not in terms
         assert "XYZ" not in terms
+
+
+class TestClusterPatterns:
+    """Tests for pattern clustering with similar items"""
+
+    def test_cluster_skips_empty_items(self):
+        """Test that empty items are skipped in clustering"""
+        analyzer = VoiceAnalyzer()
+        items = ["What if we", "", "  ", "What if they", "Let's imagine"]
+
+        clusters = analyzer._cluster_patterns(items, "Hook")
+
+        # Should create clusters without empty items
+        assert all(p.examples for p in clusters)
+        for pattern in clusters:
+            assert "" not in pattern.examples
+            assert "  " not in pattern.examples
+
+    def test_cluster_similar_patterns_grouped(self):
+        """Test that similar patterns are clustered together"""
+        analyzer = VoiceAnalyzer()
+        items = [
+            "What if we tried",
+            "What if we tested",
+            "Let's imagine this",
+            "Let's imagine that",
+        ]
+
+        clusters = analyzer._cluster_patterns(items, "Hook")
+
+        # Similar patterns should be grouped
+        assert len(clusters) <= 2  # At most 2 clusters (What if... and Let's imagine...)
+
+
+class TestGeneralizePattern:
+    """Tests for pattern generalization"""
+
+    def test_generalize_with_uppercase(self):
+        """Test generalizing patterns with uppercase characters"""
+        analyzer = VoiceAnalyzer()
+
+        result = analyzer._generalize_pattern("CEO of Acme Corp")
+
+        assert result == "specific examples or case studies"
+
+    def test_generalize_what_if(self):
+        """Test generalizing 'what if' patterns"""
+        analyzer = VoiceAnalyzer()
+
+        result = analyzer._generalize_pattern("what if we tried this")
+
+        assert result == "thought-provoking questions"
+
+    def test_generalize_most_pattern(self):
+        """Test generalizing 'most' patterns"""
+        analyzer = VoiceAnalyzer()
+
+        result = analyzer._generalize_pattern("most people struggle with")
+
+        assert result == "statements about common challenges"
+
+    def test_generalize_default(self):
+        """Test default generalization"""
+        analyzer = VoiceAnalyzer()
+
+        result = analyzer._generalize_pattern("simple lowercase example")
+
+        assert result == "concrete, relatable examples"
+
+
+class TestVoiceSpectrum:
+    """Tests for voice spectrum generation"""
+
+    def test_spectrum_formal_style(self):
+        """Test spectrum with formal voice dimensions"""
+        analyzer = VoiceAnalyzer()
+
+        voice_dimensions = {
+            "formality": {"dominant": "formal"},
+            "tone": {"dominant": "authoritative"},
+            "perspective": {"dominant": "expert"},
+        }
+
+        spectrum = analyzer._generate_voice_spectrum(voice_dimensions, 45.0)
+
+        assert "formal" in spectrum["formal_casual"].lower()
+        assert "serious" in spectrum["serious_playful"].lower()
+        assert "authoritative" in spectrum["authoritative_collaborative"].lower()
+        assert "technical" in spectrum["technical_simple"].lower()
+
+    def test_spectrum_casual_style(self):
+        """Test spectrum with casual voice dimensions"""
+        analyzer = VoiceAnalyzer()
+
+        voice_dimensions = {
+            "formality": {"dominant": "casual"},
+            "tone": {"dominant": "friendly"},
+            "perspective": {"dominant": "collaborative"},
+        }
+
+        spectrum = analyzer._generate_voice_spectrum(voice_dimensions, 75.0)
+
+        assert "casual" in spectrum["formal_casual"].lower()
+        assert "collaborative" in spectrum["authoritative_collaborative"].lower()
+        assert "simple" in spectrum["technical_simple"].lower()
+
+    def test_spectrum_conversational_style(self):
+        """Test spectrum with conversational formality"""
+        analyzer = VoiceAnalyzer()
+
+        voice_dimensions = {
+            "formality": {"dominant": "conversational"},
+            "tone": {"dominant": "enthusiastic"},
+            "perspective": {"dominant": "guide"},
+        }
+
+        spectrum = analyzer._generate_voice_spectrum(voice_dimensions, 60.0)
+
+        assert "casual" in spectrum["formal_casual"].lower()
+        assert "center" in spectrum["serious_playful"].lower()
+
+
+class TestConsistencyChecklist:
+    """Tests for consistency checklist generation"""
+
+    def test_checklist_expert_archetype(self):
+        """Test checklist includes Expert-specific items"""
+        analyzer = VoiceAnalyzer()
+
+        checklist = analyzer._generate_consistency_checklist("Expert", ["conversational"])
+
+        assert any("data" in item.lower() or "evidence" in item.lower() for item in checklist)
+        assert any("authoritative" in item.lower() for item in checklist)
+
+    def test_checklist_friend_archetype(self):
+        """Test checklist includes Friend-specific items"""
+        analyzer = VoiceAnalyzer()
+
+        checklist = analyzer._generate_consistency_checklist("Friend", ["friendly"])
+
+        assert any("relatable" in item.lower() for item in checklist)
+        assert any("warm" in item.lower() or "genuine" in item.lower() for item in checklist)
+
+    def test_checklist_innovator_archetype(self):
+        """Test checklist includes Innovator-specific items"""
+        analyzer = VoiceAnalyzer()
+
+        checklist = analyzer._generate_consistency_checklist("Innovator", ["bold"])
+
+        assert any("fresh" in item.lower() or "perspective" in item.lower() for item in checklist)
+        assert any("conventional" in item.lower() for item in checklist)
+
+    def test_checklist_guide_archetype(self):
+        """Test checklist includes Guide-specific items"""
+        analyzer = VoiceAnalyzer()
+
+        checklist = analyzer._generate_consistency_checklist("Guide", ["helpful"])
+
+        assert any("actionable" in item.lower() for item in checklist)
+        assert any("next" in item.lower() for item in checklist)
+
+    def test_checklist_motivator_archetype(self):
+        """Test checklist includes Motivator-specific items"""
+        analyzer = VoiceAnalyzer()
+
+        checklist = analyzer._generate_consistency_checklist("Motivator", ["enthusiastic"])
+
+        assert any("inspires" in item.lower() for item in checklist)
+        assert any("energy" in item.lower() for item in checklist)
+
+    def test_checklist_conversational_tone(self):
+        """Test checklist adds conversational tone check"""
+        analyzer = VoiceAnalyzer()
+
+        checklist = analyzer._generate_consistency_checklist(
+            "Expert", ["conversational", "friendly"]
+        )
+
+        assert any("spoken aloud" in item.lower() for item in checklist)

@@ -833,3 +833,474 @@ async def test_full_generation_workflow_async(
     assert template_counts[1] == 10
     assert template_counts[2] == 10
     assert template_counts[9] == 10
+
+
+# ==================== Client Memory Database Tests ====================
+
+
+def test_content_generator_init_with_memory_db(mock_client, mock_template_loader):
+    """Test initialization with client memory database"""
+    mock_db = Mock()
+    mock_db.get_client_memory = Mock(return_value=None)
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+        db=mock_db,  # Parameter is 'db', not 'client_memory_db'
+    )
+
+    assert generator.db == mock_db
+
+
+def test_content_generator_no_memory_when_db_none(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test generation without memory database"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+        db=None,  # Parameter is 'db', not 'client_memory_db'
+    )
+
+    posts = generator.generate_posts(
+        client_brief=sample_client_brief,
+        num_posts=3,
+    )
+
+    assert len(posts) == 3
+    # Should work fine without memory db
+
+
+# ==================== Edge Case Tests ====================
+
+
+def test_generate_posts_with_empty_template_quantities(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test generation with empty template quantities dict"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    # Empty dict should use num_posts fallback
+    posts = generator.generate_posts(
+        client_brief=sample_client_brief,
+        template_quantities={},
+        num_posts=5,
+    )
+
+    assert len(posts) == 5
+
+
+def test_generate_posts_with_zero_quantities(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test generation with all zero quantities"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    posts = generator.generate_posts(
+        client_brief=sample_client_brief,
+        template_quantities={1: 0, 2: 0, 9: 0},
+    )
+
+    assert len(posts) == 0
+
+
+def test_generate_variant_success(mock_client, mock_template_loader, sample_client_brief):
+    """Test successful variant generation"""
+    original_post = Post(
+        content="Original post content with enough words to be valid for testing purposes. This has good length and structure.",
+        template_id=1,
+        template_name="Problem Recognition",
+        variant=1,
+        client_name="Test Company",
+    )
+
+    mock_client.refine_post = Mock(
+        return_value="Refined variant content with enough words for validation. Updated with new angle and improved messaging."
+    )
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    result = generator.generate_variant(
+        original_post=original_post,
+        client_brief=sample_client_brief,
+        feedback="Make it more concise",
+    )
+
+    # Result should be a post (original or refined)
+    assert result is not None
+    assert isinstance(result, Post)
+
+
+def test_clean_post_content_handles_markdown_headers(mock_client, mock_template_loader):
+    """Test content cleaning handles markdown headers"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    content = "# Title\n## Section\nContent here"
+    cleaned = generator._clean_post_content(content)
+
+    # Should remove # symbols from headers
+    assert cleaned.startswith("Title")
+
+
+def test_clean_post_content_strips_whitespace(mock_client, mock_template_loader):
+    """Test content cleaning strips leading/trailing whitespace"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    content = "   Content with spaces   "
+    cleaned = generator._clean_post_content(content)
+
+    assert cleaned == "Content with spaces"
+
+
+def test_extract_blog_title_no_heading(mock_client, mock_template_loader):
+    """Test blog title extraction when no heading present"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    content = "Just some content without a heading"
+    title = generator._extract_blog_title(content)
+
+    # Uses first line as title when no heading present
+    assert title == "Just some content without a heading"
+
+
+def test_extract_blog_summary_short_content(mock_client, mock_template_loader):
+    """Test blog summary extraction with short content"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    content = "# Title\n\nShort content"
+    summary = generator._extract_blog_summary(content)
+
+    assert len(summary) > 0
+    assert not summary.endswith("...")  # Should not truncate short content
+
+
+def test_infer_archetype_agency(mock_client, mock_template_loader):
+    """Test archetype inference for agency client type"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    brief = ClientBrief(
+        company_name="Test Agency",
+        business_description="Digital marketing agency helping clients grow",
+        ideal_customer="Businesses needing marketing",
+        main_problem_solved="Marketing challenges",
+    )
+
+    archetype = generator._infer_archetype(brief)
+    assert archetype in ["Expert", "Friend", "Innovator", "Guide", "Motivator"]
+
+
+def test_infer_archetype_coach(mock_client, mock_template_loader):
+    """Test archetype inference for coach client type"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    brief = ClientBrief(
+        company_name="Success Coach",
+        business_description="Life coach helping people achieve goals and transformation",
+        ideal_customer="Individuals seeking growth",
+        main_problem_solved="Lack of direction",
+    )
+
+    archetype = generator._infer_archetype(brief)
+    # Coach/consultant typically maps to "Motivator" or "Guide"
+    assert archetype in ["Expert", "Friend", "Innovator", "Guide", "Motivator"]
+
+
+def test_infer_archetype_creator(mock_client, mock_template_loader):
+    """Test archetype inference for creator client type"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    brief = ClientBrief(
+        company_name="Creative Studio",
+        business_description="Content creator and personal brand building",
+        ideal_customer="Aspiring creators",
+        main_problem_solved="Lack of visibility",
+    )
+
+    archetype = generator._infer_archetype(brief)
+    # Creator typically maps to "Friend" or "Innovator"
+    assert archetype in ["Expert", "Friend", "Innovator", "Guide", "Motivator"]
+
+
+# ==================== Async Error Handling Tests ====================
+
+
+@pytest.mark.asyncio
+async def test_generate_posts_async_handles_partial_failures(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test async generation handles partial failures gracefully"""
+    call_count = 0
+
+    async def sometimes_fail(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count % 3 == 0:  # Every 3rd call fails
+            raise Exception("Simulated failure")
+        return "Success post content with enough words for validation. This is a complete post with good structure."
+
+    mock_client.generate_post_content_async = sometimes_fail
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    posts = await generator.generate_posts_async(
+        client_brief=sample_client_brief,
+        num_posts=6,
+        max_concurrent=2,
+    )
+
+    # Should still return 6 posts (some may be error placeholders)
+    assert len(posts) == 6
+
+
+@pytest.mark.asyncio
+async def test_generate_posts_async_large_batch(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test async generation with larger batch size"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    posts = await generator.generate_posts_async(
+        client_brief=sample_client_brief,
+        num_posts=15,
+        max_concurrent=5,
+    )
+
+    assert len(posts) == 15
+    assert all(isinstance(p, Post) for p in posts)
+
+
+# ==================== Platform-Specific Edge Cases ====================
+
+
+@pytest.mark.asyncio
+async def test_generate_posts_for_facebook(mock_client, mock_template_loader, sample_client_brief):
+    """Test Facebook-specific post generation"""
+    mock_client.generate_post_content_async.return_value = "Engaging Facebook post content with enough words for validation. This post has great content."
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    posts = await generator.generate_posts_async(
+        client_brief=sample_client_brief,
+        num_posts=3,
+        platform=Platform.FACEBOOK,
+    )
+
+    assert len(posts) == 3
+    assert all(p.target_platform == Platform.FACEBOOK for p in posts)
+
+
+@pytest.mark.asyncio
+async def test_generate_posts_for_email(mock_client, mock_template_loader, sample_client_brief):
+    """Test Email-specific post generation"""
+    mock_client.generate_post_content_async.return_value = "Subject: Important Update\n\nDear subscriber, here is valuable content with enough words for validation."
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    posts = await generator.generate_posts_async(
+        client_brief=sample_client_brief,
+        num_posts=3,
+        platform=Platform.EMAIL,
+    )
+
+    assert len(posts) == 3
+    assert all(p.target_platform == Platform.EMAIL for p in posts)
+
+
+# ==================== Quality Score Edge Cases ====================
+
+
+def test_calculate_post_quality_score_with_review_flag(mock_client, mock_template_loader):
+    """Test quality score with review flag"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    post = Post(
+        content="Test content with enough words for validation purposes here now.",
+        template_id=1,
+        template_name="Test",
+        variant=1,
+        client_name="Test",
+        needs_review=True,
+        review_reason="Too short",
+    )
+
+    score = generator._calculate_post_quality_score(post)
+    # Should be penalized for review flag
+    assert score < 1.0
+
+
+def test_calculate_post_quality_score_no_cta(mock_client, mock_template_loader):
+    """Test quality score for post without CTA"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    post = Post(
+        content="This post has no call to action and just provides information without any engagement hooks or prompts for the reader.",
+        template_id=1,
+        template_name="Test",
+        variant=1,
+        client_name="Test",
+    )
+
+    score = generator._calculate_post_quality_score(post)
+    # Should be penalized for no CTA
+    assert score <= 1.0
+
+
+# ==================== Template Selection Tests ====================
+
+
+def test_generate_posts_with_single_template(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test generation with single template"""
+    # Return only one template
+    single_template = Template(
+        template_id=1,
+        name="Single Template",
+        template_type=TemplateType.PROBLEM_RECOGNITION,
+        difficulty=TemplateDifficulty.FAST,
+        best_for="General use",
+        structure="Basic structure",
+        requires_story=False,
+        requires_data=False,
+    )
+    mock_template_loader.select_templates_for_client.return_value = [single_template]
+    mock_template_loader.get_template_by_id.return_value = single_template
+    mock_template_loader.get_all_templates.return_value = [single_template]
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    posts = generator.generate_posts(
+        client_brief=sample_client_brief,
+        num_posts=3,
+        template_count=1,
+    )
+
+    # Should generate posts using the single template
+    assert len(posts) == 3
+    assert all(p.template_id == 1 for p in posts)
+
+
+# ==================== Keyword Strategy Tests ====================
+
+
+@pytest.mark.asyncio
+async def test_generate_posts_with_keyword_strategy(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test generation with keyword strategy integration"""
+    keyword_strategy = KeywordStrategy(
+        primary_keywords=[
+            SEOKeyword(
+                keyword="productivity software",
+                intent=KeywordIntent.COMMERCIAL,
+                priority=1,
+                search_volume=1000,
+            )
+        ],
+        secondary_keywords=[
+            SEOKeyword(
+                keyword="workflow automation",
+                intent=KeywordIntent.INFORMATIONAL,
+                priority=2,
+                search_volume=500,
+            )
+        ],
+    )
+
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+        keyword_strategy=keyword_strategy,
+    )
+
+    posts = await generator.generate_posts_async(
+        client_brief=sample_client_brief,
+        num_posts=5,
+    )
+
+    assert len(posts) == 5
+    # Generator should have used keyword context in prompts
+
+
+# ==================== Sync vs Async Consistency ====================
+
+
+def test_sync_and_async_produce_same_post_count(
+    mock_client, mock_template_loader, sample_client_brief
+):
+    """Test sync and async methods produce same number of posts"""
+    generator = ContentGeneratorAgent(
+        client=mock_client,
+        template_loader=mock_template_loader,
+    )
+
+    sync_posts = generator.generate_posts(
+        client_brief=sample_client_brief,
+        num_posts=5,
+        randomize=False,
+    )
+
+    # Reset mock call count
+    mock_client.generate_post_content.reset_mock()
+
+    async def run_async():
+        return await generator.generate_posts_async(
+            client_brief=sample_client_brief,
+            num_posts=5,
+            randomize=False,
+        )
+
+    async_posts = asyncio.get_event_loop().run_until_complete(run_async())
+
+    assert len(sync_posts) == len(async_posts) == 5

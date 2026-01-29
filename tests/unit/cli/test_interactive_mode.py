@@ -938,6 +938,430 @@ class TestApplyFinalEnhancements:
         assert mode.client_brief == original_brief
 
 
+class TestBriefProperty:
+    """Test brief property accessor"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    def test_brief_property_raises_when_not_initialized(
+        self, mock_question_gen, mock_quality_checker, mock_parser, mock_enhancer
+    ):
+        """Test brief property raises RuntimeError when client_brief is None"""
+        mode = InteractiveMode()
+        mode.client_brief = None
+
+        with pytest.raises(RuntimeError, match="Client brief not initialized"):
+            _ = mode.brief
+
+
+class TestAskQuestions:
+    """Test _ask_questions method"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Prompt")
+    @patch("src.cli.interactive_mode.console")
+    def test_ask_questions_multiple(
+        self,
+        mock_console,
+        mock_prompt,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+    ):
+        """Test asking multiple questions"""
+        mock_prompt.ask.side_effect = ["Answer 1", "Answer 2"]
+
+        mock_question_gen_instance = MagicMock()
+        mock_question_gen_instance.generate_follow_up_question.return_value = None
+        mock_question_gen.return_value = mock_question_gen_instance
+
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test customer",
+            main_problem_solved="Test problem",
+        )
+
+        questions = [
+            Question(
+                text="Question 1?",
+                field_name="business_description",
+                question_type=QuestionType.OPEN_ENDED,
+                priority=3,
+            ),
+            Question(
+                text="Question 2?",
+                field_name="ideal_customer",
+                question_type=QuestionType.OPEN_ENDED,
+                priority=3,
+            ),
+        ]
+
+        mode._ask_questions(questions)
+
+        # Should have asked both questions
+        assert mock_prompt.ask.call_count == 2
+
+
+class TestQuestionWithContext:
+    """Test question display with context and example"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Prompt")
+    @patch("src.cli.interactive_mode.console")
+    def test_question_with_context_and_example(
+        self,
+        mock_console,
+        mock_prompt,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+    ):
+        """Test question displays context and example"""
+        mock_prompt.ask.return_value = "Test answer"
+
+        mock_question_gen_instance = MagicMock()
+        mock_question_gen_instance.generate_follow_up_question.return_value = None
+        mock_question_gen.return_value = mock_question_gen_instance
+
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test customer",
+            main_problem_solved="Test problem",
+        )
+
+        question = Question(
+            text="What's your target?",
+            field_name="ideal_customer",
+            question_type=QuestionType.OPEN_ENDED,
+            priority=3,
+            context="This helps us understand your audience",
+            example_answer="Small business owners aged 25-45",
+        )
+
+        mode._ask_single_question(question, 1, 1)
+
+        # Verify context and example were printed
+        print_calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("This helps us understand" in call for call in print_calls)
+        assert any("Small business owners" in call for call in print_calls)
+
+
+class TestFollowUpSkip:
+    """Test follow-up question skip handling"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Prompt")
+    @patch("src.cli.interactive_mode.console")
+    def test_follow_up_skip(
+        self,
+        mock_console,
+        mock_prompt,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+    ):
+        """Test skipping follow-up question"""
+        mock_prompt.ask.side_effect = ["Main answer", "[skip]"]
+
+        follow_up = Question(
+            text="Follow-up?",
+            field_name="business_description",
+            question_type=QuestionType.CLARIFYING,
+            priority=1,
+        )
+        mock_question_gen_instance = MagicMock()
+        mock_question_gen_instance.generate_follow_up_question.return_value = follow_up
+        mock_question_gen.return_value = mock_question_gen_instance
+
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Original",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        question = Question(
+            text="Main question?",
+            field_name="business_description",
+            question_type=QuestionType.OPEN_ENDED,
+            priority=1,  # Priority 1 triggers follow-up
+        )
+
+        mode._ask_single_question(question, 1, 1)
+
+        # Should only have main answer, not appended
+        assert mode.client_brief.business_description == "Main answer"
+
+
+class TestEnumHandlingWithUnknownValues:
+    """Test enum handling with unknown values"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.console")
+    def test_valid_tone_preferences(
+        self, mock_console, mock_question_gen, mock_quality_checker, mock_parser, mock_enhancer
+    ):
+        """Test valid tone preferences are parsed correctly"""
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        # Only valid tones
+        mode._update_brief_field("brand_personality", "conversational, direct")
+
+        assert TonePreference.CONVERSATIONAL in mode.client_brief.brand_personality
+        assert TonePreference.DIRECT in mode.client_brief.brand_personality
+        assert len(mode.client_brief.brand_personality) == 2
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.console")
+    def test_valid_platforms(
+        self, mock_console, mock_question_gen, mock_quality_checker, mock_parser, mock_enhancer
+    ):
+        """Test valid platforms are parsed correctly"""
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        # Only valid platforms
+        mode._update_brief_field("target_platforms", "linkedin, twitter")
+
+        assert Platform.LINKEDIN in mode.client_brief.target_platforms
+        assert Platform.TWITTER in mode.client_brief.target_platforms
+        assert len(mode.client_brief.target_platforms) == 2
+
+
+class TestUpdateFieldError:
+    """Test error handling in _update_brief_field"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.console")
+    def test_update_field_error_handling(
+        self, mock_console, mock_question_gen, mock_quality_checker, mock_parser, mock_enhancer
+    ):
+        """Test error handling when field update fails with invalid enum"""
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        # Try to set an invalid enum value which will fail model reconstruction
+        mode._update_brief_field("brand_personality", "invalid_tone_that_doesnt_exist")
+
+        # Should print error message due to Pydantic validation error
+        assert any(
+            "Error updating field" in str(call) for call in mock_console.print.call_args_list
+        )
+
+
+class TestSaveProgressError:
+    """Test error handling in _save_progress"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("pathlib.Path.mkdir", side_effect=Exception("mkdir failed"))
+    def test_save_progress_error_handling(
+        self, mock_mkdir, mock_question_gen, mock_quality_checker, mock_parser, mock_enhancer
+    ):
+        """Test error handling when save progress fails"""
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        # Should not raise, just log error
+        mode._save_progress()
+
+
+class TestFormatBriefWithToneToAvoid:
+    """Test formatting brief with tone_to_avoid field"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    def test_format_brief_with_tone_to_avoid(
+        self, mock_question_gen, mock_quality_checker, mock_parser, mock_enhancer
+    ):
+        """Test formatting brief with tone_to_avoid field"""
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+            tone_to_avoid="aggressive, pushy",
+        )
+
+        result = mode._format_brief_as_text()
+
+        assert "Tone to Avoid: aggressive, pushy" in result
+
+
+class TestDisplayCompletionLowQuality:
+    """Test display completion with low quality score"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.console")
+    def test_display_completion_low_quality_shows_tip(
+        self,
+        mock_console,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+    ):
+        """Test low quality score shows improvement tip"""
+        low_quality_report = BriefQualityReport(
+            overall_score=0.60,  # Below 0.75 threshold
+            completeness_score=0.6,
+            specificity_score=0.6,
+            usability_score=0.6,
+            can_generate_content=True,
+            total_fields=20,
+            filled_fields=12,
+            required_fields_filled=10,
+            minimum_questions_needed=0,
+            field_quality={},
+            missing_fields=[],
+            weak_fields=[],
+        )
+
+        mock_quality_checker_instance = MagicMock()
+        mock_quality_checker_instance.assess_brief.return_value = low_quality_report
+        mock_quality_checker.return_value = mock_quality_checker_instance
+
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        mode._display_completion("test_path.txt")
+
+        # Should show tip about improving brief
+        print_calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("Tip:" in call or "higher quality" in call for call in print_calls)
+
+
+class TestConversationLoopMaxIterations:
+    """Test conversation loop max iterations"""
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Prompt")
+    @patch("src.cli.interactive_mode.console")
+    def test_conversation_loop_max_iterations(
+        self,
+        mock_console,
+        mock_prompt,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+    ):
+        """Test conversation loop reaches max iterations"""
+        not_ready_report = BriefQualityReport(
+            overall_score=0.5,
+            completeness_score=0.5,
+            specificity_score=0.5,
+            usability_score=0.5,
+            can_generate_content=False,
+            total_fields=20,
+            filled_fields=10,
+            required_fields_filled=8,
+            minimum_questions_needed=5,
+            field_quality={},
+            missing_fields=["field1"],
+            weak_fields=[],
+        )
+
+        mock_quality_checker_instance = MagicMock()
+        mock_quality_checker_instance.assess_brief.return_value = not_ready_report
+        mock_quality_checker.return_value = mock_quality_checker_instance
+
+        # Generate questions each time
+        question = Question(
+            text="Q?",
+            field_name="business_description",
+            question_type=QuestionType.OPEN_ENDED,
+            priority=3,
+        )
+        mock_question_gen_instance = MagicMock()
+        mock_question_gen_instance.generate_questions.return_value = [question]
+        mock_question_gen_instance.generate_follow_up_question.return_value = None
+        mock_question_gen.return_value = mock_question_gen_instance
+
+        mock_prompt.ask.return_value = "answer"
+
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        with patch.object(mode, "_save_progress"):
+            mode._conversation_loop()
+
+        assert mode.iteration_count == 10  # Max iterations
+        # Should print max iterations message
+        print_calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("maximum iterations" in call.lower() for call in print_calls)
+
+
 class TestRun:
     """Test run method - main entry point"""
 
@@ -990,3 +1414,158 @@ class TestRun:
 
         # Should print interrupted message
         assert any("interrupted" in str(call).lower() for call in mock_console.print.call_args_list)
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Confirm")
+    @patch("src.cli.interactive_mode.Progress")
+    @patch("pathlib.Path.mkdir")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("src.cli.interactive_mode.console")
+    def test_run_with_exception(
+        self,
+        mock_console,
+        mock_file,
+        mock_mkdir,
+        mock_progress,
+        mock_confirm,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+        sample_quality_report,
+    ):
+        """Test run method handles general exceptions"""
+        not_ready_report = BriefQualityReport(
+            **{
+                **sample_quality_report.model_dump(),
+                "can_generate_content": False,
+                "minimum_questions_needed": 2,
+            }
+        )
+
+        mock_quality_checker_instance = MagicMock()
+        mock_quality_checker_instance.assess_brief.return_value = not_ready_report
+        mock_quality_checker.return_value = mock_quality_checker_instance
+
+        mock_question_gen_instance = MagicMock()
+        mock_question_gen_instance.generate_questions.side_effect = Exception("Test error")
+        mock_question_gen.return_value = mock_question_gen_instance
+
+        mode = InteractiveMode()
+
+        with patch("src.cli.interactive_mode.Prompt.ask", side_effect=["Test Co", "", "", ""]):
+            mode.run()
+
+        # Should print error message
+        assert any("error" in str(call).lower() for call in mock_console.print.call_args_list)
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Confirm")
+    @patch("src.cli.interactive_mode.Progress")
+    @patch("pathlib.Path.mkdir")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("src.cli.interactive_mode.console")
+    def test_run_with_initial_brief_file(
+        self,
+        mock_console,
+        mock_file,
+        mock_mkdir,
+        mock_progress,
+        mock_confirm,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+        sample_quality_report,
+    ):
+        """Test run method with initial brief file"""
+        sample_brief = ClientBrief(
+            company_name="Loaded Company",
+            business_description="Loaded description",
+            ideal_customer="Loaded customer",
+            main_problem_solved="Loaded problem",
+        )
+
+        mock_parser_instance = MagicMock()
+        mock_parser_instance.parse_brief.return_value = sample_brief
+        mock_parser.return_value = mock_parser_instance
+
+        mock_quality_checker_instance = MagicMock()
+        mock_quality_checker_instance.assess_brief.return_value = sample_quality_report
+        mock_quality_checker.return_value = mock_quality_checker_instance
+
+        mock_enhancer_instance = MagicMock()
+        mock_enhancer_instance.enhance_brief.return_value = sample_brief
+        mock_enhancer.return_value = mock_enhancer_instance
+
+        mock_confirm.ask.return_value = True
+
+        mode = InteractiveMode()
+
+        with patch("pathlib.Path.read_text", return_value="Brief content"):
+            mode.run(initial_brief_file="test_brief.txt")
+
+        assert mode.client_brief.company_name == "Loaded Company"
+
+    @patch("src.cli.interactive_mode.BriefEnhancerAgent")
+    @patch("src.cli.interactive_mode.BriefParserAgent")
+    @patch("src.cli.interactive_mode.BriefQualityChecker")
+    @patch("src.cli.interactive_mode.QuestionGeneratorAgent")
+    @patch("src.cli.interactive_mode.Confirm")
+    @patch("src.cli.interactive_mode.Prompt")
+    @patch("src.cli.interactive_mode.console")
+    def test_conversation_loop_ready_but_continue_improving(
+        self,
+        mock_console,
+        mock_prompt,
+        mock_confirm,
+        mock_question_gen,
+        mock_quality_checker,
+        mock_parser,
+        mock_enhancer,
+        sample_quality_report,
+    ):
+        """Test conversation loop when brief is ready but user wants to continue"""
+        mock_quality_checker_instance = MagicMock()
+        mock_quality_checker_instance.assess_brief.side_effect = [
+            sample_quality_report,  # First: ready
+            sample_quality_report,  # Second: still ready
+        ]
+        mock_quality_checker.return_value = mock_quality_checker_instance
+
+        # User declines first, accepts second
+        mock_confirm.ask.side_effect = [False, True]
+
+        # Generate questions on second iteration
+        question = Question(
+            text="Q?",
+            field_name="business_description",
+            question_type=QuestionType.OPEN_ENDED,
+            priority=3,
+        )
+        mock_question_gen_instance = MagicMock()
+        mock_question_gen_instance.generate_questions.return_value = [question]
+        mock_question_gen_instance.generate_follow_up_question.return_value = None
+        mock_question_gen.return_value = mock_question_gen_instance
+
+        mock_prompt.ask.return_value = "answer"
+
+        mode = InteractiveMode()
+        mode.client_brief = ClientBrief(
+            company_name="Test Co",
+            business_description="Test",
+            ideal_customer="Test",
+            main_problem_solved="Test",
+        )
+
+        with patch.object(mode, "_save_progress"):
+            mode._conversation_loop()
+
+        # Should have run 2 iterations
+        assert mode.iteration_count == 2

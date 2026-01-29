@@ -19,6 +19,7 @@ import pytest
 import httpx
 from pathlib import Path
 import sys
+import socket
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -36,8 +37,24 @@ TEST_USER = {
     "password": os.getenv("DEFAULT_USER_PASSWORD", "Random!1Pass"),  # Fallback for local dev
 }
 
-# Pytest marker for tests requiring running server
-pytestmark = pytest.mark.requires_server
+
+def _server_is_running() -> bool:
+    """Check if the server is running by attempting to connect to its port."""
+    try:
+        with socket.create_connection(("localhost", 8000), timeout=1.0):
+            return True
+    except (ConnectionRefusedError, socket.timeout, OSError):
+        return False
+
+
+# Skip all tests in this module if server is not running
+pytestmark = [
+    pytest.mark.requires_server,
+    pytest.mark.skipif(
+        not _server_is_running(),
+        reason="Server not running at localhost:8000. Start with: uvicorn backend.main:app --port 8000",
+    ),
+]
 
 
 async def get_auth_token():

@@ -3,6 +3,12 @@ Agent tools - wrappers for existing CLI commands and operations
 
 Security (TR-003): Input validation added to prevent command injection.
 All user-controlled inputs are validated before use in subprocess calls.
+
+Lazy Loading Strategy:
+- EAGER (loaded at init): ProjectDatabase - needed for answering questions
+- LAZY (loaded on first use): Skills, Backend API, AI Agents, Research Tools
+
+This minimizes startup time while keeping database queries fast.
 """
 
 import logging
@@ -11,13 +17,17 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# EAGER: ProjectDatabase for answering questions from local DB
 from src.database.project_db import ProjectDatabase
-from src.utils.skill_loader import SkillLoader, Skill, load_skill, list_skills
+
+# TYPE_CHECKING: Import types for hints without runtime cost
+if TYPE_CHECKING:
+    from src.utils.skill_loader import SkillLoader, Skill
 
 logger = logging.getLogger(__name__)
 
@@ -319,40 +329,67 @@ def validate_file_pattern(pattern: str) -> str:
 
 
 class AgentTools:
-    """Tools available to the agent for executing operations
+    """Tools available to the agent for executing operations.
 
-    Uses lazy loading for skills and heavy resources to minimize startup time.
-    Skills are only loaded when first accessed.
+    Lazy Loading Strategy:
+    ----------------------
+    EAGER (loaded at __init__):
+    - ProjectDatabase: Required for answering questions from local DB
+
+    LAZY (loaded on first use):
+    - SkillLoader & Skills: Loaded when skill methods are called
+    - Backend API (SessionLocal, crud): Imported inside API methods
+    - AI Agents (BriefParser, etc.): Imported inside agent methods
+    - Research Service: Imported inside research methods
+
+    This ensures fast startup while keeping database queries responsive.
     """
 
     def __init__(self):
+        # EAGER: Local database for answering questions
         self.db = ProjectDatabase()
         self.project_dir = Path(__file__).parent.parent
 
-        # Lazy-loaded resources (initialized as None)
-        self._skill_loader: Optional[SkillLoader] = None
-        self._loaded_skills: Dict[str, Skill] = {}
+        # LAZY: Skills (loaded on first access)
+        self._skill_loader: Optional["SkillLoader"] = None
+        self._loaded_skills: Dict[str, "Skill"] = {}
         self._available_skills: Optional[List[str]] = None
 
-        # Log available skills without loading them
-        logger.info("AgentTools initialized (skills will be lazy-loaded on first use)")
+        # LAZY: Backend database session factory (loaded on first API call)
+        self._backend_session_factory = None
+
+        logger.info("AgentTools initialized (non-essential tools will be lazy-loaded)")
+
+    # =========================================================================
+    # LAZY LOADERS
+    # =========================================================================
 
     @property
-    def skill_loader(self) -> SkillLoader:
+    def skill_loader(self) -> "SkillLoader":
         """Lazy-load the skill loader on first access."""
         if self._skill_loader is None:
+            from src.utils.skill_loader import SkillLoader
             self._skill_loader = SkillLoader()
             logger.debug("SkillLoader initialized (lazy)")
         return self._skill_loader
 
+    def _get_backend_session(self):
+        """Lazy-load backend database session factory."""
+        if self._backend_session_factory is None:
+            from backend.database import SessionLocal
+            self._backend_session_factory = SessionLocal
+            logger.debug("Backend SessionLocal initialized (lazy)")
+        return self._backend_session_factory()
+
     def _get_available_skill_names(self) -> List[str]:
         """Get available skill names (cached after first call)."""
         if self._available_skills is None:
+            from src.utils.skill_loader import list_skills
             self._available_skills = list_skills()
             logger.debug(f"Available skills discovered: {self._available_skills}")
         return self._available_skills
 
-    def _get_skill(self, skill_name: str) -> Optional[Skill]:
+    def _get_skill(self, skill_name: str) -> Optional["Skill"]:
         """
         Lazy-load a skill on first access.
 
@@ -368,7 +405,8 @@ class AgentTools:
         if skill_name in self._loaded_skills:
             return self._loaded_skills[skill_name]
 
-        # Try to load the skill
+        # Try to load the skill (lazy import)
+        from src.utils.skill_loader import load_skill
         skill = load_skill(skill_name)
         if skill:
             self._loaded_skills[skill_name] = skill
@@ -639,12 +677,11 @@ class AgentTools:
             # Try to use the research service
             try:
                 from backend.services.research_service import research_service
-                from backend.database import SessionLocal
+                from backend.services import crud
 
-                db = SessionLocal()
+                db = self._get_backend_session()
                 try:
                     # Get client ID from name
-                    from backend.services import crud
                     clients = crud.list_clients(db)
                     client = next((c for c in clients if c.name == client_name), None)
 
@@ -892,11 +929,10 @@ class AgentTools:
 
             # Try to get posts from database
             try:
-                from backend.database import SessionLocal
                 from backend.models import Post as PostModel
                 from src.models.post import Post
 
-                db = SessionLocal()
+                db = self._get_backend_session()
                 try:
                     db_posts = db.query(PostModel).filter(PostModel.project_id == project_id).all()
 
@@ -970,13 +1006,12 @@ class AgentTools:
 
             # Get posts from database
             try:
-                from backend.database import SessionLocal
                 from backend.services import crud
                 from backend.models import Post as PostModel
                 from src.models.post import Post
                 from src.models.client_brief import ClientBrief, Platform
 
-                db = SessionLocal()
+                db = self._get_backend_session()
                 try:
                     db_posts = db.query(PostModel).filter(PostModel.project_id == project_id).all()
 
@@ -1775,10 +1810,9 @@ class AgentTools:
             Dictionary with clients list and count.
         """
         try:
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 clients = crud.list_clients(db, skip=skip, limit=limit)
 
@@ -1840,11 +1874,10 @@ class AgentTools:
         try:
             name = validate_client_name(name)
 
-            from backend.database import SessionLocal
             from backend.services import crud
             from backend.schemas.client import ClientCreate
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 client_data = ClientCreate(
                     name=name,
@@ -1891,10 +1924,9 @@ class AgentTools:
             Dictionary with client data or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 client = crud.get_client(db, client_id)
 
@@ -1951,11 +1983,10 @@ class AgentTools:
             if name:
                 name = validate_client_name(name)
 
-            from backend.database import SessionLocal
             from backend.services import crud
             from backend.schemas.client import ClientUpdate
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 # Build update data
                 update_data = {}
@@ -2010,10 +2041,9 @@ class AgentTools:
             Dictionary with success status or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 success = crud.delete_client(db, client_id)
 
@@ -2058,10 +2088,9 @@ class AgentTools:
             Dictionary with projects list and count.
         """
         try:
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 projects = crud.list_projects(
                     db, client_id=client_id, status=status, skip=skip, limit=limit
@@ -2117,11 +2146,10 @@ class AgentTools:
             platform = validate_platform(platform)
             total_posts = validate_num_posts(total_posts)
 
-            from backend.database import SessionLocal
             from backend.services import crud
             from backend.schemas.project import ProjectCreate
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 # Verify client exists
                 client = crud.get_client(db, client_id)
@@ -2174,10 +2202,9 @@ class AgentTools:
         try:
             project_id = validate_project_id(project_id)
 
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 project = crud.get_project(db, project_id)
 
@@ -2238,11 +2265,10 @@ class AgentTools:
             if total_posts is not None:
                 total_posts = validate_num_posts(total_posts)
 
-            from backend.database import SessionLocal
             from backend.services import crud
             from backend.schemas.project import ProjectUpdate
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 update_data = {}
                 if name is not None:
@@ -2297,10 +2323,9 @@ class AgentTools:
         try:
             project_id = validate_project_id(project_id)
 
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 success = crud.delete_project(db, project_id)
 
@@ -2356,10 +2381,9 @@ class AgentTools:
             if platform:
                 platform = validate_platform(platform)
 
-            from backend.database import SessionLocal
             from backend.models import Post as PostModel
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 query = db.query(PostModel)
 
@@ -2426,10 +2450,9 @@ class AgentTools:
             Dictionary with full post data or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.models import Post as PostModel
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 post = db.query(PostModel).filter(PostModel.id == post_id).first()
 
@@ -2488,10 +2511,9 @@ class AgentTools:
             Dictionary with updated post data or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.models import Post as PostModel
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 post = db.query(PostModel).filter(PostModel.id == post_id).first()
 
@@ -2579,10 +2601,9 @@ class AgentTools:
             Dictionary with deliverables list and count.
         """
         try:
-            from backend.database import SessionLocal
             from backend.models import Deliverable
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 query = db.query(Deliverable)
 
@@ -2637,10 +2658,9 @@ class AgentTools:
             Dictionary with deliverable data or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.models import Deliverable
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 deliverable = db.query(Deliverable).filter(Deliverable.id == deliverable_id).first()
 
@@ -2685,10 +2705,9 @@ class AgentTools:
             Dictionary with detailed deliverable data or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.services.deliverable_service import get_deliverable_details
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 details = get_deliverable_details(db, deliverable_id)
 
@@ -2740,10 +2759,9 @@ class AgentTools:
         """
         try:
             from datetime import datetime
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 deliverable = crud.mark_deliverable_delivered(
                     db,
@@ -2788,10 +2806,9 @@ class AgentTools:
         """
         try:
             from pathlib import Path
-            from backend.database import SessionLocal
             from backend.models import Deliverable
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 deliverable = db.query(Deliverable).filter(Deliverable.id == deliverable_id).first()
 
@@ -2854,10 +2871,9 @@ class AgentTools:
             if project_id:
                 project_id = validate_project_id(project_id)
 
-            from backend.database import SessionLocal
             from backend.models import Run
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 query = db.query(Run)
 
@@ -2915,10 +2931,9 @@ class AgentTools:
             Dictionary with run data including logs.
         """
         try:
-            from backend.database import SessionLocal
             from backend.models import Run
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 run = db.query(Run).filter(Run.id == run_id).first()
 
@@ -2973,11 +2988,10 @@ class AgentTools:
             if not content or len(content) < 50:
                 return {"success": False, "error": "Brief content must be at least 50 characters"}
 
-            from backend.database import SessionLocal
             from backend.services import crud
             from backend.schemas.brief import BriefCreate
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 # Verify project exists
                 project = crud.get_project(db, project_id)
@@ -3030,10 +3044,9 @@ class AgentTools:
             Dictionary with brief data or error.
         """
         try:
-            from backend.database import SessionLocal
             from backend.models import Brief
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 brief = db.query(Brief).filter(Brief.id == brief_id).first()
 
@@ -3074,10 +3087,9 @@ class AgentTools:
         try:
             project_id = validate_project_id(project_id)
 
-            from backend.database import SessionLocal
             from backend.services import crud
 
-            db = SessionLocal()
+            db = self._get_backend_session()
             try:
                 brief = crud.get_brief_by_project(db, project_id)
 
@@ -3106,6 +3118,305 @@ class AgentTools:
         except Exception as e:
             logger.error(f"Error getting brief by project: {e}")
             return {"success": False, "error": str(e)}
+
+    # ============================================================================
+    # GOOGLE TRENDS INTEGRATION
+    # ============================================================================
+
+    def search_trends_interest(
+        self,
+        keywords: List[str],
+        client_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        timeframe: str = "past_12_months",
+        geo: str = "",
+        category: str = "all",
+    ) -> Dict[str, Any]:
+        """
+        Search Google Trends for keyword interest over time.
+
+        Args:
+            keywords: List of 1-5 keywords to search
+            client_id: Optional client to associate with search
+            project_id: Optional project to associate with search
+            timeframe: Time range (past_hour, past_day, past_week, past_month,
+                      past_3_months, past_12_months, past_5_years, all_time)
+            geo: Geographic region code (e.g., "US", "GB", "" for worldwide)
+            category: Category filter (all, business_industrial, health, etc.)
+
+        Returns:
+            Dictionary with search results and historical data points.
+        """
+        try:
+            if not keywords:
+                return {"success": False, "error": "At least one keyword is required"}
+            if len(keywords) > 5:
+                return {"success": False, "error": "Maximum 5 keywords allowed"}
+
+            from backend.services.trends_service import trends_service
+
+            db = self._get_backend_session()
+            try:
+                # Get current user ID (use a default for agent context)
+                user_id = "agent-system"
+
+                result = trends_service.search_interest_over_time(
+                    db=db,
+                    keywords=keywords,
+                    user_id=user_id,
+                    client_id=client_id,
+                    project_id=project_id,
+                    timeframe=timeframe,
+                    geo=geo,
+                    category=category,
+                )
+
+                return result
+
+            finally:
+                db.close()
+
+        except ImportError:
+            return {
+                "success": False,
+                "error": "pytrends not installed. Run: pip install pytrends",
+            }
+        except Exception as e:
+            logger.error(f"Error searching trends: {e}")
+            return {"success": False, "error": str(e)}
+
+    def search_trends_related_queries(
+        self,
+        keywords: List[str],
+        client_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        timeframe: str = "past_12_months",
+        geo: str = "",
+        category: str = "all",
+    ) -> Dict[str, Any]:
+        """
+        Search Google Trends for related queries.
+
+        Returns "top" (most popular) and "rising" (fastest growing) related queries.
+        Useful for keyword expansion and content ideation.
+
+        Args:
+            keywords: List of 1-5 keywords to search
+            client_id: Optional client to associate with search
+            project_id: Optional project to associate with search
+            timeframe: Time range
+            geo: Geographic region code
+            category: Category filter
+
+        Returns:
+            Dictionary with top and rising related queries.
+        """
+        try:
+            if not keywords:
+                return {"success": False, "error": "At least one keyword is required"}
+            if len(keywords) > 5:
+                return {"success": False, "error": "Maximum 5 keywords allowed"}
+
+            from backend.services.trends_service import trends_service
+
+            db = self._get_backend_session()
+            try:
+                user_id = "agent-system"
+
+                result = trends_service.search_related_queries(
+                    db=db,
+                    keywords=keywords,
+                    user_id=user_id,
+                    client_id=client_id,
+                    project_id=project_id,
+                    timeframe=timeframe,
+                    geo=geo,
+                    category=category,
+                )
+
+                return result
+
+            finally:
+                db.close()
+
+        except ImportError:
+            return {
+                "success": False,
+                "error": "pytrends not installed. Run: pip install pytrends",
+            }
+        except Exception as e:
+            logger.error(f"Error searching related queries: {e}")
+            return {"success": False, "error": str(e)}
+
+    def compute_trends_insight(
+        self,
+        keyword: str,
+        client_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute insights for a keyword from stored trends data.
+
+        Analyzes historical search data to determine:
+        - Trend direction (rising/declining/stable/seasonal)
+        - Average/peak interest levels
+        - Seasonality patterns
+        - Content recommendations
+
+        Args:
+            keyword: Keyword to analyze
+            client_id: Optional client filter
+            project_id: Optional project filter
+
+        Returns:
+            Dictionary with trend analysis and recommendations.
+        """
+        try:
+            if not keyword:
+                return {"success": False, "error": "Keyword is required"}
+
+            from backend.services.trends_service import trends_service
+
+            db = self._get_backend_session()
+            try:
+                result = trends_service.compute_keyword_insights(
+                    db=db,
+                    keyword=keyword,
+                    client_id=client_id,
+                    project_id=project_id,
+                )
+
+                return result
+
+            finally:
+                db.close()
+
+        except ImportError:
+            return {"success": False, "error": "Backend not available"}
+        except Exception as e:
+            logger.error(f"Error computing trends insight: {e}")
+            return {"success": False, "error": str(e)}
+
+    def get_trends_history(
+        self,
+        client_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        limit: int = 50,
+    ) -> Dict[str, Any]:
+        """
+        Get Google Trends search history.
+
+        Returns previous searches with optional filtering.
+
+        Args:
+            client_id: Filter by client
+            project_id: Filter by project
+            limit: Maximum results (default 50)
+
+        Returns:
+            Dictionary with search history.
+        """
+        try:
+            from backend.services.trends_service import trends_service
+
+            db = self._get_backend_session()
+            try:
+                result = trends_service.get_search_history(
+                    db=db,
+                    user_id=None,  # Get all for agent
+                    client_id=client_id,
+                    project_id=project_id,
+                    limit=limit,
+                )
+
+                return result
+
+            finally:
+                db.close()
+
+        except ImportError:
+            return {"success": False, "error": "Backend not available"}
+        except Exception as e:
+            logger.error(f"Error getting trends history: {e}")
+            return {"success": False, "error": str(e)}
+
+    def get_trends_insights(
+        self,
+        client_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        min_priority: float = 0,
+    ) -> Dict[str, Any]:
+        """
+        Get all computed keyword insights from trends data.
+
+        Returns actionable insights for content optimization.
+
+        Args:
+            client_id: Filter by client
+            project_id: Filter by project
+            min_priority: Minimum priority score (0-100)
+
+        Returns:
+            Dictionary with keyword insights sorted by priority.
+        """
+        try:
+            from backend.services.trends_service import trends_service
+
+            db = self._get_backend_session()
+            try:
+                result = trends_service.get_keyword_insights(
+                    db=db,
+                    client_id=client_id,
+                    project_id=project_id,
+                    min_priority=min_priority,
+                )
+
+                return result
+
+            finally:
+                db.close()
+
+        except ImportError:
+            return {"success": False, "error": "Backend not available"}
+        except Exception as e:
+            logger.error(f"Error getting trends insights: {e}")
+            return {"success": False, "error": str(e)}
+
+    def get_trends_timeframes(self) -> Dict[str, Any]:
+        """
+        Get available timeframe options for trends searches.
+
+        Returns:
+            Dictionary with available timeframes and their codes.
+        """
+        try:
+            from backend.services.trends_service import trends_service
+
+            return {
+                "success": True,
+                "timeframes": trends_service.TIMEFRAMES,
+                "default": "past_12_months",
+            }
+        except ImportError:
+            return {"success": False, "error": "Trends service not available"}
+
+    def get_trends_categories(self) -> Dict[str, Any]:
+        """
+        Get available category options for trends searches.
+
+        Returns:
+            Dictionary with available categories and their IDs.
+        """
+        try:
+            from backend.services.trends_service import trends_service
+
+            return {
+                "success": True,
+                "categories": trends_service.CATEGORIES,
+                "default": "all",
+            }
+        except ImportError:
+            return {"success": False, "error": "Trends service not available"}
 
     # ============================================================================
     # HELPER METHODS
@@ -3387,5 +3698,41 @@ class AgentTools:
                 "name": "get_brief_by_project_api",
                 "description": "Get a brief by project ID",
                 "parameters": "project_id",
+            },
+            # Google Trends Integration
+            {
+                "name": "search_trends_interest",
+                "description": "Search Google Trends for keyword interest over time",
+                "parameters": "keywords (list, max 5), client_id (optional), project_id (optional), timeframe (optional), geo (optional), category (optional)",
+            },
+            {
+                "name": "search_trends_related_queries",
+                "description": "Search Google Trends for related top and rising queries",
+                "parameters": "keywords (list, max 5), client_id (optional), project_id (optional), timeframe (optional), geo (optional), category (optional)",
+            },
+            {
+                "name": "compute_trends_insight",
+                "description": "Compute insights for a keyword from stored trends data (trend direction, seasonality, recommendations)",
+                "parameters": "keyword, client_id (optional), project_id (optional)",
+            },
+            {
+                "name": "get_trends_history",
+                "description": "Get Google Trends search history with optional filters",
+                "parameters": "client_id (optional), project_id (optional), limit (default 50)",
+            },
+            {
+                "name": "get_trends_insights",
+                "description": "Get all computed keyword insights sorted by priority",
+                "parameters": "client_id (optional), project_id (optional), min_priority (default 0)",
+            },
+            {
+                "name": "get_trends_timeframes",
+                "description": "Get available timeframe options for trends searches",
+                "parameters": "none",
+            },
+            {
+                "name": "get_trends_categories",
+                "description": "Get available category options for trends searches",
+                "parameters": "none",
             },
         ]

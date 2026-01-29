@@ -335,6 +335,288 @@ class TestMemoryLearningAgent:
         assert "error" in insights
         assert insights["error"] == "Client not found"
 
+    def test_learn_from_revision_project_not_found(self, agent):
+        """Test learning from revision when project doesn't exist"""
+        revision = Revision(
+            revision_id="nonexistent_rev",
+            project_id="nonexistent_project",
+            attempt_number=1,
+            feedback="Some feedback",
+        )
+
+        memory = agent.learn_from_revision(revision)
+
+        # Should return default memory with "Unknown" client
+        assert memory.client_name == "Unknown"
+
+    def test_learn_from_revision_with_existing_memory(self, agent, db, sample_project, test_client):
+        """Test learning from revision with pre-existing memory"""
+        db.create_project(sample_project)
+
+        # Create pre-existing memory
+        existing_memory = db.get_or_create_client_memory(test_client)
+        existing_memory.add_revisions(5)  # Already has 5 revisions
+        db.update_client_memory(existing_memory)
+
+        revision = Revision(
+            revision_id=f"{sample_project.project_id}_rev_2",
+            project_id=sample_project.project_id,
+            attempt_number=1,
+            feedback="More feedback",
+        )
+        db.create_revision(revision)
+
+        # Pass existing memory
+        memory = agent.learn_from_revision(revision, memory=existing_memory)
+
+        assert memory.total_revisions == 6  # 5 + 1
+
+    def test_extract_feedback_themes_too_short(self, agent):
+        """Test length theme extraction for 'too short'"""
+        feedback = "This is too short, please add more detail"
+        themes = agent._extract_feedback_themes(feedback)
+
+        length_themes = [t for t in themes if t.theme_type == "length"]
+        assert len(length_themes) == 1
+        assert length_themes[0].feedback_phrase == "too short"
+
+    def test_extract_feedback_themes_remove_cta(self, agent):
+        """Test CTA theme extraction for removing CTA"""
+        feedback = "Please remove the CTA from this post"
+        themes = agent._extract_feedback_themes(feedback)
+
+        cta_themes = [t for t in themes if t.theme_type == "cta"]
+        assert len(cta_themes) == 1
+        assert cta_themes[0].feedback_phrase == "remove cta"
+
+    def test_extract_feedback_themes_less_data(self, agent):
+        """Test data usage theme for less data"""
+        feedback = "Too many numbers, please remove some stats"
+        themes = agent._extract_feedback_themes(feedback)
+
+        data_themes = [t for t in themes if t.theme_type == "data_usage"]
+        assert len(data_themes) == 1
+        assert data_themes[0].feedback_phrase == "less data"
+
+    def test_extract_feedback_themes_remove_emoji(self, agent):
+        """Test emoji theme for removing emojis"""
+        feedback = "No emoji please, it looks unprofessional"
+        themes = agent._extract_feedback_themes(feedback)
+
+        emoji_themes = [t for t in themes if t.theme_type == "emoji"]
+        assert len(emoji_themes) == 1
+        assert emoji_themes[0].feedback_phrase == "remove emoji"
+
+    def test_learn_from_voice_guide_empty_patterns(
+        self, agent, sample_project, sample_posts, test_client
+    ):
+        """Test learning from voice guide with empty patterns"""
+        voice_guide = EnhancedVoiceGuide(
+            company_name=test_client,
+            generated_from_posts=30,
+            dominant_tones=["professional"],
+            tone_consistency_score=0.85,
+            voice_archetype="Expert",
+            average_readability_score=70.0,
+            average_word_count=200,
+            average_paragraph_count=3.0,
+            question_usage_rate=0.3,
+            common_opening_hooks=[],  # Empty
+            common_transitions=[],  # Empty
+            common_ctas=[],  # Empty
+            key_phrases_used=[],
+            dos=[],
+            donts=[],
+        )
+
+        memory = agent.learn_from_project(sample_project, sample_posts, voice_guide)
+
+        assert memory.voice_archetype == "Expert"
+        assert memory.average_readability_score == 70.0
+
+    def test_learn_from_voice_guide_running_average(
+        self, agent, db, sample_project, sample_posts, test_client
+    ):
+        """Test readability score running average calculation"""
+        # First project
+        voice_guide1 = EnhancedVoiceGuide(
+            company_name=test_client,
+            generated_from_posts=30,
+            dominant_tones=["professional"],
+            tone_consistency_score=0.85,
+            voice_archetype="Expert",
+            average_readability_score=70.0,
+            average_word_count=200,
+            average_paragraph_count=3.0,
+            question_usage_rate=0.3,
+            common_opening_hooks=[],
+            common_transitions=[],
+            common_ctas=[],
+            key_phrases_used=["phrase1", "phrase2"],
+            dos=[],
+            donts=[],
+        )
+
+        memory = agent.learn_from_project(sample_project, sample_posts, voice_guide1)
+        assert memory.average_readability_score == 70.0
+
+        # Second project
+        project2 = Project(
+            project_id=f"{test_client}_20251202_120000",
+            client_name=test_client,
+            num_posts=30,
+            deliverable_path=f"data/outputs/{test_client}/deliverable2.md",
+        )
+
+        voice_guide2 = EnhancedVoiceGuide(
+            company_name=test_client,
+            generated_from_posts=30,
+            dominant_tones=["casual"],
+            tone_consistency_score=0.80,
+            voice_archetype="Storyteller",  # Different, should not override
+            average_readability_score=80.0,  # Different - should average
+            average_word_count=250,
+            average_paragraph_count=4.0,
+            question_usage_rate=0.4,
+            common_opening_hooks=[],
+            common_transitions=[],
+            common_ctas=[],
+            key_phrases_used=["phrase3", "phrase4"],  # Different phrases
+            dos=[],
+            donts=[],
+        )
+
+        memory = agent.learn_from_project(project2, sample_posts, voice_guide2)
+
+        # Running average: (70 * 1 + 80) / 2 = 75
+        assert memory.average_readability_score == 75.0
+        # Voice archetype should remain "Expert" (first project)
+        assert memory.voice_archetype == "Expert"
+        # Signature phrases should have new ones added
+        assert len(memory.signature_phrases) >= 2
+
+    def test_synthesize_with_voice_samples_short_posts(self, agent, db, test_client):
+        """Test synthesis with voice samples showing short posts"""
+        from src.models.client_memory import VoiceSample
+
+        # Create memory with 2+ projects
+        memory = agent.db.get_or_create_client_memory(test_client)
+        memory.add_project(30, 1800.0)
+        memory.add_project(30, 1800.0)
+        agent.db.update_client_memory(memory)
+
+        # Store voice sample with short average word count
+        voice_sample = VoiceSample(
+            client_name=test_client,
+            project_id="proj1",
+            average_readability=70.0,
+            voice_archetype="Expert",
+            dominant_tone="professional",
+            average_word_count=150,  # Short
+            question_usage_rate=0.3,
+            common_hooks=[],
+            common_transitions=[],
+            common_ctas=[],
+            key_phrases=[],
+        )
+        db.store_voice_sample(voice_sample)
+
+        # Synthesize
+        result = agent.synthesize_multi_project_learnings(test_client)
+
+        # Should set optimal word count for short posts
+        assert result.optimal_word_count_min == 100
+        assert result.optimal_word_count_max == 200
+
+    def test_synthesize_with_voice_samples_long_posts(self, agent, db, test_client):
+        """Test synthesis with voice samples showing long posts"""
+        from src.models.client_memory import VoiceSample
+
+        # Create memory with 2+ projects
+        memory = agent.db.get_or_create_client_memory(test_client)
+        memory.add_project(30, 1800.0)
+        memory.add_project(30, 1800.0)
+        agent.db.update_client_memory(memory)
+
+        # Store voice sample with long average word count
+        voice_sample = VoiceSample(
+            client_name=test_client,
+            project_id="proj1",
+            average_readability=70.0,
+            voice_archetype="Expert",
+            dominant_tone="professional",
+            average_word_count=350,  # Long
+            question_usage_rate=0.3,
+            common_hooks=[],
+            common_transitions=[],
+            common_ctas=[],
+            key_phrases=[],
+        )
+        db.store_voice_sample(voice_sample)
+
+        # Synthesize
+        result = agent.synthesize_multi_project_learnings(test_client)
+
+        # Should set optimal word count for long posts
+        assert result.optimal_word_count_min == 250
+        assert result.optimal_word_count_max == 350
+
+    def test_synthesize_with_voice_samples_medium_posts(self, agent, db, test_client):
+        """Test synthesis with voice samples showing medium posts"""
+        from src.models.client_memory import VoiceSample
+
+        # Create memory with 2+ projects
+        memory = agent.db.get_or_create_client_memory(test_client)
+        memory.add_project(30, 1800.0)
+        memory.add_project(30, 1800.0)
+        agent.db.update_client_memory(memory)
+
+        # Store voice sample with medium average word count
+        voice_sample = VoiceSample(
+            client_name=test_client,
+            project_id="proj1",
+            average_readability=70.0,
+            voice_archetype="Expert",
+            dominant_tone="professional",
+            average_word_count=250,  # Medium
+            question_usage_rate=0.3,
+            common_hooks=[],
+            common_transitions=[],
+            common_ctas=[],
+            key_phrases=[],
+        )
+        db.store_voice_sample(voice_sample)
+
+        # Synthesize
+        result = agent.synthesize_multi_project_learnings(test_client)
+
+        # Should set optimal word count for medium posts
+        assert result.optimal_word_count_min == 150
+        assert result.optimal_word_count_max == 250
+
+    def test_get_memory_insights_with_themes_and_templates(self, agent, db, test_client):
+        """Test insights with feedback themes and template performance"""
+        # Create memory
+        memory = agent.db.get_or_create_client_memory(test_client)
+        memory.add_project(30, 1800.0)
+        agent.db.update_client_memory(memory)
+
+        # Add feedback themes
+        theme = FeedbackTheme(theme_type="tone", feedback_phrase="more casual")
+        db.record_feedback_theme(test_client, theme)
+
+        # Add template performance
+        db.update_template_performance(test_client, 1, False, 8.5)
+        db.update_template_performance(test_client, 2, True, 6.0)
+
+        # Get insights
+        insights = agent.get_memory_insights(test_client)
+
+        assert "top_feedback_themes" in insights
+        assert len(insights["top_feedback_themes"]) >= 1
+        assert "best_templates" in insights
+        assert len(insights["best_templates"]) >= 1
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

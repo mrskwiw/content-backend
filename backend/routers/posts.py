@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from backend.middleware.auth_dependency import get_current_user
 from backend.middleware.authorization import (
     verify_post_ownership,
+    filter_user_posts,
 )  # TR-021: Authorization
 from backend.schemas.post import PostResponse, PostUpdate
 from backend.services import crud
@@ -38,6 +39,7 @@ async def list_posts(
         None, description="Filter by platform (linkedin, twitter, facebook, blog)"
     ),
     has_cta: Optional[bool] = Query(None, description="Filter by CTA presence"),
+    template_id: Optional[str] = Query(None, description="Filter by template ID"),
     template_name: Optional[str] = Query(
         None, description="Filter by template name (partial match)"
     ),
@@ -89,11 +91,11 @@ async def list_posts(
     # Validate pagination params
     pagination_params = get_pagination_params(page=page, cursor=cursor, page_size=page_size)
 
-    # Build base query
-    query = db.query(Post)
-
-    # TR-021: Filter posts by project ownership
+    # TR-021: Build base query filtered by user ownership
     # Users can only see posts from projects they own
+    query = filter_user_posts(db, current_user)
+
+    # Additional filter by project_id if specified
     if project_id:
         # Verify user owns the project before showing its posts
         project = crud.get_project(db, project_id)
@@ -116,6 +118,8 @@ async def list_posts(
         query = query.filter(Post.target_platform == platform)
     if has_cta is not None:
         query = query.filter(Post.has_cta == has_cta)
+    if template_id is not None:
+        query = query.filter(Post.template_id == template_id)
     if template_name:
         query = query.filter(Post.template_name.ilike(f"%{template_name}%"))
     if needs_review is not None:
@@ -149,11 +153,13 @@ async def list_posts(
         order_direction="desc",
     )
 
-    # Convert items to response schema
-    posts_data = [PostResponse.model_validate(p).model_dump() for p in paginated["items"]]
+    # Convert items to response schema (mode="json" ensures datetime serialization)
+    posts_data = [
+        PostResponse.model_validate(p).model_dump(mode="json") for p in paginated["items"]
+    ]
 
     # Prepare response with pagination metadata
-    response_data = {"items": posts_data, "metadata": paginated["metadata"].model_dump()}
+    response_data = {"items": posts_data, "metadata": paginated["metadata"].model_dump(mode="json")}
 
     # Return cacheable response with ETag
     return create_cacheable_response(
@@ -185,7 +191,7 @@ async def get_post(
     # TR-021: post already verified by dependency
 
     # Convert to dict for caching
-    post_data = PostResponse.model_validate(post).model_dump()
+    post_data = PostResponse.model_validate(post).model_dump(mode="json")
 
     # Return cacheable response
     return create_cacheable_response(

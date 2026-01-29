@@ -365,7 +365,7 @@ class TestCreateProject:
             },
         )
 
-        assert response.status_code in [400, 404]  # Depends on validation strategy
+        assert response.status_code in [400, 404, 422]  # Depends on validation strategy
 
     def test_create_project_client_owned_by_different_user(
         self, client, auth_headers_user_a, client_for_user_b

@@ -14,18 +14,50 @@ This test verifies that the entire system works correctly for:
 - Facebook (10-15 words)
 - Blog (1500-2000 words)
 - Email (150-250 words)
+
+IMPORTANT: These tests require an Anthropic API key to run.
+They are skipped automatically if ANTHROPIC_API_KEY is not set.
 """
 
+import os
 import pytest
 
 from src.models.client_brief import Platform
-from src.agents.brief_parser import BriefParserAgent
-from src.agents.content_generator import ContentGeneratorAgent
-from src.validators.length_validator import LengthValidator
-from src.validators.hook_validator import HookValidator
-from src.validators.cta_validator import CTAValidator
-from src.validators.headline_validator import HeadlineValidator
-from src.models.post import Post
+
+
+def _should_run_real_api_tests() -> bool:
+    """Check if we should run tests that make real Anthropic API calls.
+
+    These tests are expensive and can fail due to:
+    - No API key
+    - Invalid API key
+    - Insufficient credits
+    - Rate limiting
+
+    By default, skip in CI. Set RUN_REAL_API_TESTS=1 to enable.
+    """
+    # Explicitly enable with environment variable
+    if os.getenv("RUN_REAL_API_TESTS"):
+        return True
+
+    # Default: skip these expensive E2E tests
+    # They should be run manually to verify platform-specific generation
+    return False
+
+
+# Skip all tests in this module unless explicitly enabled
+# These are true E2E tests that make real API calls and cost money
+pytestmark = pytest.mark.skipif(
+    not _should_run_real_api_tests(),
+    reason="Real API tests disabled. Set RUN_REAL_API_TESTS=1 to enable (requires valid API key with credits)",
+)
+from src.agents.brief_parser import BriefParserAgent  # noqa: E402
+from src.agents.content_generator import ContentGeneratorAgent  # noqa: E402
+from src.validators.length_validator import LengthValidator  # noqa: E402
+from src.validators.hook_validator import HookValidator  # noqa: E402
+from src.validators.cta_validator import CTAValidator  # noqa: E402
+from src.validators.headline_validator import HeadlineValidator  # noqa: E402
+from src.models.post import Post  # noqa: E402
 
 
 # Test brief content

@@ -115,11 +115,7 @@ def run_for_user_a(db_session: Session, test_user_a, project_for_user_a):
     run = Run(
         id="run-test-123",
         project_id=project_for_user_a.id,
-        user_id=test_user_a.id,
-        status="completed",
-        total_posts=30,
-        completed_posts=30,
-        failed_posts=0,
+        status="succeeded",  # Run status is pending/running/succeeded/failed
     )
     db_session.add(run)
     db_session.commit()
@@ -133,9 +129,9 @@ def deliverable_for_user_a(db_session: Session, test_user_a, project_for_user_a,
     deliverable = Deliverable(
         id="del-test-123",
         project_id=project_for_user_a.id,
+        client_id=project_for_user_a.client_id,  # Required field
         run_id=run_for_user_a.id,
-        user_id=test_user_a.id,
-        file_path="data/outputs/TestClient/deliverable.md",
+        path="data/outputs/TestClient/deliverable.md",  # Model uses 'path' not 'file_path'
         format="markdown",
         status="ready",
         delivered_at=None,
@@ -203,11 +199,7 @@ class TestListDeliverables:
         run_b = Run(
             id="run-b-999",
             project_id=db_project.id,
-            user_id=test_user_b.id,
-            status="completed",
-            total_posts=30,
-            completed_posts=30,
-            failed_posts=0,
+            status="succeeded",
         )
         db_session.add(run_b)
         db_session.commit()
@@ -215,9 +207,9 @@ class TestListDeliverables:
         deliverable_b = Deliverable(
             id="del-b-999",
             project_id=db_project.id,
+            client_id=db_client.id,
             run_id=run_b.id,
-            user_id=test_user_b.id,
-            file_path="data/outputs/ClientB/deliverable.md",
+            path="data/outputs/ClientB/deliverable.md",
             format="markdown",
             status="ready",
         )
@@ -259,9 +251,9 @@ class TestListDeliverables:
         items = data if isinstance(data, list) else data["items"]
 
         # All returned deliverables should belong to the project
+        # Use .get() to handle both snake_case and camelCase field names
         assert all(
-            d["project_id"] == project_for_user_a.id or d["projectId"] == project_for_user_a.id
-            for d in items
+            (d.get("project_id") or d.get("projectId")) == project_for_user_a.id for d in items
         )
 
     def test_list_deliverables_filter_by_format(self, client, auth_headers_user_a):
@@ -329,16 +321,15 @@ class TestDownloadDeliverable:
         db_session,
         project_for_user_a,
         run_for_user_a,
-        test_user_a,
     ):
         """Test TR-019: Path traversal attack prevention"""
         # Create deliverable with malicious path
         malicious_deliverable = Deliverable(
             id="del-malicious-999",
             project_id=project_for_user_a.id,
+            client_id=project_for_user_a.client_id,  # Get client_id from project
             run_id=run_for_user_a.id,
-            user_id=test_user_a.id,
-            file_path="../../../etc/passwd",  # Path traversal attempt
+            path="../../../etc/passwd",  # Path traversal attempt
             format="markdown",
             status="ready",
         )
@@ -355,15 +346,18 @@ class TestDownloadDeliverable:
 
 
 class TestMarkAsDelivered:
-    """Test POST /api/deliverables/{deliverable_id}/mark-delivered"""
+    """Test PATCH /api/deliverables/{deliverable_id}/mark-delivered"""
 
     def test_mark_delivered_success(
         self, client, auth_headers_user_a, deliverable_for_user_a, db_session
     ):
         """Test marking deliverable as delivered"""
-        response = client.post(
+        from datetime import datetime
+
+        response = client.patch(
             f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered",
             headers=auth_headers_user_a,
+            json={"delivered_at": datetime.now().isoformat()},
         )
 
         assert response.status_code == 200
@@ -382,38 +376,53 @@ class TestMarkAsDelivered:
 
     def test_mark_delivered_unauthorized(self, client, auth_headers_user_b, deliverable_for_user_a):
         """Test TR-021: User B cannot mark User A's deliverable as delivered"""
-        response = client.post(
+        from datetime import datetime
+
+        response = client.patch(
             f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered",
             headers=auth_headers_user_b,
+            json={"delivered_at": datetime.now().isoformat()},
         )
         assert response.status_code == 403
 
     def test_mark_delivered_not_found(self, client, auth_headers_user_a):
         """Test marking non-existent deliverable"""
-        response = client.post(
+        from datetime import datetime
+
+        response = client.patch(
             "/api/deliverables/nonexistent-id/mark-delivered",
             headers=auth_headers_user_a,
+            json={"delivered_at": datetime.now().isoformat()},
         )
         assert response.status_code == 404
 
     def test_mark_delivered_unauthenticated(self, client, deliverable_for_user_a):
         """Test marking deliverable without authentication"""
-        response = client.post(f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered")
+        from datetime import datetime
+
+        response = client.patch(
+            f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered",
+            json={"delivered_at": datetime.now().isoformat()},
+        )
         assert response.status_code == 401
 
     def test_mark_delivered_idempotent(self, client, auth_headers_user_a, deliverable_for_user_a):
         """Test marking already-delivered deliverable (should be idempotent)"""
+        from datetime import datetime
+
         # Mark as delivered first time
-        response1 = client.post(
+        response1 = client.patch(
             f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered",
             headers=auth_headers_user_a,
+            json={"delivered_at": datetime.now().isoformat()},
         )
         assert response1.status_code == 200
 
         # Mark as delivered second time (should succeed)
-        response2 = client.post(
+        response2 = client.patch(
             f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered",
             headers=auth_headers_user_a,
+            json={"delivered_at": datetime.now().isoformat()},
         )
         assert response2.status_code == 200
 
@@ -439,15 +448,14 @@ class TestExportFormats:
         db_session,
         project_for_user_a,
         run_for_user_a,
-        test_user_a,
     ):
         """Test deliverable with Word format"""
         word_deliverable = Deliverable(
             id="del-word-123",
             project_id=project_for_user_a.id,
+            client_id=project_for_user_a.client_id,
             run_id=run_for_user_a.id,
-            user_id=test_user_a.id,
-            file_path="data/outputs/TestClient/deliverable.docx",
+            path="data/outputs/TestClient/deliverable.docx",
             format="word",
             status="ready",
         )
@@ -470,15 +478,14 @@ class TestExportFormats:
         db_session,
         project_for_user_a,
         run_for_user_a,
-        test_user_a,
     ):
         """Test deliverable with PDF format"""
         pdf_deliverable = Deliverable(
             id="del-pdf-123",
             project_id=project_for_user_a.id,
+            client_id=project_for_user_a.client_id,
             run_id=run_for_user_a.id,
-            user_id=test_user_a.id,
-            file_path="data/outputs/TestClient/deliverable.pdf",
+            path="data/outputs/TestClient/deliverable.pdf",
             format="pdf",
             status="ready",
         )
@@ -532,10 +539,9 @@ class TestDeliverableMetadata:
 
         assert response.status_code == 200
         data = response.json()
-        assert (
-            data["project_id"] == project_for_user_a.id
-            or data["projectId"] == project_for_user_a.id
-        )
+        # API may return camelCase or snake_case
+        project_id = data.get("project_id") or data.get("projectId")
+        assert project_id == project_for_user_a.id
 
 
 class TestGetDeliverable:
@@ -591,16 +597,21 @@ class TestDeliverableStatus:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ready"
-        assert data["delivered_at"] is None or data.get("deliveredAt") is None
+        # API may return camelCase or snake_case
+        delivered_at = data.get("delivered_at") or data.get("deliveredAt")
+        assert delivered_at is None
 
     def test_deliverable_status_delivered(
         self, client, auth_headers_user_a, deliverable_for_user_a
     ):
         """Test deliverable with delivered status"""
-        # Mark as delivered
-        client.post(
+        from datetime import datetime
+
+        # Mark as delivered using PATCH with request body
+        client.patch(
             f"/api/deliverables/{deliverable_for_user_a.id}/mark-delivered",
             headers=auth_headers_user_a,
+            json={"delivered_at": datetime.now().isoformat()},
         )
 
         # Get deliverable
@@ -612,4 +623,6 @@ class TestDeliverableStatus:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "delivered"
-        assert data["delivered_at"] is not None or data.get("deliveredAt") is not None
+        # API may return camelCase or snake_case
+        delivered_at = data.get("delivered_at") or data.get("deliveredAt")
+        assert delivered_at is not None

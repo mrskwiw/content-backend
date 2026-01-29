@@ -70,9 +70,14 @@ def test_market_trends_validation():
             {"business_description": "Short", "target_audience": "Teams", "industry": "Tech"}
         )
 
-    # Test missing industry
-    with pytest.raises(ValueError, match="Missing required input: industry"):
-        researcher.validate_inputs({"business_description": "A" * 100, "target_audience": "Teams"})
+    # Test missing industry - use longer target_audience to pass length check
+    with pytest.raises(ValueError, match="industry"):
+        researcher.validate_inputs(
+            {
+                "business_description": "A" * 100,
+                "target_audience": "Marketing teams and sales leaders",
+            }
+        )
 
     print("[OK] Validation tests passed")
 

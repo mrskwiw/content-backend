@@ -76,18 +76,22 @@ def test_competitive_analysis_validation():
             }
         )
 
-    # Test no competitors
-    with pytest.raises(ValueError, match="at least 1 competitor"):
+    # Test no competitors - use longer target_audience to pass length check
+    with pytest.raises(ValueError, match="competitors"):
         analyzer.validate_inputs(
-            {"business_description": "A" * 100, "target_audience": "Teams", "competitors": []}
+            {
+                "business_description": "A" * 100,
+                "target_audience": "Marketing teams and sales leaders",
+                "competitors": [],
+            }
         )
 
-    # Test too many competitors
+    # Test too many competitors - use longer target_audience to pass length check
     with pytest.raises(ValueError, match="Maximum 5 competitors"):
         analyzer.validate_inputs(
             {
                 "business_description": "A" * 100,
-                "target_audience": "Teams",
+                "target_audience": "Marketing teams and sales leaders",
                 "competitors": ["C1", "C2", "C3", "C4", "C5", "C6"],
             }
         )

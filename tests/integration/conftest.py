@@ -29,6 +29,44 @@ import backend.models  # noqa: E402, F401 - Import models before app to register
 from backend.main import app  # noqa: E402
 
 
+@pytest.fixture(scope="function", autouse=True)
+def reset_rate_limiting():
+    """
+    Reset rate limiter storage before each test.
+
+    Rate limiters use in-memory storage that accumulates across tests,
+    causing tests to fail when run together due to rate limit exhaustion.
+    This fixture resets the storage before each test.
+    """
+    from backend.utils.http_rate_limiter import (
+        limiter,
+        strict_limiter,
+        standard_limiter,
+        lenient_limiter,
+    )
+
+    # Reset all rate limiters by clearing their internal storage
+    # slowapi uses limits library which stores data in the storage backend
+    for rate_limiter in [limiter, strict_limiter, standard_limiter, lenient_limiter]:
+        try:
+            # Access the storage backend and reset it
+            if hasattr(rate_limiter, "_storage") and rate_limiter._storage:
+                storage = rate_limiter._storage
+                # For memory storage, reset by calling reset() or clearing storage dict
+                if hasattr(storage, "reset"):
+                    storage.reset()
+                elif hasattr(storage, "storage"):
+                    storage.storage.clear()
+                elif hasattr(storage, "_cache"):
+                    storage._cache.clear()
+        except Exception:
+            pass  # Ignore errors if storage doesn't support reset
+
+    yield
+
+    # No cleanup needed - fixture runs before each test
+
+
 @pytest.fixture(scope="function", autouse=False)
 def db_session():
     """

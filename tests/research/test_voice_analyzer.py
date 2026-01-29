@@ -74,19 +74,25 @@ def test_voice_analyzer_validation():
 
     analyzer = VoiceAnalyzer(project_id="test_validation")
 
-    # Test missing input
-    with pytest.raises(ValueError, match="business_description is required"):
+    # Test missing input - content_samples is required
+    with pytest.raises(ValueError, match="content_samples"):
         analyzer.validate_inputs({})
 
-    # Test too few samples
-    with pytest.raises(ValueError, match="at least 5"):
-        analyzer.validate_inputs({"content_samples": ["short", "text"]})
+    # Test too few samples - minimum is 3
+    with pytest.raises(ValueError, match="at least 3"):
+        analyzer.validate_inputs(
+            {
+                "content_samples": [
+                    "This is a sample text that is long enough to pass validation." * 2
+                ]
+            }
+        )
 
-    # Test samples too short
+    # Test samples too short (min 50 chars each)
     with pytest.raises(ValueError, match="too short"):
         analyzer.validate_inputs({"content_samples": ["a", "b", "c", "d", "e", "f"]})
 
-    print("✅ Validation tests passed")
+    print("Validation tests passed")
 
 
 if __name__ == "__main__":

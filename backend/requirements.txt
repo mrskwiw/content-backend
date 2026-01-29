@@ -36,6 +36,10 @@ anthropic==0.18.1
 cachetools==5.3.2  # In-memory caching for query results
 textstat==0.7.3    # Readability scoring for voice analysis
 
+# Google Trends Integration
+pytrends==4.9.2    # Unofficial Google Trends API
+pandas>=1.5.0      # Required by pytrends for dataframes
+
 # Background Job Queue (Phase 2 optimization)
 celery==5.3.6  # Distributed task queue
 redis==5.0.1   # Message broker and result backend

@@ -562,3 +562,171 @@ class TestQAReport:
         assert "**Issues:**" in markdown
         assert "Primary keyword missing in posts #3, #7, #15" in markdown
         assert "Keyword density too low in posts #12, #20" in markdown
+
+    def test_seo_validation_passing(
+        self,
+        sample_hook_validation,
+        sample_cta_validation,
+        sample_length_validation,
+        sample_headline_validation,
+    ):
+        """Test markdown includes SEO validation for blog posts (lines 169-186)."""
+        seo_validation = {
+            "passed": True,
+            "skipped": False,
+            "average_score": 85.5,
+            "metric": "Average SEO Score: 85.5/100 (5 blog posts)",
+            "seo_scores": [88, 82, 90, 85, 82],
+            "recommendations": [
+                "Add more internal links to improve site structure",
+                "Include primary keyword in first paragraph",
+            ],
+            "issues": [],
+        }
+        report = QAReport(
+            client_name="Test Client",
+            total_posts=30,
+            overall_passed=True,
+            quality_score=0.90,
+            hook_validation=sample_hook_validation,
+            cta_validation=sample_cta_validation,
+            length_validation=sample_length_validation,
+            headline_validation=sample_headline_validation,
+            seo_validation=seo_validation,
+        )
+        markdown = report.to_markdown()
+
+        # Check SEO validation section (lines 169-186)
+        assert "## SEO Optimization (Blog Posts)" in markdown
+        assert "[PASS] PASSED" in markdown
+        assert "**Average SEO Score:** 85.5/100" in markdown
+        assert "**SEO Recommendations:**" in markdown
+        assert "Add more internal links to improve site structure" in markdown
+        assert "Include primary keyword in first paragraph" in markdown
+
+    def test_seo_validation_failing_with_issues(
+        self,
+        sample_hook_validation,
+        sample_cta_validation,
+        sample_length_validation,
+        sample_headline_validation,
+    ):
+        """Test SEO validation displays issues when failing (lines 181-185)."""
+        seo_validation = {
+            "passed": False,
+            "skipped": False,
+            "average_score": 45.0,
+            "metric": "Average SEO Score: 45/100 (3 blog posts)",
+            "seo_scores": [40, 45, 50],
+            "recommendations": [
+                "Increase content length to at least 1500 words",
+                "Add more H2 headings for better structure",
+            ],
+            "issues": [
+                "Blog 1: Content too short (800 words, min 1500)",
+                "Blog 2: Missing H2 headings (0 found, min 3)",
+                "Blog 3: Keyword density too low (0.5%, target 1-3%)",
+            ],
+        }
+        report = QAReport(
+            client_name="Test Client",
+            total_posts=30,
+            overall_passed=False,
+            quality_score=0.65,
+            hook_validation=sample_hook_validation,
+            cta_validation=sample_cta_validation,
+            length_validation=sample_length_validation,
+            headline_validation=sample_headline_validation,
+            seo_validation=seo_validation,
+            total_issues=3,
+            all_issues=seo_validation["issues"],
+        )
+        markdown = report.to_markdown()
+
+        # Check SEO validation failing section
+        assert "## SEO Optimization (Blog Posts)" in markdown
+        assert "[FAIL] FAILED" in markdown
+        assert "**Average SEO Score:** 45.0/100" in markdown
+        # Check issues are listed (lines 181-185)
+        assert "**Issues:**" in markdown
+        assert "Blog 1: Content too short" in markdown
+        assert "Blog 2: Missing H2 headings" in markdown
+        assert "Blog 3: Keyword density too low" in markdown
+
+    def test_seo_validation_skipped(
+        self,
+        sample_hook_validation,
+        sample_cta_validation,
+        sample_length_validation,
+        sample_headline_validation,
+    ):
+        """Test SEO validation is not shown when skipped (no blog posts)."""
+        seo_validation = {
+            "passed": True,
+            "skipped": True,  # Set to true when no blog posts
+            "average_score": 0,
+            "metric": "No blog posts to validate",
+            "seo_scores": [],
+            "recommendations": [],
+            "issues": [],
+        }
+        report = QAReport(
+            client_name="Test Client",
+            total_posts=30,
+            overall_passed=True,
+            quality_score=0.92,
+            hook_validation=sample_hook_validation,
+            cta_validation=sample_cta_validation,
+            length_validation=sample_length_validation,
+            headline_validation=sample_headline_validation,
+            seo_validation=seo_validation,
+        )
+        markdown = report.to_markdown()
+
+        # SEO section should NOT appear when skipped (line 169 condition)
+        assert "## SEO Optimization (Blog Posts)" not in markdown
+
+    def test_seo_validation_with_many_recommendations(
+        self,
+        sample_hook_validation,
+        sample_cta_validation,
+        sample_length_validation,
+        sample_headline_validation,
+    ):
+        """Test SEO validation only shows top 5 recommendations (line 179)."""
+        seo_validation = {
+            "passed": True,
+            "skipped": False,
+            "average_score": 75.0,
+            "metric": "Average SEO Score: 75/100 (5 blog posts)",
+            "seo_scores": [75, 75, 75, 75, 75],
+            "recommendations": [
+                "Recommendation 1",
+                "Recommendation 2",
+                "Recommendation 3",
+                "Recommendation 4",
+                "Recommendation 5",
+                "Recommendation 6 - should not appear",
+                "Recommendation 7 - should not appear",
+            ],
+            "issues": [],
+        }
+        report = QAReport(
+            client_name="Test Client",
+            total_posts=30,
+            overall_passed=True,
+            quality_score=0.85,
+            hook_validation=sample_hook_validation,
+            cta_validation=sample_cta_validation,
+            length_validation=sample_length_validation,
+            headline_validation=sample_headline_validation,
+            seo_validation=seo_validation,
+        )
+        markdown = report.to_markdown()
+
+        # Should show first 5 recommendations (line 179)
+        assert "Recommendation 1" in markdown
+        assert "Recommendation 5" in markdown
+        # Should NOT show recommendations beyond 5
+        assert "Recommendation 6" not in markdown
+        assert "Recommendation 7" not in markdown

@@ -184,7 +184,8 @@ Provide a helpful, concise response. If the user's question is about something o
 @router.post("/chat", response_model=ChatResponse)
 @standard_limiter.limit("50/hour")  # TR-004: Moderate limit for Claude API chat
 async def chat_with_assistant(
-    request: ChatRequest,
+    request: Request,  # Required for rate limiter (Starlette Request)
+    body: ChatRequest,  # Request body (Pydantic model)
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -204,7 +205,7 @@ async def chat_with_assistant(
     try:
         # SECURITY (TR-020): Sanitize user message before passing to LLM
         try:
-            sanitized_message = sanitize_prompt_input(request.message, strict=False)
+            sanitized_message = sanitize_prompt_input(body.message, strict=False)
             logger.info(f"Sanitized assistant chat message for user {current_user.email}")
         except ValueError as e:
             logger.warning(f"Prompt injection detected in assistant chat: {e}")
@@ -214,14 +215,14 @@ async def chat_with_assistant(
             )
 
         # Get current page from context
-        page = request.context.get("page", "overview")
+        page = body.context.get("page", "overview")
 
         # Build context-aware prompt
         system_prompt = build_assistant_prompt(
             page=page,
-            context=request.context,
+            context=body.context,
             user_message=sanitized_message,  # Use sanitized message
-            history=request.conversation_history,
+            history=body.conversation_history,
         )
 
         # PERFORMANCE (Phase 3): Check cache before calling Claude API
@@ -252,7 +253,7 @@ async def chat_with_assistant(
             logger.info(f"AI assistant API call for user {current_user.email} on page {page}")
 
         # Generate context-aware suggestions
-        suggestions = generate_suggestions(page, request.context)
+        suggestions = generate_suggestions(page, body.context)
 
         logger.info(f"AI assistant responded to user {current_user.email} on page {page}")
 
@@ -269,7 +270,8 @@ async def chat_with_assistant(
 @router.post("/context", response_model=ContextResponse)
 @lenient_limiter.limit("1000/hour")  # TR-004: Cheap operation, no AI calls
 async def get_context_suggestions(
-    request: ContextRequest,
+    request: Request,  # Required for rate limiter (Starlette Request)
+    body: ContextRequest,  # Request body (Pydantic model)
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -279,8 +281,8 @@ async def get_context_suggestions(
 
     Rate limit: 1000/hour (cheap operation, no AI calls)
     """
-    suggestions = generate_suggestions(request.page, request.data)
-    quick_actions = generate_quick_actions(request.page, request.data)
+    suggestions = generate_suggestions(body.page, body.data)
+    quick_actions = generate_quick_actions(body.page, body.data)
 
     return ContextResponse(suggestions=suggestions, quick_actions=quick_actions)
 

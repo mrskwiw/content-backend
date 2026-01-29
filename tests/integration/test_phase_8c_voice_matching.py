@@ -20,9 +20,22 @@ class TestVoiceSampleUpload:
     """Test voice sample upload functionality"""
 
     def setup_method(self):
-        """Setup test database"""
-        self.db = ProjectDatabase()
+        """Setup test database using temporary file for isolation"""
+        # Use a temporary database file for test isolation
+        self.temp_dir = tempfile.mkdtemp()
+        self.db_path = Path(self.temp_dir) / "test_projects.db"
+        self.db = ProjectDatabase(db_path=self.db_path)
         self.test_client = f"TestClient_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    def teardown_method(self):
+        """Cleanup test database"""
+        import shutil
+
+        try:
+            if hasattr(self, "temp_dir") and Path(self.temp_dir).exists():
+                shutil.rmtree(self.temp_dir)
+        except Exception:
+            pass  # Ignore cleanup errors
 
     def test_voice_sample_model_validation(self):
         """Test VoiceSampleUpload model validation"""
@@ -221,9 +234,12 @@ class TestVoiceMatcher:
         _voice_guide = EnhancedVoiceGuide(
             company_name="Test",
             generated_from_posts=1,
-            average_readability_score=70.0,
-            average_word_count=200,
-            voice_archetype="Expert",
+            tone_consistency_score=0.85,  # Required field
+            average_word_count=200,  # Required field
+            average_paragraph_count=3.0,  # Required field
+            question_usage_rate=0.3,  # Required field
+            average_readability_score=70.0,  # Optional
+            voice_archetype="Expert",  # Optional
         )
 
         posts = [

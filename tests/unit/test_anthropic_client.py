@@ -546,6 +546,162 @@ class TestGetDefaultClient:
         assert client1 is client2
 
 
+class TestAsyncCoverageGaps:
+    """Test async methods for full coverage"""
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    async def test_async_with_cost_tracking(
+        self, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test async message creation with cost tracking"""
+        mock_tracker_instance = MagicMock()
+        mock_tracker.return_value = mock_tracker_instance
+
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create = AsyncMock(return_value=mock_anthropic_response)
+            mock_async_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            messages = [{"role": "user", "content": "Test async"}]
+            result = await client.create_message_async(
+                messages, project_id="test_project", operation="async_op"
+            )
+
+            assert result == "This is a test response from Claude"
+            mock_tracker_instance.track_api_call.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    async def test_async_cost_tracking_failure(
+        self, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test async cost tracking failure doesn't break execution"""
+        mock_tracker_instance = MagicMock()
+        mock_tracker_instance.track_api_call.side_effect = Exception("Tracking failed")
+        mock_tracker.return_value = mock_tracker_instance
+
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create = AsyncMock(return_value=mock_anthropic_response)
+            mock_async_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            messages = [{"role": "user", "content": "Test"}]
+            result = await client.create_message_async(messages, project_id="test")
+
+            assert result == "This is a test response from Claude"
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    @patch("src.utils.anthropic_client.ResponseCache")
+    async def test_async_with_cache_hit(self, mock_cache_class, mock_tracker, mock_settings):
+        """Test async message creation uses cache hit"""
+        mock_cache_instance = MagicMock()
+        mock_cache_instance.get.return_value = "Cached async response"
+        mock_cache_class.return_value = mock_cache_instance
+
+        mock_settings.ENABLE_RESPONSE_CACHE = True
+
+        with patch("src.utils.anthropic_client.AsyncAnthropic"):
+            client = AnthropicClient(enable_response_cache=True)
+            messages = [{"role": "user", "content": "Test"}]
+            result = await client.create_message_async(messages, system="System")
+
+            assert result == "Cached async response"
+            mock_cache_instance.get.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    @patch("src.utils.anthropic_client.ResponseCache")
+    async def test_async_stores_in_cache(
+        self, mock_cache_class, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test async message creation stores response in cache"""
+        mock_cache_instance = MagicMock()
+        mock_cache_instance.get.return_value = None
+        mock_cache_class.return_value = mock_cache_instance
+
+        mock_settings.ENABLE_RESPONSE_CACHE = True
+
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create = AsyncMock(return_value=mock_anthropic_response)
+            mock_async_class.return_value = mock_client_instance
+
+            client = AnthropicClient(enable_response_cache=True)
+            messages = [{"role": "user", "content": "Test"}]
+            await client.create_message_async(messages)
+
+            mock_cache_instance.put.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    async def test_async_empty_response(self, mock_tracker, mock_settings):
+        """Test async handles empty response"""
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            mock_empty_response = MagicMock()
+            mock_empty_response.content = []
+            mock_client_instance.messages.create = AsyncMock(return_value=mock_empty_response)
+            mock_async_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            messages = [{"role": "user", "content": "Test"}]
+
+            with pytest.raises(RuntimeError, match="Empty response from API"):
+                await client.create_message_async(messages)
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    async def test_async_connection_error_all_retries_fail(self, mock_tracker, mock_settings):
+        """Test async all retries fail on connection error with diagnostics"""
+        from src.utils.connection_diagnostics import ConnectionDiagnostics, ConnectionErrorType
+
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create = AsyncMock(
+                side_effect=APIConnectionError(message="Connection refused", request=MagicMock())
+            )
+            mock_async_class.return_value = mock_client_instance
+
+            mock_diagnostics = ConnectionDiagnostics(
+                error_type=ConnectionErrorType.CONNECTION_REFUSED,
+                suggestions=["Check network"],
+            )
+
+            client = AnthropicClient(max_retries=2, retry_delay=0.01)
+            messages = [{"role": "user", "content": "Test"}]
+
+            with patch(
+                "src.utils.anthropic_client.diagnose_connection_error",
+                return_value=mock_diagnostics,
+            ):
+                with pytest.raises(APIConnectionError):
+                    await client.create_message_async(messages)
+
+            assert len(client.error_history) >= 1
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    async def test_async_all_retries_fail_runtime_error(self, mock_tracker, mock_settings):
+        """Test async raises RuntimeError when all retries fail without exception"""
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            # Make it fail with rate limit that exhausts retries
+            mock_client_instance.messages.create = AsyncMock(
+                side_effect=RateLimitError("Rate limit", response=MagicMock(), body=None)
+            )
+            mock_async_class.return_value = mock_client_instance
+
+            client = AnthropicClient(max_retries=1, retry_delay=0.01)
+            messages = [{"role": "user", "content": "Test"}]
+
+            with pytest.raises(RateLimitError):
+                await client.create_message_async(messages)
+
+
 class TestEdgeCases:
     """Test edge cases and error scenarios"""
 
@@ -607,3 +763,120 @@ class TestEdgeCases:
             # Should succeed despite tracking failure
             result = client.create_message(messages, project_id="test")
             assert result == "This is a test response from Claude"
+
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    def test_create_brief_analysis_with_custom_prompt(
+        self, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test brief analysis with custom system prompt"""
+        with patch("src.utils.anthropic_client.Anthropic") as mock_anthropic_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create.return_value = mock_anthropic_response
+            mock_anthropic_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            result = client.create_brief_analysis(
+                "Test brief", system_prompt="Custom analysis prompt"
+            )
+
+            assert result == "This is a test response from Claude"
+            call_args = mock_client_instance.messages.create.call_args.kwargs
+            # Should use custom system prompt
+            assert "Custom analysis prompt" in str(call_args.get("system", ""))
+
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    def test_generate_post_content_with_custom_prompt(
+        self, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test post generation with custom system prompt"""
+        with patch("src.utils.anthropic_client.Anthropic") as mock_anthropic_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create.return_value = mock_anthropic_response
+            mock_anthropic_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            context = {"company_name": "Test Co"}
+            result = client.generate_post_content(
+                "Template", context, system_prompt="Custom gen prompt"
+            )
+
+            assert result == "This is a test response from Claude"
+            call_args = mock_client_instance.messages.create.call_args.kwargs
+            assert "Custom gen prompt" in str(call_args.get("system", ""))
+
+    @pytest.mark.asyncio
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    async def test_generate_post_content_async_with_custom_prompt(
+        self, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test async post generation with custom system prompt"""
+        with patch("src.utils.anthropic_client.AsyncAnthropic") as mock_async_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create = AsyncMock(return_value=mock_anthropic_response)
+            mock_async_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            context = {"company_name": "Test Co"}
+            result = await client.generate_post_content_async(
+                "Template", context, system_prompt="Custom async prompt"
+            )
+
+            assert result == "This is a test response from Claude"
+
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    def test_format_context_with_dict_value(self, mock_tracker, mock_settings):
+        """Test context formatting with dict values"""
+        client = AnthropicClient()
+
+        context = {
+            "company_name": "Test Co",
+            "metadata": {"key1": "val1", "key2": "val2"},  # Dict value
+            "empty_dict": {},  # Empty dict should be skipped
+        }
+
+        result = client._format_context_optimized(context)
+
+        assert "company_name: Test Co" in result
+        # Dict values should be skipped (not formatted as lists)
+        assert "metadata" not in result
+        assert "empty_dict" not in result
+
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    def test_format_context_with_none_value(self, mock_tracker, mock_settings):
+        """Test context formatting with None values"""
+        client = AnthropicClient()
+
+        context = {
+            "company_name": "Test Co",
+            "none_field": None,  # None should be included as-is
+        }
+
+        result = client._format_context_optimized(context)
+
+        assert "company_name: Test Co" in result
+
+    @patch("src.utils.anthropic_client.get_default_tracker")
+    def test_create_message_with_system_no_caching(
+        self, mock_tracker, mock_settings, mock_anthropic_response
+    ):
+        """Test message creation with system prompt but caching disabled"""
+        mock_settings.ENABLE_PROMPT_CACHING = False
+        mock_settings.CACHE_SYSTEM_PROMPTS = False
+
+        with patch("src.utils.anthropic_client.Anthropic") as mock_anthropic_class:
+            mock_client_instance = MagicMock()
+            mock_client_instance.messages.create.return_value = mock_anthropic_response
+            mock_anthropic_class.return_value = mock_client_instance
+
+            client = AnthropicClient()
+            messages = [{"role": "user", "content": "Test"}]
+            result = client.create_message(
+                messages, system="Test system", enable_prompt_caching=False
+            )
+
+            assert result == "This is a test response from Claude"
+            call_args = mock_client_instance.messages.create.call_args.kwargs
+            # System should be plain string or simple list without cache_control
+            system_arg = call_args.get("system", "")
+            if isinstance(system_arg, list):
+                assert "cache_control" not in system_arg[0]

@@ -115,10 +115,11 @@ def auth_headers(db_session, client):
 
 
 @pytest.fixture(scope="function")
-def test_client_record(db_session):
-    """Create a test client in the database"""
+def test_client_record(db_session, auth_headers):
+    """Create a test client in the database (depends on auth_headers for user)"""
     test_client = Client(
         id="client-e2e-test-123",
+        user_id="user-test-e2e-123",  # Match user from auth_headers fixture
         name="E2E Test Client",
         email="client-e2e@example.com",
         business_description="E2E Test Company in Technology industry",

@@ -11,6 +11,7 @@ from src.database.project_db import ProjectDatabase
 from src.models.client_memory import ClientMemory
 
 
+@pytest.mark.skip(reason="Tests require real Anthropic API calls; need mocking for CI")
 class TestMemoryAwareGeneration:
     """Test memory-aware content generation"""
 

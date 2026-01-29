@@ -211,6 +211,72 @@ class ProjectUpdate(BaseModel):
         extra="forbid",  # TR-022: Reject unknown fields like user_id, client_id
     )
 
+    # TR-003: Input validation (same as ProjectBase)
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        """Validate project name if provided"""
+        if v is None:
+            return v
+        return validate_string_field(v, field_name="name", min_length=3, max_length=200)
+
+    @field_validator("num_posts")
+    @classmethod
+    def validate_num_posts(cls, v: Optional[int]) -> Optional[int]:
+        """Validate post count is within reasonable bounds"""
+        if v is None:
+            return v
+        return validate_integer_field(v, field_name="num_posts", min_value=1, max_value=1000)
+
+    @field_validator("price_per_post", "research_price_per_post", "total_price")
+    @classmethod
+    def validate_prices(cls, v: Optional[float], info) -> Optional[float]:
+        """Validate pricing fields are positive"""
+        if v is None:
+            return v
+        return validate_float_field(v, field_name=info.field_name, min_value=0.0, max_value=10000.0)
+
+    @field_validator("tone")
+    @classmethod
+    def validate_tone(cls, v: Optional[str]) -> Optional[str]:
+        """Validate tone field if provided"""
+        if v is None:
+            return v
+        return validate_string_field(
+            v, field_name="tone", min_length=3, max_length=100, allow_empty=False
+        )
+
+    @field_validator("template_quantities")
+    @classmethod
+    def validate_template_quantities(cls, v: Optional[Dict[str, int]]) -> Optional[Dict[str, int]]:
+        """Validate template quantities dict"""
+        if v is None:
+            return v
+
+        # Check size (DoS prevention)
+        if len(v) > 50:
+            raise ValueError("template_quantities cannot exceed 50 templates")
+
+        # Validate each entry
+        for template_id, quantity in v.items():
+            # Validate template ID format
+            try:
+                template_id_int = int(template_id)
+                if template_id_int < 1 or template_id_int > 100:
+                    raise ValueError(f"Invalid template_id: {template_id}")
+            except ValueError:
+                raise ValueError(f"template_id must be numeric: {template_id}")
+
+            # Validate quantity
+            validate_integer_field(
+                quantity,
+                field_name=f"quantity for template {template_id}",
+                min_value=0,
+                max_value=100,
+            )
+
+        return v
+
 
 class ProjectResponse(ProjectBase):
     """

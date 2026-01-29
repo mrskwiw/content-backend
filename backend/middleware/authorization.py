@@ -358,6 +358,33 @@ def filter_user_runs(db: Session, current_user: User):
     return query.filter(Project.user_id == current_user.id)
 
 
+def filter_user_posts(db: Session, current_user: User):
+    """
+    Filter query to show only user's posts (via project ownership).
+
+    Apply this to list operations to ensure users only see their own data.
+
+    Posts are owned indirectly through project ownership.
+
+    NOTE: Requires user_id field on Project model
+    """
+    from backend.models import Post, Project
+
+    # Superusers see all
+    if current_user.is_superuser:
+        return db.query(Post)
+
+    # Regular users see only posts from their own projects
+    query = db.query(Post).join(Project, Post.project_id == Project.id)
+
+    # Check if Project model has user_id field
+    if not hasattr(Project, "user_id"):
+        logger.warning("Project model missing user_id field - returning all posts (INSECURE)")
+        return db.query(Post)
+
+    return query.filter(Project.user_id == current_user.id)
+
+
 # ==================== Brief Ownership (via Project) ====================
 
 

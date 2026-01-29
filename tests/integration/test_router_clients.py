@@ -64,25 +64,47 @@ def test_user_b(db_session: Session):
 
 
 @pytest.fixture
-def auth_headers_user_a(test_user_a, client):
+def auth_headers_user_a(test_user_a, client, db_session):
     """Get auth headers for user A"""
+    # Ensure user is committed
+    db_session.commit()
+
     response = client.post(
         "/api/auth/login",
         json={"email": "usera@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
-    token = response.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+
+    # Debug: print response if login fails
+    if response.status_code != 200:
+        print(f"[DEBUG] Login failed: status={response.status_code}, body={response.json()}")
+
+    data = response.json()
+    if "access_token" not in data:
+        raise ValueError(f"Login failed: {data}")
+
+    return {"Authorization": f"Bearer {data['access_token']}"}
 
 
 @pytest.fixture
-def auth_headers_user_b(test_user_b, client):
+def auth_headers_user_b(test_user_b, client, db_session):
     """Get auth headers for user B"""
+    # Ensure user is committed
+    db_session.commit()
+
     response = client.post(
         "/api/auth/login",
         json={"email": "userb@example.com", "password": "testpass123"},  # pragma: allowlist secret
     )
-    token = response.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+
+    # Debug: print response if login fails
+    if response.status_code != 200:
+        print(f"[DEBUG] Login failed: status={response.status_code}, body={response.json()}")
+
+    data = response.json()
+    if "access_token" not in data:
+        raise ValueError(f"Login failed: {data}")
+
+    return {"Authorization": f"Bearer {data['access_token']}"}
 
 
 @pytest.fixture
@@ -223,7 +245,8 @@ class TestCreateClient:
         assert data["name"] == "New Client Corp"
         assert data["email"] == "contact@newclient.com"
         assert "id" in data
-        assert "created_at" in data
+        # API returns camelCase for frontend compatibility
+        assert "createdAt" in data or "created_at" in data
 
     def test_create_client_minimal_fields(self, client, auth_headers_user_a):
         """Test creating client with minimal required fields"""
@@ -302,7 +325,8 @@ class TestUpdateClient:
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Updated Client Name"
-        assert data["tone_preference"] == "casual"
+        # API returns camelCase for frontend compatibility
+        assert data.get("tonePreference") == "casual" or data.get("tone_preference") == "casual"
 
     def test_update_client_partial_update(self, client, auth_headers_user_a, client_for_user_a):
         """Test partial update (only some fields)"""
@@ -317,7 +341,8 @@ class TestUpdateClient:
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == original_name  # Name unchanged
-        assert data["tone_preference"] == "friendly"  # Tone updated
+        # API returns camelCase for frontend compatibility
+        assert data.get("tonePreference") == "friendly" or data.get("tone_preference") == "friendly"
 
     def test_update_client_unauthorized(self, client, auth_headers_user_b, client_for_user_a):
         """Test TR-021: User B cannot update User A's client"""
@@ -412,7 +437,12 @@ class TestClientDataValidation:
         )
 
         assert response.status_code == 201
-        assert response.json()["customer_pain_points"] == pain_points
+        # API returns camelCase for frontend compatibility
+        data = response.json()
+        assert (
+            data.get("customerPainPoints") == pain_points
+            or data.get("customer_pain_points") == pain_points
+        )
 
     def test_customer_questions_array(self, client, auth_headers_user_a):
         """Test customer_questions accepts array of strings"""
@@ -424,4 +454,9 @@ class TestClientDataValidation:
         )
 
         assert response.status_code == 201
-        assert response.json()["customer_questions"] == questions
+        # API returns camelCase for frontend compatibility
+        data = response.json()
+        assert (
+            data.get("customerQuestions") == questions
+            or data.get("customer_questions") == questions
+        )

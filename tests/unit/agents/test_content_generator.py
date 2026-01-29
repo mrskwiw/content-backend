@@ -604,3 +604,376 @@ class TestContentGeneratorAgent:
 
             # Should NOT call get_client_memory
             mock_db.get_client_memory.assert_not_called()
+
+    def test_repeat_client_with_preferred_templates(
+        self, content_generator, sample_client_brief, mock_template_loader
+    ):
+        """Test repeat client with preferred and avoided templates"""
+        from src.models.client_memory import ClientMemory
+
+        # Create repeat client memory with preferences
+        mock_memory = ClientMemory(
+            client_name="Test Company",
+            total_projects=3,
+            is_repeat_client=True,
+            preferred_templates=[1, 2, 5],
+            avoided_templates=[3, 7],
+            signature_phrases=["test phrase", "example"],
+            voice_adjustments={"tone": "more casual", "length": "shorter"},
+            optimal_word_count_min=100,
+            optimal_word_count_max=200,
+        )
+
+        mock_db = Mock()
+        mock_db.get_client_memory.return_value = mock_memory
+        content_generator.db = mock_db
+
+        with patch.object(content_generator, "_generate_single_post") as mock_gen_single:
+            mock_gen_single.return_value = Post(
+                content="Test",
+                template_id=1,
+                template_name="Test",
+                client_name="Test Company",
+            )
+
+            result = content_generator.generate_posts(
+                client_brief=sample_client_brief,
+                num_posts=2,
+                use_client_memory=True,
+            )
+
+            # Should have generated posts
+            assert len(result) == 2
+            # Template loader should be called with memory preferences
+            mock_template_loader.select_templates_for_client.assert_called_once()
+            call_kwargs = mock_template_loader.select_templates_for_client.call_args[1]
+            # Uses boost_templates and avoid_templates parameters
+            assert call_kwargs["boost_templates"] == [1, 2, 5]
+            assert call_kwargs["avoid_templates"] == [3, 7]
+
+    def test_build_system_prompt_with_key_phrases(self, content_generator, sample_client_brief):
+        """Test system prompt includes key phrases"""
+        sample_client_brief.key_phrases = ["innovation", "transform", "growth"]
+
+        prompt = content_generator._build_system_prompt(
+            client_brief=sample_client_brief,
+            platform=Platform.LINKEDIN,
+        )
+
+        assert "KEY PHRASES TO USE" in prompt
+        assert "innovation" in prompt
+        assert "transform" in prompt
+
+    def test_build_system_prompt_with_misconceptions(self, content_generator, sample_client_brief):
+        """Test system prompt includes misconceptions to address"""
+        sample_client_brief.misconceptions = ["Common myth 1", "Industry fallacy"]
+
+        prompt = content_generator._build_system_prompt(
+            client_brief=sample_client_brief,
+            platform=Platform.LINKEDIN,
+        )
+
+        assert "COMMON MISCONCEPTIONS TO ADDRESS" in prompt
+        assert "Common myth 1" in prompt
+
+    def test_build_system_prompt_with_client_memory(self, content_generator, sample_client_brief):
+        """Test system prompt includes client memory insights"""
+        from src.models.client_memory import ClientMemory
+
+        mock_memory = ClientMemory(
+            client_name="Test Company",
+            total_projects=5,
+            is_repeat_client=True,
+            voice_adjustments={"tone": "more professional", "style": "concise"},
+            signature_phrases=["let's dive in", "here's the truth"],
+            optimal_word_count_min=150,
+            optimal_word_count_max=250,
+        )
+
+        prompt = content_generator._build_system_prompt(
+            client_brief=sample_client_brief,
+            platform=Platform.LINKEDIN,
+            client_memory=mock_memory,
+        )
+
+        assert "[CLIENT HISTORY]" in prompt
+        assert "repeat client" in prompt
+        assert "LEARNED PREFERENCES" in prompt
+        assert "SIGNATURE PHRASES" in prompt
+        assert "OPTIMAL LENGTH" in prompt
+        assert "150-250 words" in prompt
+
+    def test_build_skill_guidance_no_skill(self, mock_anthropic_client, mock_template_loader):
+        """Test skill guidance returns empty when skill not loaded"""
+        # Create generator with skill disabled
+        generator = ContentGeneratorAgent(
+            client=mock_anthropic_client,
+            template_loader=mock_template_loader,
+            use_content_skill=False,
+        )
+
+        guidance = generator._build_skill_guidance(Platform.LINKEDIN)
+        assert guidance == ""
+
+    def test_content_skill_loading_failure(self, mock_anthropic_client, mock_template_loader):
+        """Test graceful handling when skill loading fails"""
+        with patch("src.agents.content_generator.load_skill") as mock_load:
+            mock_load.side_effect = Exception("Skill not found")
+
+            generator = ContentGeneratorAgent(
+                client=mock_anthropic_client,
+                template_loader=mock_template_loader,
+                use_content_skill=True,
+            )
+
+            # Should not raise, just log warning
+            assert generator.content_skill is None
+
+
+class TestGenerateWithVoiceSamples:
+    """Tests for voice sample integration"""
+
+    @pytest.fixture
+    def content_generator_with_db(self, mock_anthropic_client, mock_template_loader):
+        """Content generator with mocked database"""
+
+        generator = ContentGeneratorAgent(
+            client=mock_anthropic_client,
+            template_loader=mock_template_loader,
+            use_content_skill=False,
+        )
+        generator.db = Mock()
+        return generator
+
+    @pytest.fixture
+    def sample_client_brief(self):
+        """Sample client brief"""
+        return ClientBrief(
+            company_name="Voice Test Company",
+            business_description="Test business",
+            ideal_customer="Test customers",
+            main_problem_solved="Test problem",
+        )
+
+    @pytest.fixture
+    def mock_anthropic_client(self):
+        """Mock Anthropic client"""
+        return Mock()
+
+    @pytest.fixture
+    def mock_template_loader(self):
+        """Mock template loader"""
+        loader = Mock()
+        loader.select_templates_for_client.return_value = [
+            Template(
+                template_id=1,
+                name="Template 1",
+                structure="Test structure",
+                template_type=TemplateType.PROBLEM_RECOGNITION,
+                difficulty=TemplateDifficulty.FAST,
+                best_for="Test",
+            )
+        ]
+        return loader
+
+    @pytest.mark.asyncio
+    async def test_generate_posts_with_voice_matching_async_no_db(
+        self, mock_anthropic_client, mock_template_loader, sample_client_brief
+    ):
+        """Test voice sample generation without database returns None report"""
+        generator = ContentGeneratorAgent(
+            client=mock_anthropic_client,
+            template_loader=mock_template_loader,
+            use_content_skill=False,
+        )
+        generator.db = None
+
+        with patch.object(generator, "generate_posts_async") as mock_async:
+            mock_async.return_value = [
+                Post(content="Test", template_id=1, template_name="Test", client_name="Test")
+            ]
+
+            posts, report = await generator.generate_posts_with_voice_matching_async(
+                client_brief=sample_client_brief,
+                num_posts=1,
+            )
+
+            assert posts is not None
+            assert report is None
+
+    @pytest.mark.asyncio
+    async def test_generate_posts_with_voice_matching_async_no_samples_in_db(
+        self, content_generator_with_db, sample_client_brief
+    ):
+        """Test voice sample generation when no samples exist"""
+        content_generator_with_db.db.get_voice_sample_upload_stats.return_value = None
+
+        with patch.object(content_generator_with_db, "generate_posts_async") as mock_async:
+            mock_async.return_value = [
+                Post(content="Test", template_id=1, template_name="Test", client_name="Test")
+            ]
+
+            posts, report = (
+                await content_generator_with_db.generate_posts_with_voice_matching_async(
+                    client_brief=sample_client_brief,
+                    num_posts=1,
+                )
+            )
+
+            assert posts is not None
+            assert report is None
+
+    @pytest.mark.asyncio
+    async def test_generate_posts_with_voice_matching_async_stats_but_no_samples(
+        self, content_generator_with_db, sample_client_brief
+    ):
+        """Test when stats exist but samples can't be retrieved"""
+        content_generator_with_db.db.get_voice_sample_upload_stats.return_value = {
+            "sample_count": 5,
+            "total_words": 1000,
+        }
+        content_generator_with_db.db.get_voice_sample_uploads.return_value = []
+
+        with patch.object(content_generator_with_db, "generate_posts_async") as mock_async:
+            mock_async.return_value = [
+                Post(content="Test", template_id=1, template_name="Test", client_name="Test")
+            ]
+
+            posts, report = (
+                await content_generator_with_db.generate_posts_with_voice_matching_async(
+                    client_brief=sample_client_brief,
+                    num_posts=1,
+                )
+            )
+
+            assert posts is not None
+            assert report is None
+
+    @pytest.mark.asyncio
+    async def test_generate_posts_with_voice_matching_async_full_flow(
+        self, content_generator_with_db, sample_client_brief
+    ):
+        """Test full voice sample generation flow"""
+        # Use Mock objects for voice samples to avoid validation constraints
+        mock_sample_1 = Mock()
+        mock_sample_1.sample_text = (
+            "This is a test voice sample with professional tone and business language."
+        )
+        mock_sample_1.sample_source = "linkedin"
+
+        mock_sample_2 = Mock()
+        mock_sample_2.sample_text = (
+            "Another sample showing consistent voice patterns in professional context."
+        )
+        mock_sample_2.sample_source = "linkedin"
+
+        voice_samples = [mock_sample_1, mock_sample_2]
+
+        content_generator_with_db.db.get_voice_sample_upload_stats.return_value = {
+            "sample_count": 2,
+            "total_words": 200,
+        }
+        content_generator_with_db.db.get_voice_sample_uploads.return_value = voice_samples
+
+        # Mock voice analyzer - create a Mock instead of real VoiceGuide
+        mock_voice_guide = Mock()
+        mock_voice_guide.voice_archetype = "The Professional"
+        mock_voice_guide.average_readability_score = 65.0
+        mock_voice_guide.average_word_count = 150
+        mock_voice_guide.key_phrases_used = ["test phrase", "example"]
+
+        with (
+            patch.object(content_generator_with_db, "generate_posts_async") as mock_async,
+            patch("src.agents.voice_analyzer.VoiceAnalyzer") as mock_analyzer_class,
+            patch("src.utils.voice_matcher.VoiceMatcher") as mock_matcher_class,
+        ):
+            mock_async.return_value = [
+                Post(
+                    content="Generated test post",
+                    template_id=1,
+                    template_name="Test",
+                    client_name="Voice Test Company",
+                )
+            ]
+
+            # Mock analyzer
+            mock_analyzer = Mock()
+            mock_analyzer.analyze_voice_samples.return_value = mock_voice_guide
+            mock_analyzer_class.return_value = mock_analyzer
+
+            # Mock matcher
+            mock_match_report = Mock()
+            mock_match_report.match_score = 0.85
+            mock_match_report.readability_score = Mock(score=0.9)
+            mock_match_report.word_count_score = Mock(score=0.8)
+            mock_match_report.archetype_score = Mock(score=0.85)
+            mock_match_report.phrase_usage_score = Mock(score=0.75)
+
+            mock_matcher = Mock()
+            mock_matcher.calculate_match_score.return_value = mock_match_report
+            mock_matcher_class.return_value = mock_matcher
+
+            posts, report = (
+                await content_generator_with_db.generate_posts_with_voice_matching_async(
+                    client_brief=sample_client_brief,
+                    num_posts=1,
+                )
+            )
+
+            assert posts is not None
+            assert len(posts) == 1
+            assert report is not None
+            assert report.match_score == 0.85
+
+    @pytest.mark.asyncio
+    async def test_generate_posts_with_voice_matching_async_matcher_error(
+        self, content_generator_with_db, sample_client_brief
+    ):
+        """Test graceful handling when voice matcher fails"""
+        # Use Mock objects to avoid validation constraints
+        mock_sample = Mock()
+        mock_sample.sample_text = "Test sample text for voice analysis"
+        mock_sample.sample_source = "linkedin"
+
+        voice_samples = [mock_sample]
+
+        content_generator_with_db.db.get_voice_sample_upload_stats.return_value = {
+            "sample_count": 1,
+            "total_words": 100,
+        }
+        content_generator_with_db.db.get_voice_sample_uploads.return_value = voice_samples
+
+        mock_voice_guide = Mock()
+        mock_voice_guide.average_readability_score = 60.0
+        mock_voice_guide.voice_archetype = None
+        mock_voice_guide.average_word_count = None
+        mock_voice_guide.key_phrases_used = []
+
+        with (
+            patch.object(content_generator_with_db, "generate_posts_async") as mock_async,
+            patch("src.agents.voice_analyzer.VoiceAnalyzer") as mock_analyzer_class,
+            patch("src.utils.voice_matcher.VoiceMatcher") as mock_matcher_class,
+        ):
+            mock_async.return_value = [
+                Post(content="Test", template_id=1, template_name="Test", client_name="Test")
+            ]
+
+            mock_analyzer = Mock()
+            mock_analyzer.analyze_voice_samples.return_value = mock_voice_guide
+            mock_analyzer_class.return_value = mock_analyzer
+
+            # Make matcher raise exception
+            mock_matcher = Mock()
+            mock_matcher.calculate_match_score.side_effect = Exception("Matcher error")
+            mock_matcher_class.return_value = mock_matcher
+
+            posts, report = (
+                await content_generator_with_db.generate_posts_with_voice_matching_async(
+                    client_brief=sample_client_brief,
+                    num_posts=1,
+                )
+            )
+
+            # Should return posts but None report on error
+            assert posts is not None
+            assert report is None
