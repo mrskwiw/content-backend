@@ -62,9 +62,14 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    // SPA fallback: serve index.html for all non-file requests (deep-link routing fix)
+    // This is enabled by default in Vite, but explicit config ensures it works
+    fs: {
+      strict: false, // Allow serving files outside of root during development
+    },
   },
 
-  // Preview server configuration
+  // Preview server configuration (production build preview)
   preview: {
     port: 4173,
     proxy: {
@@ -74,4 +79,7 @@ export default defineConfig({
       },
     },
   },
+
+  // Ensure SPA fallback works - Vite handles this automatically but we're explicit
+  appType: 'spa',
 })

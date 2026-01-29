@@ -176,22 +176,35 @@ def test_deprecated_secret_warning(secret_manager, caplog):
     """Test that using deprecated secret logs a warning."""
     import logging
 
-    caplog.set_level(logging.WARNING)
+    # Ensure the auth module logger propagates to root (required for caplog to capture)
+    auth_logger = logging.getLogger("backend.utils.auth")
+    original_propagate = auth_logger.propagate
+    auth_logger.propagate = True
 
-    # Add first secret and create token
-    secret_manager.add_secret("deprecated-secret")
-    token_old = create_access_token({"sub": "deprecated-user@example.com"})
+    try:
+        caplog.set_level(logging.WARNING, logger="backend.utils.auth")
 
-    # Rotate secret
-    secret_manager.rotate_secret(grace_period_days=7)
+        # Add first secret and create token
+        secret_manager.add_secret("deprecated-secret")
+        token_old = create_access_token({"sub": "deprecated-user@example.com"})
 
-    # Decode old token should log warning
-    payload = decode_token(token_old)
-    assert payload is not None
+        # Rotate secret
+        secret_manager.rotate_secret(grace_period_days=7)
 
-    # Check that warning was logged
-    assert any("deprecated secret" in record.message.lower() for record in caplog.records)
-    assert any("index 1" in record.message for record in caplog.records)
+        # Decode old token should log warning
+        payload = decode_token(token_old)
+        assert payload is not None
+
+        # Check that warning was logged
+        assert any(
+            "deprecated secret" in record.message.lower() for record in caplog.records
+        ), f"Expected 'deprecated secret' warning, got: {[r.message for r in caplog.records]}"
+        assert any(
+            "index 1" in record.message for record in caplog.records
+        ), f"Expected 'index 1' in warning, got: {[r.message for r in caplog.records]}"
+    finally:
+        # Restore original propagate setting
+        auth_logger.propagate = original_propagate
 
 
 def test_rotation_workflow_end_to_end(secret_manager):

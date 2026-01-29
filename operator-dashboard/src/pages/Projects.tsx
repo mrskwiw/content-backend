@@ -366,6 +366,7 @@ export default function Projects() {
                               // TODO: Implement duplicate functionality
                               alert('Duplicate functionality coming soon');
                             },
+                            hidden: true, // Hide until implemented
                           },
                           {
                             label: 'Export Project',
@@ -375,6 +376,7 @@ export default function Projects() {
                               alert('Export functionality coming soon');
                             },
                             dividerAfter: true,
+                            hidden: true, // Hide until implemented
                           },
                           {
                             label: 'Archive Project',
@@ -385,6 +387,7 @@ export default function Projects() {
                                 alert('Archive functionality coming soon');
                               }
                             },
+                            hidden: true, // Hide until implemented
                           },
                         ]}
                       />

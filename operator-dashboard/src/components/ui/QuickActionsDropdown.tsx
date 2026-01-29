@@ -7,6 +7,7 @@ export interface QuickAction {
   onClick: () => void;
   variant?: 'default' | 'danger';
   dividerAfter?: boolean;
+  hidden?: boolean; // Hide action until implemented
 }
 
 interface QuickActionsDropdownProps {
@@ -80,9 +81,9 @@ export function QuickActionsDropdown({ actions, align = 'right', size = 'md' }: 
           }`}
         >
           <div className="py-1">
-            {actions.map((action, index) => {
+            {actions.filter(a => !a.hidden).map((action, index, filteredActions) => {
               const Icon = action.icon ? ICON_MAP[action.icon] : null;
-              const isLast = index === actions.length - 1;
+              const isLast = index === filteredActions.length - 1;
               const hasDropdown = !isLast && action.dividerAfter;
 
               return (

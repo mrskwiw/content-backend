@@ -449,6 +449,7 @@ export default function Clients() {
                               // TODO: Implement export functionality
                               alert('Export functionality coming soon');
                             },
+                            hidden: true, // Hide until implemented
                           },
                           {
                             label: 'Archive Client',
@@ -459,6 +460,7 @@ export default function Clients() {
                                 alert('Archive functionality coming soon');
                               }
                             },
+                            hidden: true, // Hide until implemented
                           },
                         ]}
                       />

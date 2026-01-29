@@ -37,6 +37,7 @@ from backend.routers import (
     projects,
     research,
     runs,
+    trends,
 )
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -50,7 +51,13 @@ from backend.utils.rate_limiter import rate_limiter
 from backend.utils.http_rate_limiter import limiter
 
 # Load .env file to make variables available to os.getenv() for admin seeding
-load_dotenv()
+# On Render: .env file won't exist, variables come from Render dashboard
+env_file_path = Path(__file__).parent / ".env"
+if env_file_path.exists():
+    load_dotenv(env_file_path)
+    print(f">> Loaded environment from: {env_file_path}")
+else:
+    print(f">> No .env file found at {env_file_path}, using system environment variables")
 
 
 @asynccontextmanager
@@ -107,6 +114,16 @@ async def lifespan(app: FastAPI):
         # Check if admin seeding is forced (useful for password reset)
         force_admin_seed = os.getenv("FORCE_ADMIN_SEED", "false").lower() == "true"
 
+        # Debug: Show seeding decision factors
+        print(">> Admin seeding check:")
+        print(f">>   - User count in DB: {user_count}")
+        print(f">>   - FORCE_ADMIN_SEED: {os.getenv('FORCE_ADMIN_SEED', 'not set')}")
+        print(f">>   - PRIMARY_ADMIN_EMAIL: {os.getenv('PRIMARY_ADMIN_EMAIL', 'not set')}")
+        print(
+            f">>   - DEFAULT_USER_PASSWORD: {'set' if os.getenv('DEFAULT_USER_PASSWORD') else 'not set'}"
+        )
+        print(f">>   - Will seed: {user_count == 0 or force_admin_seed}")
+
         if user_count == 0 or force_admin_seed:
             if force_admin_seed and user_count > 0:
                 print(">> FORCE_ADMIN_SEED=true - Updating admin accounts...")
@@ -154,13 +171,15 @@ async def lifespan(app: FastAPI):
             if not default_password:
                 # Generate secure random password if not provided
                 default_password = secrets.token_urlsafe(16)
-                print(">> WARNING: No DEFAULT_USER_PASSWORD set in environment!")
-                print(f">> Generated random password for admin users: {default_password}")
-                print(">> IMPORTANT: Save this password immediately - it won't be shown again!")
-                print(">> Set DEFAULT_USER_PASSWORD in .env to use a custom password")
+                print(">> " + "=" * 60)
+                print(">> WARNING: DEFAULT_USER_PASSWORD not set in environment!")
+                print(f">> Generated temporary password: {default_password}")
+                print(">> SAVE THIS PASSWORD - it won't be shown again!")
+                print(">> ")
+                print(">> FOR PRODUCTION: Set DEFAULT_USER_PASSWORD in Render dashboard")
+                print(">> " + "=" * 60)
             else:
                 print(">> Using DEFAULT_USER_PASSWORD from environment")
-                print(">> SECURITY: Password not displayed (using environment variable)")
 
             created_count = 0
             updated_count = 0
@@ -390,20 +409,44 @@ async def spa_routing_middleware(request: Request, call_next):
     - API routes to return JSON 404s properly
     - Frontend routes (/login, /dashboard, etc.) to load the React app
     - No interference with API routing
+
+    Known frontend routes that should serve index.html:
+    - /login, /dashboard, /dashboard/*, /wizard, etc.
     """
+    path = request.url.path
+
+    # List of paths that should NOT trigger SPA fallback
+    excluded_prefixes = [
+        "/api",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/health",
+        "/assets",
+        "/favicon.ico",
+    ]
+
+    # Check if this is a known frontend route BEFORE processing
+    # This handles deep-links that would otherwise 404
+    is_frontend_route = not any(
+        path.startswith(prefix) for prefix in excluded_prefixes
+    ) and not path.endswith(
+        (".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".json", ".map")
+    )
+
     response = await call_next(request)
 
-    # If 404 and not an API/docs/health route, serve index.html
-    if response.status_code == 404 and not request.url.path.startswith("/api"):
-        if request.url.path not in ["/docs", "/redoc", "/openapi.json", "/health"]:
-            frontend_build_dir = Path(__file__).parent.parent / "operator-dashboard" / "dist"
-            if frontend_build_dir.exists():
-                spa_response = FileResponse(frontend_build_dir / "index.html")
-                # Prevent HTML caching to avoid chunk loading errors
-                spa_response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                spa_response.headers["Pragma"] = "no-cache"
-                spa_response.headers["Expires"] = "0"
-                return spa_response
+    # If 404 and looks like a frontend route, serve index.html
+    if response.status_code == 404 and is_frontend_route:
+        frontend_build_dir = Path(__file__).parent.parent / "operator-dashboard" / "dist"
+        index_file = frontend_build_dir / "index.html"
+        if index_file.exists():
+            spa_response = FileResponse(index_file)
+            # Prevent HTML caching to avoid chunk loading errors
+            spa_response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            spa_response.headers["Pragma"] = "no-cache"
+            spa_response.headers["Expires"] = "0"
+            return spa_response
 
     return response
 
@@ -535,6 +578,7 @@ app.include_router(deliverables.router, prefix="/api/deliverables", tags=["Deliv
 app.include_router(posts.router, prefix="/api/posts", tags=["Posts"])
 app.include_router(generator.router, prefix="/api/generator", tags=["Generator"])
 app.include_router(research.router, prefix="/api/research", tags=["Research"])
+app.include_router(trends.router, prefix="/api/trends", tags=["Google Trends"])
 app.include_router(pricing.router, prefix="/api/pricing", tags=["Pricing"])
 app.include_router(assistant.router, prefix="/api/assistant", tags=["AI Assistant"])
 app.include_router(database.router, prefix="/api", tags=["Database"])
