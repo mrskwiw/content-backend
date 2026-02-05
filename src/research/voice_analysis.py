@@ -35,7 +35,6 @@ from ..validators.research_input_validator import (
 )
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
-from ..utils.anthropic_client import get_default_client
 
 # Try to import textstat for readability scoring
 try:
@@ -61,8 +60,6 @@ class VoiceAnalyzer(ResearchTool, CommonValidationMixin):
         """Initialize voice analyzer with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
-        self.client = get_default_client()  # Needed for API calls
-
     @property
     def tool_name(self) -> str:
         return "voice_analysis"
@@ -542,15 +539,11 @@ Provide analysis in JSON format:
 Focus on objective patterns in the writing, not what the content is about."""
 
         try:
-            client = get_default_client()
-            content = client.create_message(
-                messages=[{"role": "user", "content": prompt}], max_tokens=1000, temperature=0.3
+            result = self._call_claude_api(
+                prompt, max_tokens=1000, temperature=0.3, extract_json=True, fallback_on_error={}
             )
-            # Find JSON in response
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if json_match:
-                result: Dict[str, Any] = json.loads(json_match.group())
 
+            if result:
                 # Convert strings to enums
                 result["primary_tone"] = ToneType(result["primary_tone"])
                 if result.get("secondary_tone"):

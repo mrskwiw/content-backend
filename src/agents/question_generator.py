@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from ..models.brief_quality import BriefQualityReport
 from ..models.client_brief import ClientBrief
 from ..models.question import Question, QuestionType
+from ..utils.agent_helpers import call_claude_api
 from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import logger
 

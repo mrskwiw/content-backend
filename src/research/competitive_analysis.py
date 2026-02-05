@@ -24,7 +24,6 @@ from ..validators.research_input_validator import (
 )
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
-from ..utils.anthropic_client import get_default_client
 import re
 
 
@@ -70,7 +69,6 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
         """Initialize competitive analyzer with input validator"""
         super().__init__(project_id=project_id, config=config)
         self.validator = ResearchInputValidator(strict_mode=False)
-        self.client = get_default_client()  # Still needed for unmigrated API calls
 
     @property
     def tool_name(self) -> str:
@@ -442,16 +440,16 @@ Return as JSON with keys:
 positioning_statement, unique_angles (array), competitive_advantages (array), areas_to_improve (array)"""
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": prompt}],
+            data = self._call_claude_api(
+                prompt,
                 max_tokens=1500,
                 temperature=0.5,
+                extract_json=True,
+                fallback_on_error={},
             )
 
-            data = json.loads(response)
-
             position = MarketPosition(
-                positioning_statement=data["positioning_statement"],
+                positioning_statement=data.get("positioning_statement", ""),
                 unique_angles=data.get("unique_angles", [])[:5],
                 competitive_advantages=data.get("competitive_advantages", [])[:5],
                 areas_to_improve=data.get("areas_to_improve", [])[:5],

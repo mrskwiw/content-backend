@@ -20,7 +20,6 @@ from src.models.content_calendar_models import (
 )
 from src.research.base import ResearchTool
 from src.research.validation_mixin import CommonValidationMixin
-from src.utils.anthropic_client import get_default_client
 from src.validators.research_input_validator import ResearchInputValidator
 
 
@@ -31,7 +30,6 @@ class ContentCalendarStrategist(ResearchTool, CommonValidationMixin):
         """Initialize Content Calendar Strategist with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
-        self.client = get_default_client()  # Needed for API calls
 
     @property
     def tool_name(self) -> str:
@@ -279,11 +277,9 @@ Return JSON array with 3 themes:
   ...
 ]"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2000
+        themes_data = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        themes_data = self._extract_json_from_response(response)
 
         return [
             ContentTheme(
@@ -472,11 +468,9 @@ Return JSON array for weeks {weeks_in_batch}:
   ...
 ]"""
 
-            response = client.create_message(
-                messages=[{"role": "user", "content": prompt}], max_tokens=3000
+            weeks_data = self._call_claude_api(
+                prompt, max_tokens=3000, temperature=0.4, extract_json=True, fallback_on_error={}
             )
-
-            weeks_data = self._extract_json_from_response(response)
 
             # Convert to CalendarWeek objects
             for week_data in weeks_data:
@@ -537,11 +531,9 @@ Return JSON array:
 
 Frequency options: daily, 3x_per_week, 2x_per_week, weekly, biweekly"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2000
+        calendars_data = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        calendars_data = self._extract_json_from_response(response)
 
         return [
             PlatformCalendar(

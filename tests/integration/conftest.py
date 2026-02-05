@@ -28,6 +28,32 @@ import backend.models  # noqa: E402, F401 - Import models before app to register
 
 from backend.main import app  # noqa: E402
 
+# Import shared fixtures for integration tests
+from tests.fixtures.anthropic_responses import (  # noqa: E402, F401
+    mock_anthropic_client,
+    mock_anthropic_client_with_custom_response,
+    mock_anthropic_client_with_error,
+)
+
+
+@pytest.fixture(autouse=True)
+def mock_background_tasks(monkeypatch):
+    """
+    Mock background tasks to not actually run during tests.
+
+    Background tasks in routers create their own database sessions which
+    bypass test database mocking. For integration tests, we test the
+    endpoint behavior (returns 202 Accepted) without actually running
+    the background generation.
+    """
+    from unittest.mock import Mock
+
+    # Mock BackgroundTasks.add_task to do nothing
+    mock_add_task = Mock(return_value=None)
+
+    monkeypatch.setattr("fastapi.BackgroundTasks.add_task", mock_add_task)
+    yield mock_add_task
+
 
 @pytest.fixture(scope="function", autouse=True)
 def reset_rate_limiting():
@@ -68,7 +94,7 @@ def reset_rate_limiting():
 
 
 @pytest.fixture(scope="function", autouse=False)
-def db_session():
+def db_session(monkeypatch):
     """
     Create a fresh database session for each test.
 
@@ -129,6 +155,21 @@ def db_session():
     app.dependency_overrides[get_db] = override_get_db
     print("[DEBUG] Dependency override set for get_db")
     print(f"[DEBUG] App dependency overrides: {list(app.dependency_overrides.keys())}")
+
+    # CRITICAL: Also monkeypatch SessionLocal for background tasks
+    # Background tasks in generator.py and other routers create their own
+    # database sessions using SessionLocal() directly, bypassing dependency injection.
+    # We need to patch it to return our test session instead.
+    from backend import database
+
+    def mock_sessionlocal():
+        """Return the test session for background tasks"""
+        print(f"[DEBUG] SessionLocal() called, returning test session {id(session)}")
+        return session
+
+    # Patch the SessionLocal callable
+    monkeypatch.setattr(database, "SessionLocal", mock_sessionlocal)
+    print("[DEBUG] Monkeypatched SessionLocal for background tasks")
 
     # Provide the session to the test
     yield session

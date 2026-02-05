@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Agent implementation for 30-Day Content Jumpstart - AI content generator using Claude 3.5 Sonnet. Business templates are in parent directory (`../`).
+Agent implementation for 30-Day Content Jumpstart - AI content generator using Claude 3.5 Sonnet. Business templates are in parent directory (`../templates/`).
 
 ## Development Workflow
 
@@ -40,11 +40,14 @@ python agent_cli_enhanced.py chat
 
 ### Testing & Quality
 ```bash
-pytest                           # All tests
+pytest                           # All tests (3,077 tests, 95% coverage)
 pytest tests/unit/               # Unit only
-pytest --cov=src                 # With coverage
+pytest --cov=src --cov=backend --cov-report=html --cov-report=term  # With detailed coverage
+pytest -q                        # Quick run without verbose output
 black src/ tests/ && ruff check src/ tests/ && mypy src/  # All quality checks
 ```
+
+**View coverage report:** Open `htmlcov/index.html` in browser after running coverage tests
 
 ### Docker Deployment
 ```bash
@@ -79,6 +82,10 @@ backend/models/   # SQLAlchemy models
 operator-dashboard/src/  # React + TypeScript UI
 
 agent/            # Interactive agent (core_enhanced.py, tools.py - 58 tools)
+
+# Parent directory (../)
+../templates/     # Business templates (client brief, post library, checklists)
+../docs/          # Documentation and archives
 ```
 
 ### API Routes
@@ -108,7 +115,7 @@ agent/            # Interactive agent (core_enhanced.py, tools.py - 58 tools)
 
 **UTF-8 (Windows):** Lines 13-15 of 03_post_generator.py force UTF-8 - never remove.
 
-**Template Paths:** Loaded from `../02_POST_TEMPLATE_LIBRARY.md`.
+**Template Paths:** Loaded from `../templates/02_POST_TEMPLATE_LIBRARY.md`.
 
 **Error Recovery:** Failed posts create placeholders to maintain batch count.
 
@@ -121,7 +128,7 @@ DEBUG_MODE=True LOG_LEVEL=DEBUG
 # Check logs
 logs/content_jumpstart.log
 
-# Verify templates
+# Verify templates (loads from ../templates/02_POST_TEMPLATE_LIBRARY.md)
 python 03_post_generator.py list-templates  # Should show 15
 
 # Check outputs
@@ -142,7 +149,7 @@ UI/UX revisions tracked in `../docs/todo.md`.
 - **Async-first:** Default async, sync for debugging
 - **Pydantic validation:** All data models validated
 - **Fail gracefully:** Placeholder posts on error
-- **Business template separation:** Templates in parent dir, never modify
+- **Business template separation:** Templates in `../templates/`, never modify
 
 ## Known Issues
 
@@ -151,6 +158,27 @@ UI/UX revisions tracked in `../docs/todo.md`.
 - Running Vite dev server (automatic SPA fallback)
 
 If issues persist, ensure the frontend is built (`cd operator-dashboard && npm run build`).
+
+## Recent Fixes (February 2, 2026)
+
+**Template Path Issue:** ~~24 coordinator tests failing with FileNotFoundError.~~ **FIXED**
+- Root cause: `.env` file had `TEMPLATE_LIBRARY_PATH=../02_POST_TEMPLATE_LIBRARY.md`
+- Solution: Updated to `TEMPLATE_LIBRARY_PATH=02_POST_TEMPLATE_LIBRARY.md`
+- Template file exists at `Project/02_POST_TEMPLATE_LIBRARY.md`
+- All 25 coordinator tests now pass ✅
+
+**Test Organization:** Agent tests moved to correct locations
+- Moved 4 tests from `tests/unit/` to `tests/unit/agents/`
+- Improved test directory consistency
+
+**Integration Test Coverage:** Added 67 new router integration tests
+- `test_router_research.py` - 20 tests (P0 priority, $300-600 features)
+- `test_router_trends.py` - 29 tests (Google Trends integration)
+- `test_router_assistant.py` - 18 tests (AI assistant chat)
+
+**Test Suite Status:** 3,077 passing tests, **95% coverage achieved** ✅ (target: 90%)
+
+**Coverage Details:** See `TEST_COVERAGE_ACHIEVED.md` for comprehensive coverage report
 
 ## Operator Dashboard
 

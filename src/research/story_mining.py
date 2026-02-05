@@ -24,7 +24,6 @@ from ..models.story_mining_models import (
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
-from ..utils.anthropic_client import get_default_client
 
 
 class StoryMiner(ResearchTool, CommonValidationMixin):
@@ -34,7 +33,6 @@ class StoryMiner(ResearchTool, CommonValidationMixin):
         """Initialize story miner with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
-        self.client = get_default_client()  # Needed for API calls
 
     @property
     def tool_name(self) -> str:
@@ -264,11 +262,9 @@ Return JSON with:
 - pain_points: array of strings
 - cost_of_inaction: string"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Challenge(
             problem_description=data.get("problem_description", ""),
@@ -310,11 +306,9 @@ Return JSON with:
 - stakeholders_involved: array of strings
 - concerns_overcome: array of strings"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return DecisionProcess(
             why_chose_solution=data.get("why_chose_solution", ""),
@@ -355,11 +349,9 @@ Return JSON with:
 - surprises_discoveries: array of strings
 - support_needed: string"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Implementation(
             getting_started=data.get("getting_started"),
@@ -401,11 +393,9 @@ Return JSON with:
 - before_after_comparison: string
 - unexpected_benefits: array of strings"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Results(
             quantitative_results=data.get("quantitative_results", []),
@@ -447,11 +437,9 @@ Return JSON with:
 
 Make quotes sound authentic and specific."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Testimonials(
             headline_quote=data.get("headline_quote"),
@@ -486,11 +474,9 @@ Return JSON with:
 - long_term_vision: string
 - expansion_plans: string"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=1500
+        data = self._call_claude_api(
+            prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return FuturePlans(
             ongoing_success=data.get("ongoing_success"),
@@ -527,11 +513,9 @@ Return JSON with:
 - key_takeaways: array of strings
 - use_cases: array of strings"""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2000
+        data = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return (
             data.get("one_sentence_summary", ""),
@@ -607,11 +591,9 @@ Create a structured case study outline with:
 
 Return as markdown text (not JSON)."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2000
+        text = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.4, extract_json=False
         )
-
-        text: str = response.content[0].text if response.content else ""
         return text.strip()
 
     def generate_reports(self, analysis: StoryMiningAnalysis) -> Dict[str, Path]:
@@ -675,7 +657,7 @@ Return as markdown text (not JSON)."""
 {story.customer_background.starting_situation or 'Not specified'}
 
 **Key Responsibilities:**
-{self._format_list(story.customer_background.key_responsibilities)}
+{self._format_markdown_list(story.customer_background.key_responsibilities)}
 
 ---
 
@@ -691,10 +673,10 @@ Return as markdown text (not JSON)."""
 {story.challenge.urgency_level or 'Not specified'}
 
 **Pain Points:**
-{self._format_list(story.challenge.pain_points)}
+{self._format_markdown_list(story.challenge.pain_points)}
 
 **Previous Attempts:**
-{self._format_list(story.challenge.failed_attempts)}
+{self._format_markdown_list(story.challenge.failed_attempts)}
 
 **Cost of Inaction:**
 {story.challenge.cost_of_inaction or 'Not specified'}
@@ -707,17 +689,17 @@ Return as markdown text (not JSON)."""
 {story.decision_process.why_chose_solution}
 
 **Alternatives Considered:**
-{self._format_list(story.decision_process.alternatives_considered)}
+{self._format_markdown_list(story.decision_process.alternatives_considered)}
 
 **Key Decision Factors:**
-{self._format_list(story.decision_process.key_decision_factors)}
+{self._format_markdown_list(story.decision_process.key_decision_factors)}
 
 **Timeline:** {story.decision_process.decision_timeline or 'Not specified'}
 
 **Stakeholders:** {', '.join(story.decision_process.stakeholders_involved) or 'Not specified'}
 
 **Concerns Overcome:**
-{self._format_list(story.decision_process.concerns_overcome)}
+{self._format_markdown_list(story.decision_process.concerns_overcome)}
 
 ---
 
@@ -729,13 +711,13 @@ Return as markdown text (not JSON)."""
 **Timeline:** {story.implementation.implementation_timeline or 'Not specified'}
 
 **Key Milestones:**
-{self._format_list(story.implementation.key_milestones)}
+{self._format_markdown_list(story.implementation.key_milestones)}
 
 **Obstacles Overcome:**
-{self._format_list(story.implementation.obstacles_overcome)}
+{self._format_markdown_list(story.implementation.obstacles_overcome)}
 
 **Surprises & Discoveries:**
-{self._format_list(story.implementation.surprises_discoveries)}
+{self._format_markdown_list(story.implementation.surprises_discoveries)}
 
 **Support Needed:**
 {story.implementation.support_needed or 'Not specified'}
@@ -745,10 +727,10 @@ Return as markdown text (not JSON)."""
 ## Results Achieved
 
 ### Quantitative Results
-{self._format_list(story.results.quantitative_results)}
+{self._format_markdown_list(story.results.quantitative_results)}
 
 ### Qualitative Improvements
-{self._format_list(story.results.qualitative_improvements)}
+{self._format_markdown_list(story.results.qualitative_improvements)}
 
 **ROI:** {story.results.roi_metrics or 'Not specified'}
 
@@ -758,7 +740,7 @@ Return as markdown text (not JSON)."""
 {story.results.before_after_comparison or 'Not specified'}
 
 **Unexpected Benefits:**
-{self._format_list(story.results.unexpected_benefits)}
+{self._format_markdown_list(story.results.unexpected_benefits)}
 
 ---
 
@@ -770,11 +752,11 @@ Return as markdown text (not JSON)."""
 
 ### Detailed Quotes
 
-{self._format_list(story.testimonials.detailed_quotes, quote=True)}
+{self._format_markdown_list(story.testimonials.detailed_quotes, item_formatter=lambda x: f"> {x}")}
 
 ### Specific Wins (in customer's words)
 
-{self._format_list(story.testimonials.specific_wins)}
+{self._format_markdown_list(story.testimonials.specific_wins)}
 
 **Would They Recommend?**
 {story.testimonials.would_recommend or 'Not specified'}
@@ -790,7 +772,7 @@ Return as markdown text (not JSON)."""
 {story.future_plans.ongoing_success or 'Not specified'}
 
 **Next Goals:**
-{self._format_list(story.future_plans.next_goals)}
+{self._format_markdown_list(story.future_plans.next_goals)}
 
 **Long-Term Vision:**
 {story.future_plans.long_term_vision or 'Not specified'}
@@ -802,19 +784,19 @@ Return as markdown text (not JSON)."""
 
 ## Key Takeaways
 
-{self._format_list(story.key_takeaways, numbered=True)}
+{self._format_markdown_list(story.key_takeaways, ordered=True)}
 
 ---
 
 ## Use Cases Demonstrated
 
-{self._format_list(story.use_cases)}
+{self._format_markdown_list(story.use_cases)}
 
 ---
 
 ## Content Recommendations
 
-{self._format_list(analysis.content_recommendations, numbered=True)}
+{self._format_markdown_list(analysis.content_recommendations, ordered=True)}
 
 ---
 
@@ -823,34 +805,3 @@ Return as markdown text (not JSON)."""
 
         return md
 
-    def _format_list(self, items: List[str], numbered: bool = False, quote: bool = False) -> str:
-        """Format list for markdown"""
-        if not items:
-            return "None specified\n"
-
-        if quote:
-            return "\n\n".join([f"> {item}" for item in items])
-        elif numbered:
-            return "\n".join([f"{i}. {item}" for i, item in enumerate(items, 1)])
-        else:
-            return "\n".join([f"- {item}" for item in items])
-
-    def _extract_json_from_response(self, text: str) -> Any:
-        """Extract JSON from Claude response"""
-        try:
-            # Try to parse entire response as JSON
-            return json.loads(text)
-        except json.JSONDecodeError:
-            # Look for JSON in code blocks
-            import re
-
-            json_match = re.search(r"```(?:json)?\s*(\{.*\}|\[.*\])\s*```", text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(1))
-
-            # Try to find JSON object/array
-            json_match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(1))
-
-            raise ValueError(f"Could not extract JSON from response: {text[:200]}")

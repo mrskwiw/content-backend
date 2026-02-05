@@ -7,6 +7,7 @@ from ..config.constants import BRIEF_PARSING_TEMPERATURE
 from ..config.prompts import SystemPrompts
 from ..exceptions import BriefParsingError
 from ..models.client_brief import ClientBrief, DataUsagePreference, Platform, TonePreference
+from ..utils.agent_helpers import call_claude_api
 from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import logger
 
@@ -45,14 +46,14 @@ class BriefParserAgent:
 
         try:
             # Get structured JSON from API using centralized temperature
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": brief_text}],
-                system=self.SYSTEM_PROMPT,
+            brief_data = call_claude_api(
+                self.client,
+                brief_text,
+                system_prompt=self.SYSTEM_PROMPT,
                 temperature=BRIEF_PARSING_TEMPERATURE,
+                extract_json=True,
+                fallback_on_error={},
             )
-
-            # Parse JSON response
-            brief_data = self._extract_json_from_response(response)
 
             # Validate and convert to ClientBrief
             client_brief = self._convert_to_client_brief(brief_data)
@@ -66,38 +67,6 @@ class BriefParserAgent:
         except Exception as e:
             logger.error(f"Failed to parse client brief: {str(e)}", exc_info=True)
             raise BriefParsingError(f"Brief parsing failed: {str(e)}")
-
-    def _extract_json_from_response(self, response: str) -> Dict[str, Any]:
-        """
-        Extract JSON from API response
-
-        Args:
-            response: API response text
-
-        Returns:
-            Parsed JSON dictionary
-
-        Raises:
-            ValueError: If JSON extraction fails
-        """
-        # Try to find JSON in response
-        # Sometimes the model wraps JSON in markdown code blocks
-        import re
-
-        # Try to find JSON block
-        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response, re.DOTALL)
-        if json_match:
-            json_str = json_match.group(1)
-        else:
-            # Assume entire response is JSON
-            json_str = response.strip()
-
-        try:
-            result: Dict[str, Any] = json.loads(json_str)
-            return result
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON from response: {response}")
-            raise ValueError(f"Invalid JSON in response: {str(e)}")
 
     def _convert_to_client_brief(self, data: Dict[str, Any]) -> ClientBrief:
         """
@@ -190,13 +159,14 @@ Keep all existing information unless the new information explicitly contradicts 
 Return ONLY the complete updated JSON, no additional commentary."""
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": enrichment_prompt}],
-                system=self.SYSTEM_PROMPT,
+            brief_data = call_claude_api(
+                self.client,
+                enrichment_prompt,
+                system_prompt=self.SYSTEM_PROMPT,
                 temperature=0.3,
+                extract_json=True,
+                fallback_on_error={},
             )
-
-            brief_data = self._extract_json_from_response(response)
             updated_brief = self._convert_to_client_brief(brief_data)
 
             logger.info(f"Successfully enriched brief for {client_brief.company_name}")

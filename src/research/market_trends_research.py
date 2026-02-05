@@ -21,7 +21,6 @@ from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
-from ..utils.anthropic_client import get_default_client
 
 
 class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
@@ -31,8 +30,6 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
         """Initialize Market Trends Researcher with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
-        self.client = get_default_client()  # Still needed for unmigrated API calls
-
     @property
     def tool_name(self) -> str:
         return "market_trends_research"

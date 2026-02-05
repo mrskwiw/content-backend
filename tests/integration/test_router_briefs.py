@@ -355,8 +355,8 @@ class TestParseBriefEndpoint:
         assert "fields" in data
         assert "companyName" in data["fields"] or "company_name" in data["fields"]
 
-    def test_parse_brief_empty_content(self, client, auth_headers_user_a):
-        """Test parsing empty brief content"""
+    def test_parse_brief_empty_content(self, client, auth_headers_user_a, mock_anthropic_client):
+        """Test parsing empty brief content - returns default values with fallback"""
         from io import BytesIO
 
         files = {"file": ("brief.txt", BytesIO(b""), "text/plain")}
@@ -367,9 +367,14 @@ class TestParseBriefEndpoint:
             files=files,
         )
 
-        # Empty content may cause parser to fail (500) or return validation error (400/422)
-        # The parser doesn't gracefully handle empty content
-        assert response.status_code in [400, 422, 500]
+        # With mock and fallback_on_error, empty content returns 200 with default values
+        # The brief parser gracefully handles empty content using agent_helpers fallback
+        assert response.status_code == 200
+        data = response.json()
+        # Should return a brief with default values
+        assert "fields" in data
+        # Default company name when parsing fails
+        assert data["fields"].get("companyName") == "Unknown Company" or data["fields"].get("company_name") == "Unknown Company"
 
     def test_parse_brief_unauthenticated(self, client):
         """Test parsing brief without authentication"""

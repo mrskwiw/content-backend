@@ -31,7 +31,6 @@ from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
-from ..utils.anthropic_client import get_default_client
 
 
 class BrandArchetype:
@@ -447,26 +446,10 @@ Please respond with JSON only (no markdown):
 
 Rate each archetype 0.0 (no fit) to 1.0 (perfect fit) based on the brand's personality, values, and positioning."""
 
-        try:
-            client = get_default_client()
-            content = client.create_message(
-                messages=[{"role": "user", "content": prompt}], max_tokens=500, temperature=0.3
-            )
-
-            # Extract JSON
-            import re
-
-            json_match = re.search(r"\{[^}]+\}", content, re.DOTALL)
-            if json_match:
-                result = json.loads(json_match.group())
-                return dict(result) if isinstance(result, dict) else {}
-            else:
-                logger.warning("Claude didn't return valid JSON, using fallback")
-                return {}
-
-        except Exception as e:
-            logger.error(f"Claude analysis failed: {e}")
-            return {}
+        result = self._call_claude_api(
+            prompt, max_tokens=500, temperature=0.3, extract_json=True, fallback_on_error={}
+        )
+        return dict(result) if isinstance(result, dict) else {}
 
     def _combine_scores(
         self, keyword_scores: Dict[str, float], claude_scores: Dict[str, float]

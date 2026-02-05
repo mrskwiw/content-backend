@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from ..models.brief_quality import BriefQualityReport
 from ..models.client_brief import ClientBrief
+from ..utils.agent_helpers import call_claude_api
 from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import logger
 
@@ -105,15 +106,15 @@ class BriefEnhancerAgent:
         enhancement_prompt = self._build_enhancement_prompt(client_brief, enhancement_targets)
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": enhancement_prompt}],
-                system="You are a content strategist enhancing client briefs. Return only JSON.",
-                temperature=0.5,
+            enhancements = call_claude_api(
+                self.client,
+                enhancement_prompt,
+                system_prompt="You are a content strategist enhancing client briefs. Return only JSON.",
                 max_tokens=1000,
+                temperature=0.5,
+                extract_json=True,
+                fallback_on_error={},
             )
-
-            # Parse response
-            enhancements = self._extract_json(response)
 
             logger.info(f"Generated enhancements for {len(enhancements)} fields")
             return enhancements
@@ -230,36 +231,6 @@ Return ONLY valid JSON, no additional commentary."""
             logger.error(f"Failed to create enhanced brief: {e}", exc_info=True)
             # Return original brief if enhancement fails validation
             return client_brief
-
-    def _extract_json(self, response: str) -> Dict[str, Any]:
-        """
-        Extract JSON from API response
-
-        Args:
-            response: API response text
-
-        Returns:
-            Parsed JSON dictionary
-
-        Raises:
-            ValueError: If JSON extraction fails
-        """
-        import re
-
-        # Try to find JSON block
-        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response, re.DOTALL)
-        if json_match:
-            json_str = json_match.group(1)
-        else:
-            # Assume entire response is JSON
-            json_str = response.strip()
-
-        try:
-            result: Dict[str, Any] = json.loads(json_str)
-            return result
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON from response: {response}")
-            raise ValueError(f"Invalid JSON in response: {str(e)}")
 
     def suggest_enhancements_only(
         self, client_brief: ClientBrief, quality_report: BriefQualityReport

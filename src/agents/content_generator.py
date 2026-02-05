@@ -20,6 +20,7 @@ from ..models.post import Post
 from ..models.seo_keyword import KeywordStrategy
 from ..models.template import Template
 from ..models.voice_sample import VoiceMatchReport
+from ..utils.agent_helpers import call_claude_api_async
 from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import log_post_generated, logger
 from ..utils.skill_loader import load_skill, Skill
@@ -127,10 +128,17 @@ class ContentGeneratorAgent:
             f"using {template_count} templates (legacy equal distribution mode)"
         )
 
+        # SECURITY: Sanitize client brief before processing (TR-014)
+        try:
+            sanitized_brief = self._sanitize_client_brief(client_brief)
+        except ValueError as e:
+            logger.error(f"Prompt injection detected, aborting generation: {e}")
+            raise
+
         # Load client memory if available and enabled
         client_memory = None
         if use_client_memory and self.db:
-            client_memory = self.db.get_client_memory(client_brief.company_name)
+            client_memory = self.db.get_client_memory(sanitized_brief.company_name)
             if client_memory and client_memory.is_repeat_client:
                 logger.info(
                     f"[REPEAT CLIENT] Welcome back {client_brief.company_name}! "
@@ -163,15 +171,15 @@ class ContentGeneratorAgent:
         else:
             # Intelligent template selection with memory-aware preferences
             selected_templates = self.template_loader.select_templates_for_client(
-                client_brief,
+                sanitized_brief,
                 count=template_count,
                 boost_templates=client_memory.preferred_templates if client_memory else [],
                 avoid_templates=client_memory.avoided_templates if client_memory else [],
             )
 
         # Cache system prompt and base context for reuse across all posts
-        cached_system_prompt = self._build_system_prompt(client_brief, platform, client_memory)
-        base_context = client_brief.to_context_dict()
+        cached_system_prompt = self._build_system_prompt(sanitized_brief, platform, client_memory)
+        base_context = sanitized_brief.to_context_dict()
 
         # Generate posts (each template used twice for variety)
         posts = []
@@ -186,7 +194,7 @@ class ContentGeneratorAgent:
             for variant in range(1, uses_per_template + 1):
                 post = self._generate_single_post(
                     template=template,
-                    client_brief=client_brief,
+                    client_brief=sanitized_brief,  # SECURITY FIX: Use sanitized brief (TR-014)
                     variant=variant,
                     post_number=post_number,
                     cached_system_prompt=cached_system_prompt,
@@ -275,10 +283,17 @@ class ContentGeneratorAgent:
             f"using {template_count} templates (async mode, legacy equal distribution, max concurrent: {max_concurrent})"
         )
 
+        # SECURITY: Sanitize client brief before processing (TR-014)
+        try:
+            sanitized_brief = self._sanitize_client_brief(client_brief)
+        except ValueError as e:
+            logger.error(f"Prompt injection detected, aborting generation: {e}")
+            raise
+
         # Load client memory if available and enabled
         client_memory = None
         if use_client_memory and self.db:
-            client_memory = self.db.get_client_memory(client_brief.company_name)
+            client_memory = self.db.get_client_memory(sanitized_brief.company_name)
             if client_memory and client_memory.is_repeat_client:
                 logger.info(
                     f"[REPEAT CLIENT] Welcome back {client_brief.company_name}! "
@@ -311,15 +326,15 @@ class ContentGeneratorAgent:
         else:
             # Intelligent template selection with memory-aware preferences
             selected_templates = self.template_loader.select_templates_for_client(
-                client_brief,
+                sanitized_brief,
                 count=template_count,
                 boost_templates=client_memory.preferred_templates if client_memory else [],
                 avoid_templates=client_memory.avoided_templates if client_memory else [],
             )
 
         # Cache system prompt and base context for reuse across all posts
-        cached_system_prompt = self._build_system_prompt(client_brief, platform, client_memory)
-        base_context = client_brief.to_context_dict()
+        cached_system_prompt = self._build_system_prompt(sanitized_brief, platform, client_memory)
+        base_context = sanitized_brief.to_context_dict()
 
         # Build list of post generation tasks
         tasks = []
@@ -366,7 +381,7 @@ class ContentGeneratorAgent:
             async with semaphore:
                 return await self._generate_single_post_with_retry_async(
                     template=task_params["template"],
-                    client_brief=client_brief,  # Brief is used from outer scope
+                    client_brief=sanitized_brief,  # SECURITY FIX: Use sanitized brief (TR-014)
                     variant=task_params["variant"],
                     post_number=task_params["post_number"],
                     cached_system_prompt=task_params["cached_system_prompt"],
@@ -735,7 +750,7 @@ class ContentGeneratorAgent:
             async with semaphore:
                 return await self._generate_single_post_with_retry_async(
                     template=task_params["template"],
-                    client_brief=client_brief,  # Brief is used from outer scope
+                    client_brief=sanitized_brief,  # SECURITY FIX: Use sanitized brief (TR-014)
                     variant=task_params["variant"],
                     post_number=task_params["post_number"],
                     cached_system_prompt=task_params["cached_system_prompt"],
@@ -1912,10 +1927,13 @@ Generate the {platform.value} teaser now:"""
 
         try:
             # Generate teaser content
-            content = await self.client.create_message_async(
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
+            content = await call_claude_api_async(
+                self.client,
+                user_prompt,
+                system_prompt=system_prompt,
                 temperature=0.8,  # More creative for teasers
+                extract_json=False,
+                fallback_on_error="",
             )
 
             # Clean content

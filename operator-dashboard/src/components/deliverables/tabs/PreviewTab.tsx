@@ -1,50 +1,18 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
 import type { DeliverableDetails } from '@/types/domain';
-import { FileText, AlertCircle, Loader2 } from 'lucide-react';
-
-// Lazy load syntax highlighter to reduce bundle size (saves ~450KB)
-const SyntaxHighlighter = lazy(() =>
-  import('react-syntax-highlighter').then((mod) => ({
-    default: mod.Prism,
-  }))
-);
-
-// Lazy load the theme
-const vscDarkPlusLoader = () =>
-  import('react-syntax-highlighter/dist/esm/styles/prism').then(
-    (mod) => mod.vscDarkPlus
-  );
+import { FileText, AlertCircle } from 'lucide-react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface Props {
   deliverable: DeliverableDetails;
 }
 
-// Loading fallback component
-function SyntaxHighlighterFallback() {
-  return (
-    <div className="flex items-center justify-center h-64 p-6">
-      <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-      <span className="ml-2 text-sm text-slate-600">Loading syntax highlighter...</span>
-    </div>
-  );
-}
-
-// Lazy-loaded markdown preview component
+// Markdown preview with syntax highlighting
 function MarkdownPreview({ content }: { content: string }) {
-  const [style, setStyle] = useState<{ [key: string]: React.CSSProperties } | null>(null);
-
-  useEffect(() => {
-    vscDarkPlusLoader().then(setStyle);
-  }, []);
-
-  if (!style) {
-    return <SyntaxHighlighterFallback />;
-  }
-
   return (
     <SyntaxHighlighter
       language="markdown"
-      style={style}
+      style={vscDarkPlus}
       customStyle={{
         margin: 0,
         borderRadius: 0,
@@ -98,9 +66,7 @@ export function PreviewTab({ deliverable }: Props) {
       {/* Content preview */}
       <div className="flex-1 overflow-y-auto">
         {isMarkdown ? (
-          <Suspense fallback={<SyntaxHighlighterFallback />}>
-            <MarkdownPreview content={deliverable.filePreview} />
-          </Suspense>
+          <MarkdownPreview content={deliverable.filePreview} />
         ) : (
           <pre className="p-6 text-xs font-mono text-slate-700 dark:text-neutral-300 whitespace-pre-wrap bg-slate-50 dark:bg-neutral-900">
             {deliverable.filePreview}
