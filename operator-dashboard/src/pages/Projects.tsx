@@ -143,7 +143,6 @@ export default function Projects() {
         isBatch: true,
       }),
     onSuccess: (run) => {
-      console.log('Generation started:', run);
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['runs'] });
       // Show success message

@@ -102,6 +102,60 @@ async def update_client(
     return updated_client
 
 
+@router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+@standard_limiter.limit("100/hour")  # TR-004: Standard operation
+async def delete_client(
+    request: Request,
+    client_id: str,
+    force: bool = Query(False, description="Force delete even if client has projects"),
+    client: Client = Depends(verify_client_ownership),  # TR-021: Authorization check
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete client.
+
+    Rate limit: 100/hour per IP+user (standard operation)
+    Authorization: TR-021 - User must own client
+
+    Args:
+        client_id: Client ID to delete
+        force: If True, cascade delete all associated projects. If False, fail if projects exist.
+
+    Returns:
+        204 No Content on success
+        400 Bad Request if client has projects and force=False
+    """
+    # TR-021: client already verified by dependency
+
+    # Check for associated projects
+    from backend.models import Project
+    projects = db.query(Project).filter(Project.client_id == client_id).all()
+
+    if projects and not force:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Client has {len(projects)} associated project(s). Use force=true to delete all related data.",
+        )
+
+    # If force=True, delete associated projects first (cascade)
+    if projects:
+        for project in projects:
+            # Delete associated posts, runs, briefs, deliverables
+            from backend.models import Post, Run, Brief, Deliverable
+            db.query(Post).filter(Post.project_id == project.id).delete()
+            db.query(Run).filter(Run.project_id == project.id).delete()
+            db.query(Brief).filter(Brief.project_id == project.id).delete()
+            db.query(Deliverable).filter(Deliverable.project_id == project.id).delete()
+            db.delete(project)
+
+    # Delete the client
+    db.delete(client)
+    db.commit()
+
+    return None
+
+
 @router.get("/{client_id}/export-profile")
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def export_client_profile(

@@ -45,10 +45,13 @@ def _check_ownership(resource_type: str, resource, current_user: User) -> bool:
 
     # Check if resource has user_id field
     if not hasattr(resource, "user_id"):
-        logger.error(f"{resource_type} model missing user_id field - authorization check skipped")
-        # SECURITY: Fail open for now (will be fixed when user_id is added)
-        # In production, this should fail closed (return False)
-        return True
+        logger.error(
+            f"SECURITY ERROR: {resource_type} model missing user_id field - "
+            f"denying access as security precaution (TR-021)"
+        )
+        # SECURITY FIX: Fail closed (deny access) if user_id is missing (TR-021)
+        # This prevents IDOR vulnerabilities if a model is missing authorization fields
+        return False
 
     # Check ownership
     if resource.user_id != current_user.id:

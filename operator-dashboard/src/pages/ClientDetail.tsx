@@ -48,6 +48,25 @@ export default function ClientDetail() {
   const [researchResults, setResearchResults] = useState<Map<string, any>>(new Map());
   const [isExporting, setIsExporting] = useState(false);
 
+  // Data collection dialog state
+  const [dialogInputValue, setDialogInputValue] = useState('');
+  const [dialogInputLabel, setDialogInputLabel] = useState('');
+  const [dialogInputPlaceholder, setDialogInputPlaceholder] = useState('');
+
+  // Tools that require input data
+  const toolsNeedingInput: Record<string, { label: string; placeholder: string; paramKey: string }> = {
+    voice_analysis: {
+      label: 'Content Samples',
+      placeholder: 'Paste 2-3 existing content samples (blog posts, LinkedIn posts, etc.) separated by ---',
+      paramKey: 'content_samples',
+    },
+    competitive_analysis: {
+      label: 'Competitor Names/URLs',
+      placeholder: 'Enter competitor company names or website URLs (one per line)',
+      paramKey: 'competitors',
+    },
+  };
+
   // Fetch client data
   const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ['client', clientId],
@@ -104,9 +123,41 @@ export default function ClientDetail() {
   const handleRunResearchTool = (toolName: string) => {
     setSelectedTool(toolName);
 
-    // For now, run tools without additional data collection
-    // TODO: Add data collection dialog for tools that need it (voice_analysis, competitive_analysis, etc.)
-    runResearchMutation.mutate({ tool: toolName, params: {} });
+    // Check if this tool needs input data
+    const inputConfig = toolsNeedingInput[toolName];
+    if (inputConfig) {
+      // Show data collection dialog
+      setDialogInputLabel(inputConfig.label);
+      setDialogInputPlaceholder(inputConfig.placeholder);
+      setDialogInputValue('');
+      setShowDataDialog(true);
+    } else {
+      // Run immediately without data collection
+      runResearchMutation.mutate({ tool: toolName, params: {} });
+    }
+  };
+
+  // Handler for submitting the data collection dialog
+  const handleDialogSubmit = () => {
+    if (!selectedTool) return;
+
+    const inputConfig = toolsNeedingInput[selectedTool];
+    if (!inputConfig) return;
+
+    // Build params with the collected data
+    const params: Record<string, any> = {};
+    if (dialogInputValue.trim()) {
+      params[inputConfig.paramKey] = dialogInputValue.trim();
+    }
+
+    runResearchMutation.mutate({ tool: selectedTool, params });
+  };
+
+  // Handler for canceling the dialog
+  const handleDialogCancel = () => {
+    setShowDataDialog(false);
+    setSelectedTool(null);
+    setDialogInputValue('');
   };
 
   // Handler for exporting client profile
@@ -736,12 +787,58 @@ export default function ClientDetail() {
                             </div>
                             {result.metadata && (
                               <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                                {new Date(result.metadata.executed_at).toLocaleString()}
+                                {result.metadata.executed_at ? new Date(result.metadata.executed_at).toLocaleString() : 'Just now'}
+                                {result.metadata.note && (
+                                  <span className="ml-2 text-amber-600 dark:text-amber-400">({result.metadata.note})</span>
+                                )}
                               </p>
                             )}
+                            {/* Display analysis data if available */}
+                            {result.data && (
+                              <div className="mt-3 space-y-2">
+                                {result.data.summary && (
+                                  <p className="text-sm text-neutral-700 dark:text-neutral-300">{result.data.summary}</p>
+                                )}
+                                {result.data.tone && (
+                                  <div className="text-xs">
+                                    <span className="font-medium text-neutral-600 dark:text-neutral-400">Tone:</span>{' '}
+                                    <span className="text-neutral-900 dark:text-neutral-100">{result.data.tone}</span>
+                                  </div>
+                                )}
+                                {result.data.primary_archetype && (
+                                  <div className="text-xs">
+                                    <span className="font-medium text-neutral-600 dark:text-neutral-400">Primary Archetype:</span>{' '}
+                                    <span className="text-neutral-900 dark:text-neutral-100">{result.data.primary_archetype}</span>
+                                  </div>
+                                )}
+                                {result.data.recommendations && result.data.recommendations.length > 0 && (
+                                  <div className="mt-2">
+                                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">Recommendations:</p>
+                                    <ul className="text-xs text-neutral-700 dark:text-neutral-300 space-y-1 pl-4">
+                                      {result.data.recommendations.slice(0, 3).map((rec: string, idx: number) => (
+                                        <li key={idx} className="list-disc">{rec}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {result.data.trending_topics && (
+                                  <div className="mt-2">
+                                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">Trending Topics:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {result.data.trending_topics.map((topic: string, idx: number) => (
+                                        <span key={idx} className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2 py-0.5 text-xs text-primary-800 dark:text-primary-300">
+                                          {topic}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Legacy: Display file outputs if available */}
                             {result.outputs && Object.keys(result.outputs).length > 0 && (
                               <div className="mt-3 space-y-1">
-                                <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Outputs:</p>
+                                <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Output Files:</p>
                                 {Object.entries(result.outputs).map(([format, path]) => (
                                   <div key={format} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                                     <span className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
@@ -1086,6 +1183,64 @@ export default function ClientDetail() {
           </div>
         )}
       </div>
+
+      {/* Research Tool Data Collection Dialog */}
+      {showDataDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-lg rounded-lg bg-white dark:bg-neutral-900 p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {selectedTool?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              </h3>
+              <button
+                onClick={handleDialogCancel}
+                className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                {dialogInputLabel}
+              </label>
+              <textarea
+                value={dialogInputValue}
+                onChange={(e) => setDialogInputValue(e.target.value)}
+                placeholder={dialogInputPlaceholder}
+                rows={6}
+                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 p-3 text-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:border-primary-500 dark:focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:focus:ring-primary-400"
+              />
+              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+                Optional: Providing input data improves analysis quality. Leave empty to use client profile data.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleDialogCancel}
+                className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDialogSubmit}
+                disabled={runResearchMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {runResearchMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  'Run Analysis'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

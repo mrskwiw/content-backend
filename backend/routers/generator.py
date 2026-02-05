@@ -31,6 +31,7 @@ class GenerateAllInput(BaseModel):
     project_id: str
     client_id: str
     is_batch: bool = True
+    num_posts: Optional[int] = None  # Number of posts to generate (defaults to project setting or 30)
     template_quantities: Optional[dict[str, int]] = (
         None  # Optional template quantities from frontend
     )
@@ -187,13 +188,16 @@ async def generate_all(
 
     logger.info(f"Created run {db_run.id} for project {input.project_id}")
 
+    # Determine num_posts: input > project setting > default 30
+    num_posts = input.num_posts or project.num_posts or 30
+
     # Queue background task (returns immediately)
     background_tasks.add_task(
         run_generation_background,
         run_id=db_run.id,
         project_id=input.project_id,
         client_id=input.client_id,
-        num_posts=30,  # TODO: Make configurable via input
+        num_posts=num_posts,
         template_quantities=input.template_quantities,  # Pass template quantities from frontend
         custom_topics=input.custom_topics,  # NEW: pass topic override for generation
     )

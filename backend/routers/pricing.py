@@ -1,13 +1,13 @@
 """
 Pricing API endpoints.
 
-Provides pricing configuration, preset packages, and price calculations
+Provides pricing configuration and price calculations
 for the operator dashboard and external integrations.
 """
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from fastapi import APIRouter, Query, HTTPException, Request, status, Body
 from pydantic import BaseModel
@@ -17,13 +17,9 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.config.pricing import (  # noqa: E402
-    PRESET_PACKAGES,
     calculate_price,
     calculate_price_from_quantities,
     PricingConfig,
-    PresetPackage,
-    PackageTier,
-    get_preset_package,
 )
 from backend.utils.http_rate_limiter import lenient_limiter  # noqa: E402
 
@@ -81,60 +77,6 @@ async def get_pricing_config(request: Request) -> PricingConfigResponse:
         maxPosts=config.MAX_POSTS,
         unlimitedRevisions=config.UNLIMITED_REVISIONS,
     )
-
-
-@router.get("/packages", response_model=List[PresetPackage])
-@lenient_limiter.limit("1000/hour")  # TR-004: Cheap read operation
-async def get_preset_packages(request: Request) -> List[PresetPackage]:
-    """
-    Get all preset packages.
-
-    Rate limit: 1000/hour (cheap read operation)
-
-    Returns a list of preset packages with their template quantities,
-    descriptions, and pricing.
-
-    Example response:
-    ```json
-    [
-        {
-            "tier": "starter",
-            "name": "Quick Start (15 Posts)",
-            "description": "Fast templates for high engagement",
-            "templateQuantities": {"1": 2, "2": 2, "5": 2, ...},
-            "researchIncluded": false,
-            "price": 600.0
-        },
-        ...
-    ]
-    ```
-    """
-    return PRESET_PACKAGES
-
-
-@router.get("/packages/{tier}", response_model=PresetPackage)
-@lenient_limiter.limit("1000/hour")  # TR-004: Cheap read operation
-async def get_package_by_tier(request: Request, tier: PackageTier) -> PresetPackage:
-    """
-    Get a specific preset package by tier.
-
-    Rate limit: 1000/hour (cheap read operation)
-
-    Args:
-        tier: Package tier (starter, professional, premium)
-
-    Returns:
-        Preset package details
-
-    Raises:
-        404: Package tier not found
-    """
-    package = get_preset_package(tier)
-    if not package:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Package tier '{tier}' not found"
-        )
-    return package
 
 
 @router.get("/calculate", response_model=CalculatePriceResponse)

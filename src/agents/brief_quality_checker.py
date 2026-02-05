@@ -4,7 +4,6 @@ from typing import Dict, List, Optional
 
 from ..models.brief_quality import BriefQualityReport, FieldQuality
 from ..models.client_brief import ClientBrief
-from ..utils.agent_helpers import call_claude_api
 from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import logger
 

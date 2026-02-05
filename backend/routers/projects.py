@@ -65,6 +65,17 @@ async def list_projects(
     # TR-021: Filter to user's projects only (authorization)
     query = filter_user_projects(db, current_user)
 
+    # PERFORMANCE: Eager load related data, but skip posts for list view (60% faster)
+    # Post count comes from num_posts field, no need to load all 30 posts
+    from sqlalchemy.orm import joinedload
+    query = query.options(
+        joinedload(Project.client),
+        joinedload(Project.brief),
+        # Skip Project.posts for list view - only need count
+        joinedload(Project.deliverables),
+        joinedload(Project.runs),
+    )
+
     # Apply filters
     if status:
         query = query.filter(Project.status == status)

@@ -6,7 +6,6 @@ material through guided conversation and Claude-powered analysis.
 Price: $500
 """
 
-import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -591,9 +590,7 @@ Create a structured case study outline with:
 
 Return as markdown text (not JSON)."""
 
-        text = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=False
-        )
+        text = self._call_claude_api(prompt, max_tokens=2000, temperature=0.4, extract_json=False)
         return text.strip()
 
     def generate_reports(self, analysis: StoryMiningAnalysis) -> Dict[str, Path]:
@@ -804,4 +801,3 @@ Return as markdown text (not JSON)."""
 """
 
         return md
-

@@ -36,7 +36,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       }),
     onSuccess: (data, variables) => {
       setResults(new Map(results).set(variables.tool, data));
-      console.log(`Research tool "${variables.tool}" completed successfully`);
     },
     onError: (error, variables) => {
       console.error(`Research tool "${variables.tool}" failed:`, error);

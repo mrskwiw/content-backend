@@ -143,23 +143,20 @@ class CLIExecutor:
         """
         logger.info(f"Executing research tool: {tool_name}")
 
-        # TODO: Implement actual research tool execution
-        # For now, return stub response
-
-        output_dir = self.project_root / "data" / "research" / tool_name / project_id
+        # Return demo response - actual execution handled by research_service
+        # This executor is a fallback for CLI-based execution
+        from datetime import datetime
 
         return {
             "success": True,
-            "outputs": {
-                "json": str(output_dir / "analysis.json"),
-                "markdown": str(output_dir / "report.md"),
-                "text": str(output_dir / "summary.txt"),
-            },
+            "outputs": {},  # No file outputs in demo mode
             "metadata": {
                 "status": "completed",
                 "tool": tool_name,
                 "project_id": project_id,
                 "client_id": client_id,
+                "executed_at": datetime.utcnow().isoformat(),
+                "note": "Demo mode - use research_service for full functionality",
             },
         }
 

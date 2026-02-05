@@ -1,5 +1,7 @@
 """
 Quick test script to verify pricing endpoints work correctly.
+
+Tests the simplified $40/post pricing model (no preset packages).
 """
 import sys
 from pathlib import Path
@@ -16,11 +18,8 @@ sys.path.insert(0, str(project_root))
 
 from src.config.pricing import (
     PricingConfig,
-    PRESET_PACKAGES,
     calculate_price,
     calculate_price_from_quantities,
-    get_preset_package,
-    PackageTier,
 )
 
 
@@ -39,102 +38,102 @@ def test_pricing_config():
     print("✓ All pricing config tests passed!")
 
 
-def test_preset_packages():
-    """Test preset packages"""
-    print("\n=== Testing Preset Packages ===")
-    print(f"✓ Total packages: {len(PRESET_PACKAGES)}")
-
-    for pkg in PRESET_PACKAGES:
-        total_posts = pkg.total_posts
-        print(f"\n  {pkg.tier.upper()}:")
-        print(f"    Name: {pkg.name}")
-        print(f"    Total posts: {total_posts}")
-        print(f"    Price: ${pkg.price}")
-        print(f"    Research included: {pkg.research_included}")
-        print(f"    Templates: {len(pkg.template_quantities)} types")
-
-        # Verify price calculation
-        expected_price = calculate_price(
-            total_posts,
-            research_per_post=pkg.research_included
-        )
-        assert pkg.price == expected_price, f"Price mismatch for {pkg.tier}"
-
-    print("\n✓ All preset package tests passed!")
-
-
-def test_get_package_by_tier():
-    """Test getting package by tier"""
-    print("\n=== Testing Get Package by Tier ===")
-
-    professional = get_preset_package(PackageTier.PROFESSIONAL)
-    assert professional is not None
-    assert professional.tier == PackageTier.PROFESSIONAL
-    assert professional.total_posts == 30
-    assert professional.price == 1200.0
-    print(f"✓ Professional package: {professional.name}, ${professional.price}")
-
-    starter = get_preset_package(PackageTier.STARTER)
-    assert starter is not None
-    assert starter.total_posts == 15
-    print(f"✓ Starter package: {starter.name}, ${starter.price}")
-
-    premium = get_preset_package(PackageTier.PREMIUM)
-    assert premium is not None
-    assert premium.total_posts == 50
-    print(f"✓ Premium package: {premium.name}, ${premium.price}")
-
-    print("✓ All get_package_by_tier tests passed!")
-
-
 def test_price_calculations():
     """Test price calculation functions"""
     print("\n=== Testing Price Calculations ===")
 
-    # Test 1: 30 posts, no research
-    price1 = calculate_price(30, research_per_post=False)
-    assert price1 == 1200.0
-    print(f"✓ 30 posts, no research: ${price1}")
+    # Test 1: 10 posts, no research
+    price1 = calculate_price(10, research_per_post=False)
+    assert price1 == 400.0  # 10 * 40
+    print(f"✓ 10 posts, no research: ${price1}")
 
-    # Test 2: 30 posts, with research
-    price2 = calculate_price(30, research_per_post=True)
-    assert price2 == 1650.0  # 30 * (40 + 15)
-    print(f"✓ 30 posts, with research: ${price2}")
+    # Test 2: 30 posts, no research
+    price2 = calculate_price(30, research_per_post=False)
+    assert price2 == 1200.0  # 30 * 40
+    print(f"✓ 30 posts, no research: ${price2}")
 
-    # Test 3: 50 posts, with research
-    price3 = calculate_price(50, research_per_post=True)
-    assert price3 == 2750.0  # 50 * (40 + 15)
-    print(f"✓ 50 posts, with research: ${price3}")
+    # Test 3: 30 posts, with research
+    price3 = calculate_price(30, research_per_post=True)
+    assert price3 == 1650.0  # 30 * (40 + 15)
+    print(f"✓ 30 posts, with research: ${price3}")
 
-    # Test 4: Calculate from template quantities
-    quantities = {1: 3, 2: 5, 9: 2}  # 10 total posts
-    price4 = calculate_price_from_quantities(quantities, research_per_post=False)
-    assert price4 == 400.0  # 10 * 40
-    print(f"✓ Custom quantities (10 posts): ${price4}")
+    # Test 4: 50 posts, with research
+    price4 = calculate_price(50, research_per_post=True)
+    assert price4 == 2750.0  # 50 * (40 + 15)
+    print(f"✓ 50 posts, with research: ${price4}")
 
-    # Test 5: Custom quantities with research
-    price5 = calculate_price_from_quantities(quantities, research_per_post=True)
-    assert price5 == 550.0  # 10 * (40 + 15)
-    print(f"✓ Custom quantities (10 posts) with research: ${price5}")
+    # Test 5: 100 posts, no research
+    price5 = calculate_price(100, research_per_post=False)
+    assert price5 == 4000.0  # 100 * 40
+    print(f"✓ 100 posts, no research: ${price5}")
+
+    # Test 6: 100 posts, with research
+    price6 = calculate_price(100, research_per_post=True)
+    assert price6 == 5500.0  # 100 * (40 + 15)
+    print(f"✓ 100 posts, with research: ${price6}")
 
     print("✓ All price calculation tests passed!")
 
 
-def test_template_quantities_structure():
-    """Test template quantities structure"""
-    print("\n=== Testing Template Quantities Structure ===")
+def test_template_quantities_calculations():
+    """Test calculate_price_from_quantities function"""
+    print("\n=== Testing Template Quantities Calculations ===")
 
-    for pkg in PRESET_PACKAGES:
-        # Verify all template IDs are integers
-        for template_id, quantity in pkg.template_quantities.items():
-            assert isinstance(template_id, int), f"Template ID should be int, got {type(template_id)}"
-            assert isinstance(quantity, int), f"Quantity should be int, got {type(quantity)}"
-            assert quantity > 0, f"Quantity should be positive, got {quantity}"
-            assert 1 <= template_id <= 15, f"Template ID should be 1-15, got {template_id}"
+    # Test 1: Calculate from template quantities (10 posts, no research)
+    quantities1 = {1: 3, 2: 5, 9: 2}  # 10 total posts
+    price1 = calculate_price_from_quantities(quantities1, research_per_post=False)
+    assert price1 == 400.0  # 10 * 40
+    print(f"✓ Custom quantities (10 posts), no research: ${price1}")
 
-        print(f"✓ {pkg.tier}: All template IDs and quantities valid")
+    # Test 2: Custom quantities with research (10 posts)
+    price2 = calculate_price_from_quantities(quantities1, research_per_post=True)
+    assert price2 == 550.0  # 10 * (40 + 15)
+    print(f"✓ Custom quantities (10 posts), with research: ${price2}")
 
-    print("✓ All template quantities structure tests passed!")
+    # Test 3: Larger custom order (30 posts)
+    quantities2 = {1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 9: 5}  # 30 total
+    price3 = calculate_price_from_quantities(quantities2, research_per_post=False)
+    assert price3 == 1200.0  # 30 * 40
+    print(f"✓ Custom quantities (30 posts), no research: ${price3}")
+
+    # Test 4: Empty quantities
+    price4 = calculate_price_from_quantities({}, research_per_post=False)
+    assert price4 == 0.0
+    print(f"✓ Empty quantities: ${price4}")
+
+    print("✓ All template quantities calculation tests passed!")
+
+
+def test_common_scenarios():
+    """Test common pricing scenarios"""
+    print("\n=== Testing Common Pricing Scenarios ===")
+
+    # Scenario 1: Small trial (10 posts)
+    price1 = calculate_price(10, research_per_post=False)
+    print(f"✓ Small trial (10 posts): ${price1}")
+    assert price1 == 400.0
+
+    # Scenario 2: Monthly content (30 posts)
+    price2 = calculate_price(30, research_per_post=False)
+    print(f"✓ Monthly content (30 posts): ${price2}")
+    assert price2 == 1200.0
+
+    # Scenario 3: Monthly content with research
+    price3 = calculate_price(30, research_per_post=True)
+    print(f"✓ Monthly content with research (30 posts): ${price3}")
+    assert price3 == 1650.0
+
+    # Scenario 4: Quarterly bank (100 posts)
+    price4 = calculate_price(100, research_per_post=False)
+    print(f"✓ Quarterly bank (100 posts): ${price4}")
+    assert price4 == 4000.0
+
+    # Scenario 5: Single post
+    price5 = calculate_price(1, research_per_post=False)
+    print(f"✓ Single post: ${price5}")
+    assert price5 == 40.0
+
+    print("✓ All common scenario tests passed!")
 
 
 if __name__ == "__main__":
@@ -144,20 +143,18 @@ if __name__ == "__main__":
 
     try:
         test_pricing_config()
-        test_preset_packages()
-        test_get_package_by_tier()
         test_price_calculations()
-        test_template_quantities_structure()
+        test_template_quantities_calculations()
+        test_common_scenarios()
 
         print("\n" + "=" * 60)
         print("✓✓✓ ALL TESTS PASSED ✓✓✓")
         print("=" * 60)
-        print("\nPricing endpoints are ready to use!")
-        print("Available endpoints:")
+        print("\nPricing model: $40/post + $15/post research add-on")
+        print("\nAvailable endpoints:")
         print("  - GET /api/pricing/config")
-        print("  - GET /api/pricing/packages")
-        print("  - GET /api/pricing/packages/{tier}")
         print("  - GET /api/pricing/calculate?num_posts=30&research=false")
+        print("  - POST /api/pricing/calculate")
         print("  - POST /api/pricing/calculate-from-quantities")
 
     except AssertionError as e:

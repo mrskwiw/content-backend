@@ -22,7 +22,6 @@ Automation Level: 90%
 Time: 1-2 minutes automated + 15 min review
 """
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional

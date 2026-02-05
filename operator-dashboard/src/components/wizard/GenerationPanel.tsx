@@ -20,7 +20,6 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
   const generate = useMutation({
     mutationFn: (input: GenerateAllInput) => generatorApi.generateAll(input),
     onSuccess: (run) => {
-      console.log('Generation queued successfully:', run);
       setRunId(run.id);
       setPollingEnabled(true);
     },
@@ -46,7 +45,6 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
   useEffect(() => {
     if (runStatus?.status === 'succeeded') {
       setPollingEnabled(false);
-      console.log('Generation completed successfully');
       onStarted?.(runStatus);
     } else if (runStatus?.status === 'failed') {
       setPollingEnabled(false);

@@ -510,7 +510,6 @@ export default function AuditTrail() {
   }, [auditLogs]);
 
   const handleExport = (format: 'csv' | 'json') => {
-    console.log(`Exporting ${filteredLogs.length} logs as ${format.toUpperCase()}`);
     setShowExportModal(false);
   };
 

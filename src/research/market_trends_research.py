@@ -30,6 +30,7 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
         """Initialize Market Trends Researcher with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
+
     @property
     def tool_name(self) -> str:
         return "market_trends_research"

@@ -222,22 +222,18 @@ export default function ContentReview() {
 
   // Bulk actions
   const handleBulkApprove = () => {
-    console.log('Approving posts:', selectedPosts);
     setSelectedPosts([]);
   };
 
   const handleBulkFlag = () => {
-    console.log('Flagging posts:', selectedPosts);
     setSelectedPosts([]);
   };
 
   const handleBulkRegenerate = () => {
-    console.log('Regenerating posts:', selectedPosts);
     setSelectedPosts([]);
   };
 
   const handleBulkExport = () => {
-    console.log('Exporting posts:', selectedPosts);
   };
 
   // Get quality badge

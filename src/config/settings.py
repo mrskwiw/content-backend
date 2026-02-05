@@ -73,9 +73,9 @@ class Settings(BaseSettings):
     OPTIMAL_POST_MAX_WORDS: int = 250  # Sweet spot maximum
 
     # Paths (relative to /project/ directory)
-    TEMPLATE_LIBRARY_PATH: str = "../02_POST_TEMPLATE_LIBRARY.md"
-    CLIENT_BRIEF_TEMPLATE_PATH: str = "../01_CLIENT_BRIEF_TEMPLATE.md"
-    DELIVERABLE_TEMPLATE_PATH: str = "../Jumpstart_Deliverable_Template.docx"
+    TEMPLATE_LIBRARY_PATH: str = "02_POST_TEMPLATE_LIBRARY.md"
+    CLIENT_BRIEF_TEMPLATE_PATH: str = "../templates/01_CLIENT_BRIEF_TEMPLATE.md"
+    DELIVERABLE_TEMPLATE_PATH: str = "../templates/Jumpstart_Deliverable_Template.docx"
     DEFAULT_OUTPUT_DIR: str = "data/outputs"
     DEFAULT_BRIEFS_DIR: str = "data/briefs"
     PROJECTS_DIR: str = "data/projects"  # Completed client deliverables

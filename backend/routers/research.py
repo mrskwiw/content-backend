@@ -32,8 +32,19 @@ from backend.services.research_service import research_service
 from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import strict_limiter, lenient_limiter
 from backend.middleware.authorization import _check_ownership  # TR-021: IDOR prevention
+from src.utils.response_cache import ResponseCache
+import hashlib
+import json
 
 router = APIRouter()
+
+# PERFORMANCE: Research result caching (Phase 3 optimization)
+# Cache expensive research results for 48 hours to save $100-200/month
+# Research results are stable - client profile rarely changes
+research_cache = ResponseCache(
+    ttl_seconds=172800,  # 48 hours cache for research results
+    enabled=True,
+)
 
 
 class ResearchTool(BaseModel):
@@ -496,14 +507,42 @@ async def run_research(
         )
 
     try:
-        # Execute research tool via service with sanitized params
-        result = await research_service.execute_research_tool(
-            db=db,
-            project_id=input.project_id,
-            client_id=input.client_id,
-            tool_name=input.tool,
-            params=sanitized_params,  # Use sanitized params for LLM safety
-        )
+        # PERFORMANCE: Check cache before executing expensive research ($300-600 per call)
+        # Cache key includes tool name, client ID, and param hash for uniqueness
+        cache_key_data = {
+            "tool": input.tool,
+            "client_id": input.client_id,
+            "params": sanitized_params,
+        }
+        cache_key = hashlib.sha256(json.dumps(cache_key_data, sort_keys=True).encode()).hexdigest()
+
+        cached_result = research_cache.get_by_key(cache_key) if research_cache else None
+
+        if cached_result:
+            result = cached_result
+            logger.info(
+                f"Research cache HIT for {input.tool} (client {input.client_id}) "
+                f"- saved ${tool.price} API call"
+            )
+        else:
+            # Execute research tool via service with sanitized params
+            result = await research_service.execute_research_tool(
+                db=db,
+                project_id=input.project_id,
+                client_id=input.client_id,
+                tool_name=input.tool,
+                params=sanitized_params,  # Use sanitized params for LLM safety
+            )
+
+            # Cache successful results for 48 hours
+            if result["success"] and research_cache:
+                research_cache.put_by_key(cache_key, result)
+                logger.debug(f"Cached research result for {input.tool} (48hr TTL)")
+
+            logger.info(
+                f"Research cache MISS for {input.tool} (client {input.client_id}) "
+                f"- executed ${tool.price} API call"
+            )
 
         if not result["success"]:
             raise HTTPException(

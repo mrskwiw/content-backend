@@ -10,7 +10,7 @@ from backend.middleware.authorization import (
     verify_run_ownership,
     filter_user_runs,
 )  # TR-021: Authorization
-from backend.schemas.run import RunCreate, RunResponse, RunUpdate
+from backend.schemas.run import RunCreate, RunResponse, RunUpdate, LogEntry
 from backend.services import crud
 from sqlalchemy.orm import Session
 
@@ -18,6 +18,8 @@ from backend.database import get_db
 from backend.models import Run, User
 
 router = APIRouter()
+
+
 
 
 @router.get("/", response_model=List[RunResponse])
@@ -123,3 +125,38 @@ async def update_run(
             detail=f"Run {run_id} not found",
         )
     return updated_run
+
+
+@router.get("/{run_id}/logs", response_model=List[LogEntry])
+async def get_run_logs(
+    run_id: str,
+    run: Run = Depends(verify_run_ownership),  # TR-021: Authorization check
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get logs for a specific run.
+
+    Authorization: TR-021 - User must own run's project
+
+    Returns structured log entries with timestamps and messages.
+    """
+    # TR-021: run already verified by dependency
+    if not run.logs:
+        return []
+
+    # Convert logs to LogEntry objects if needed
+    from datetime import datetime
+
+    logs = []
+    for item in run.logs:
+        if isinstance(item, str):
+            # Plain string - convert to LogEntry
+            logs.append(LogEntry(timestamp=datetime.utcnow().isoformat(), message=item))
+        elif isinstance(item, dict):
+            # Already a dict - convert to LogEntry
+            logs.append(LogEntry(**item))
+        else:
+            logs.append(item)
+
+    return logs

@@ -155,32 +155,142 @@ class GeneratorService:
         db: Session,
         project_id: str,
         post_ids: List[str],
+        feedback: Optional[str] = None,
     ) -> Dict[str, any]:
         """
-        Regenerate specific posts
+        Regenerate specific posts with new content
 
         Args:
             db: Database session
             project_id: Project ID
             post_ids: List of post IDs to regenerate
+            feedback: Optional feedback/instructions for regeneration
 
         Returns:
-            Dict with regeneration results
+            Dict with regeneration results including updated posts
         """
         logger.info(f"Regenerating {len(post_ids)} posts for project {project_id}")
 
-        # TODO: Implement actual regeneration logic
-        # This would:
-        # 1. Get original posts from database
-        # 2. Extract their templates and variants
-        # 3. Call CLI with regeneration parameters
-        # 4. Update post records with new content
+        # Get project and client
+        project = crud.get_project(db, project_id)
+        if not project:
+            raise ValueError(f"Project {project_id} not found")
 
-        # For now, return stub response
-        return {
-            "posts_regenerated": len(post_ids),
-            "status": "completed",
-        }
+        client = crud.get_client(db, project.client_id)
+        if not client:
+            raise ValueError(f"Client {project.client_id} not found")
+
+        # Get original posts to regenerate
+        original_posts = []
+        for post_id in post_ids:
+            post = crud.get_post(db, post_id)
+            if post and post.project_id == project_id:
+                original_posts.append(post)
+            else:
+                logger.warning(f"Post {post_id} not found or doesn't belong to project {project_id}")
+
+        if not original_posts:
+            return {
+                "posts_regenerated": 0,
+                "status": "completed",
+                "message": "No valid posts found to regenerate",
+            }
+
+        # Build template quantities from original posts
+        template_quantities: Dict[int, int] = {}
+        for post in original_posts:
+            if post.template_id:
+                template_id = int(post.template_id)
+                template_quantities[template_id] = template_quantities.get(template_id, 0) + 1
+
+        logger.info(f"Template quantities for regeneration: {template_quantities}")
+
+        try:
+            # Import content generator
+            import sys
+            from pathlib import Path
+
+            project_root = Path(__file__).parent.parent.parent
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+
+            from src.agents.content_generator import ContentGeneratorAgent
+            from src.models.client_brief import ClientBrief, Platform
+
+            # Map platform string to Platform enum
+            platform_str = original_posts[0].target_platform or "linkedin"
+            platform_upper = platform_str.upper()
+            try:
+                platform_enum = Platform[platform_upper]
+            except KeyError:
+                platform_enum = Platform.LINKEDIN
+
+            # Create client brief (with optional feedback incorporated)
+            business_desc = client.business_description or "Content creation project"
+            if feedback:
+                business_desc = f"{business_desc}\n\nRegeneration feedback: {feedback}"
+
+            brief = ClientBrief(
+                company_name=client.name,
+                business_description=business_desc,
+                ideal_customer=client.ideal_customer or "General audience",
+                main_problem_solved=client.main_problem_solved or "Communication challenges",
+                platforms=[platform_enum],
+                tone_preference=project.tone or client.tone_preference or "Professional",
+                customer_pain_points=client.customer_pain_points or [],
+                customer_questions=client.customer_questions or [],
+            )
+
+            # Generate new posts
+            generator = ContentGeneratorAgent()
+            new_posts = await generator.generate_posts_async(
+                client_brief=brief,
+                template_quantities=template_quantities,
+                platform=platform_enum,
+                randomize=True,
+                max_concurrent=5,
+                use_client_memory=False,
+            )
+
+            logger.info(f"Generated {len(new_posts)} new posts for regeneration")
+
+            # Update original posts with new content
+            posts_updated = 0
+            new_posts_iter = iter(new_posts)
+
+            for original_post in original_posts:
+                try:
+                    new_post = next(new_posts_iter, None)
+                    if new_post:
+                        # Update the post record
+                        original_post.content = new_post.content
+                        original_post.word_count = new_post.word_count
+                        original_post.has_cta = new_post.has_cta
+                        original_post.status = "approved"  # Reset status after regeneration
+                        original_post.flags = None  # Clear any flags
+                        posts_updated += 1
+                        logger.info(f"Updated post {original_post.id} with new content")
+                except Exception as e:
+                    logger.error(f"Failed to update post {original_post.id}: {str(e)}")
+                    continue
+
+            db.commit()
+            logger.info(f"Successfully regenerated {posts_updated} posts")
+
+            return {
+                "posts_regenerated": posts_updated,
+                "status": "completed",
+                "message": f"Successfully regenerated {posts_updated} posts",
+            }
+
+        except Exception as e:
+            logger.error(f"Regeneration failed: {str(e)}", exc_info=True)
+            db.rollback()
+            return {
+                "posts_regenerated": 0,
+                "status": "failed",
+                "message": f"Regeneration failed: {str(e)}",
+            }
 
     async def _generate_with_template_quantities(
         self,

@@ -8,7 +8,6 @@ Price: $600
 Security: Phase 2 - Comprehensive input validation (TR-019)
 """
 
-import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -117,16 +116,12 @@ class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
         print("[3/6] Analyzing behavioral patterns...")
 
         # Step 3: Behavioral
-        behavioral = self._gather_behavioral(
-            business_description, demographics, psychographics
-        )
+        behavioral = self._gather_behavioral(business_description, demographics, psychographics)
 
         print("[4/6] Identifying situational factors...")
 
         # Step 4: Situational
-        situational = self._gather_situational(
-            business_description, demographics, psychographics
-        )
+        situational = self._gather_situational(business_description, demographics, psychographics)
 
         print("[5/6] Defining success criteria...")
 
@@ -676,4 +671,3 @@ RECOMMENDED CONTENT TOPICS
         text += "\n\nSee icp_profile.md for complete details.\n"
 
         return text
-

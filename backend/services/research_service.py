@@ -131,24 +131,9 @@ class ResearchService:
 
         # Check if research tools are available
         if not RESEARCH_TOOLS_AVAILABLE:
-            logger.warning(f"Research tools not available - returning stub response for '{tool_name}'")
-            # Return stub response
-            return {
-                "success": True,
-                "outputs": {
-                    "json": f"data/research/{tool_name}/{project_id}/analysis.json",
-                    "markdown": f"data/research/{tool_name}/{project_id}/report.md",
-                    "text": f"data/research/{tool_name}/{project_id}/summary.txt",
-                },
-                "metadata": {
-                    "status": "completed",
-                    "duration_seconds": 1.0,
-                    "tool_name": tool_name,
-                    "project_id": project_id,
-                    "note": "Stub response - research tools not available in this environment",
-                },
-                "error": None,
-            }
+            logger.warning(f"Research tools not available - returning demo response for '{tool_name}'")
+            # Return demo response with realistic sample data
+            return self._get_demo_response(tool_name, project_id, client)
 
         # Check if tool exists
         if tool_name not in RESEARCH_TOOL_MAP:
@@ -188,6 +173,128 @@ class ResearchService:
                 },
                 "error": str(e),
             }
+
+    def _get_demo_response(
+        self,
+        tool_name: str,
+        project_id: str,
+        client: Client,
+    ) -> Dict:
+        """
+        Generate realistic demo response for research tools when actual tools unavailable.
+        This allows the UI to demonstrate the feature during demos.
+        """
+        from datetime import datetime
+
+        client_name = client.name if client else "Demo Client"
+        base_response = {
+            "success": True,
+            "metadata": {
+                "status": "completed",
+                "duration_seconds": 2.5,
+                "tool_name": tool_name,
+                "project_id": project_id,
+                "executed_at": datetime.utcnow().isoformat(),
+                "note": "Demo data - full analysis requires API key configuration",
+            },
+            "error": None,
+        }
+
+        # Tool-specific demo data
+        demo_data = {
+            "voice_analysis": {
+                "summary": f"Voice analysis for {client_name}",
+                "tone": "Professional and approachable",
+                "readability_score": 72.5,
+                "reading_level": "8th grade",
+                "voice_dimensions": {
+                    "formality": 0.7,
+                    "enthusiasm": 0.6,
+                    "technical_depth": 0.5,
+                    "warmth": 0.65,
+                },
+                "recommendations": [
+                    "Maintain conversational tone while keeping authority",
+                    "Use more storytelling elements",
+                    "Add concrete examples to abstract concepts",
+                ],
+            },
+            "brand_archetype": {
+                "summary": f"Brand archetype analysis for {client_name}",
+                "primary_archetype": "Expert/Sage",
+                "secondary_archetype": "Guide/Mentor",
+                "archetype_traits": [
+                    "Knowledge-focused",
+                    "Trustworthy advisor",
+                    "Clear communicator",
+                ],
+                "content_themes": [
+                    "Industry insights and trends",
+                    "How-to guides and tutorials",
+                    "Thought leadership pieces",
+                ],
+                "voice_guidelines": {
+                    "do": ["Share expertise generously", "Use data to support claims"],
+                    "avoid": ["Being condescending", "Oversimplifying complex topics"],
+                },
+            },
+            "competitive_analysis": {
+                "summary": f"Competitive landscape for {client_name}",
+                "competitors_analyzed": 3,
+                "market_position": "Challenger with differentiation opportunity",
+                "content_gaps": [
+                    "Video content underutilized by competitors",
+                    "LinkedIn presence stronger than competitors",
+                    "Educational content opportunity",
+                ],
+                "differentiation_opportunities": [
+                    "More personal storytelling",
+                    "Behind-the-scenes content",
+                    "Customer success stories",
+                ],
+            },
+            "market_trends_research": {
+                "summary": f"Market trends for {client_name}'s industry",
+                "trending_topics": [
+                    "AI integration in workflows",
+                    "Remote work optimization",
+                    "Sustainability practices",
+                ],
+                "content_opportunities": [
+                    "Thought leadership on industry changes",
+                    "Practical implementation guides",
+                    "Case studies and results",
+                ],
+                "recommended_hashtags": ["#Innovation", "#FutureOfWork", "#Leadership"],
+            },
+            "seo_keyword_research": {
+                "summary": f"SEO keyword analysis for {client_name}",
+                "primary_keywords": [
+                    {"keyword": "business solutions", "volume": 12000, "difficulty": 65},
+                    {"keyword": "workflow automation", "volume": 8500, "difficulty": 55},
+                ],
+                "long_tail_opportunities": [
+                    "how to improve team productivity",
+                    "best practices for remote teams",
+                ],
+                "content_recommendations": [
+                    "Create pillar content around primary keywords",
+                    "Build topic clusters with long-tail content",
+                ],
+            },
+        }
+
+        # Get tool-specific data or generic response
+        tool_data = demo_data.get(tool_name, {
+            "summary": f"Analysis completed for {client_name}",
+            "status": "Demo data generated",
+            "recommendations": ["Full analysis available with API configuration"],
+        })
+
+        base_response["data"] = tool_data
+        base_response["outputs"] = {}  # No file outputs for demo mode
+
+        return base_response
 
     def _prepare_inputs(
         self,

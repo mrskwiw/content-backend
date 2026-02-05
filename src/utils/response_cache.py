@@ -202,6 +202,76 @@ class ResponseCache:
         except Exception as e:
             logger.error(f"Failed to cache response: {e}")
 
+    def get_by_key(self, cache_key: str) -> Optional[Any]:
+        """Retrieve cached data by key (generic caching)
+
+        Args:
+            cache_key: Cache key (typically a hash)
+
+        Returns:
+            Cached data if valid and not expired, None otherwise
+        """
+        if not self.enabled:
+            return None
+
+        cache_file = self.cache_dir / f"{cache_key}.json"
+
+        try:
+            if not cache_file.exists():
+                return None
+
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache_data = json.load(f)
+
+            # Check TTL
+            timestamp = cache_data.get("timestamp", 0)
+            ttl = cache_data.get("ttl", self.ttl_seconds)
+
+            if time.time() - timestamp > ttl:
+                logger.debug(f"Cache expired: {cache_key[:8]}...")
+                cache_file.unlink()  # Clean up expired cache
+                return None
+
+            logger.debug(f"Cache hit: {cache_key[:8]}...")
+            return cache_data.get("data")
+
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Invalid cache file {cache_key[:8]}...: {e}")
+            if cache_file.exists():
+                cache_file.unlink()  # Clean up corrupted cache
+            return None
+        except Exception as e:
+            logger.error(f"Cache read error for {cache_key[:8]}...: {e}")
+            return None
+
+    def put_by_key(self, cache_key: str, data: Any) -> None:
+        """Cache data by key (generic caching)
+
+        Args:
+            cache_key: Cache key (typically a hash)
+            data: Data to cache (must be JSON-serializable)
+        """
+        if not self.enabled:
+            return
+
+        cache_file = self.cache_dir / f"{cache_key}.json"
+
+        try:
+            cache_data = {
+                "data": data,
+                "timestamp": time.time(),
+                "ttl": self.ttl_seconds,
+                "key": cache_key[:8],  # For debugging
+            }
+
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(cache_data, f, indent=2)
+
+            logger.debug(f"Cached data: {cache_key[:8]}...")
+
+        except Exception as e:
+            logger.error(f"Failed to cache data: {e}")
+
     def clear(self) -> None:
         """Clear all cached responses
 

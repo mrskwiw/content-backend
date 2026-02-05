@@ -208,9 +208,11 @@ def generate_all_posts_task(
         raise
 
 
-@celery_app.task(name="regenerate_posts")
+@celery_app.task(bind=True, base=DatabaseTask, name="regenerate_posts")
 def regenerate_posts_task(
+    self,
     run_id: str,
+    project_id: str,
     post_ids: list[str],
     feedback: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -218,27 +220,91 @@ def regenerate_posts_task(
     Background task for regenerating specific posts.
 
     Args:
+        self: Celery task instance (injected by bind=True)
         run_id: Run identifier
+        project_id: Project identifier
         post_ids: List of post IDs to regenerate
         feedback: Optional feedback to guide regeneration
 
     Returns:
-        dict: Regeneration results
-
-    Note:
-        This is a placeholder for future implementation.
-        Phase 2 focuses on initial generation, regeneration is Phase 3.
+        dict: Regeneration results with status and count
     """
+    import asyncio
+
     logger.info(f"Regenerating {len(post_ids)} posts for run {run_id}")
 
-    # TODO: Implement regeneration logic
-    # 1. Load existing posts
-    # 2. Call generator service with feedback
-    # 3. Update posts in database
-    # 4. Return results
+    try:
+        # Update run status
+        run = crud.get_run(self.db, run_id)
+        if run:
+            run.status = "running"
+            run.started_at = datetime.utcnow()
+            self.db.commit()
 
-    return {
-        "run_id": run_id,
-        "status": "succeeded",
-        "posts_regenerated": len(post_ids),
-    }
+        # Update progress
+        self.update_state(
+            state="PROGRESS",
+            meta={
+                "progress": 20,
+                "status": f"Regenerating {len(post_ids)} posts...",
+                "run_id": run_id,
+            },
+        )
+
+        # Import and call the generator service
+        from backend.services.generator_service import generator_service
+
+        # Run the async regeneration in an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(
+                generator_service.regenerate_posts(
+                    db=self.db,
+                    project_id=project_id,
+                    post_ids=post_ids,
+                    feedback=feedback,
+                )
+            )
+        finally:
+            loop.close()
+
+        # Update run status to succeeded
+        if run:
+            run.status = "succeeded"
+            run.completed_at = datetime.utcnow()
+            self.db.commit()
+
+        self.update_state(
+            state="PROGRESS",
+            meta={
+                "progress": 100,
+                "status": "Complete",
+                "run_id": run_id,
+            },
+        )
+
+        logger.info(f"Regeneration completed: {result}")
+
+        return {
+            "run_id": run_id,
+            "status": result.get("status", "succeeded"),
+            "posts_regenerated": result.get("posts_regenerated", 0),
+            "message": result.get("message", "Regeneration complete"),
+        }
+
+    except Exception as e:
+        logger.error(f"Regeneration failed for run {run_id}: {str(e)}", exc_info=True)
+
+        # Update run status to failed
+        try:
+            run = crud.get_run(self.db, run_id)
+            if run:
+                run.status = "failed"
+                run.error_message = str(e)
+                run.completed_at = datetime.utcnow()
+                self.db.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to update run status: {str(db_error)}")
+
+        raise

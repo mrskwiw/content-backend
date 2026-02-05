@@ -173,10 +173,10 @@ async def lifespan(app: FastAPI):
                 default_password = secrets.token_urlsafe(16)
                 print(">> " + "=" * 60)
                 print(">> WARNING: DEFAULT_USER_PASSWORD not set in environment!")
-                print(f">> Generated temporary password: {default_password}")
-                print(">> SAVE THIS PASSWORD - it won't be shown again!")
+                print(">> Generated secure random password for admin users")
+                print(">> IMPORTANT: Use /api/auth/forgot-password to reset admin password")
                 print(">> ")
-                print(">> FOR PRODUCTION: Set DEFAULT_USER_PASSWORD in Render dashboard")
+                print(">> FOR PRODUCTION: Set DEFAULT_USER_PASSWORD in environment")
                 print(">> " + "=" * 60)
             else:
                 print(">> Using DEFAULT_USER_PASSWORD from environment")

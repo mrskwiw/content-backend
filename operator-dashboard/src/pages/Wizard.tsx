@@ -71,7 +71,6 @@ export default function Wizard() {
     onSuccess: (data) => {
       setClientId(data.id);
       qc.invalidateQueries({ queryKey: ['clients'] });
-      console.log(`✅ Client created successfully: ${data.id} (${data.name})`);
     },
     onError: (error: unknown) => {
       console.error('❌ Client creation failed:', error);
@@ -94,7 +93,6 @@ export default function Wizard() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['clients'] });
       qc.invalidateQueries({ queryKey: ['client', clientId] });
-      console.log(`✅ Client updated successfully: ${data.id} (${data.name})`);
     },
     onError: (error: unknown) => {
       console.error('❌ Client update failed:', error);
@@ -114,7 +112,6 @@ export default function Wizard() {
     onSuccess: (data) => {
       setProjectId(data.id);
       qc.invalidateQueries({ queryKey: ['project', data.id] });
-      console.log(`✅ Project created successfully: ${data.id} (${data.name})`);
     },
     onError: (error: unknown) => {
       console.error('❌ Project creation failed:', error);
@@ -202,18 +199,11 @@ export default function Wizard() {
 
   // Handler for saving client profile
   const handleSaveProfile = async (brief: ClientBrief) => {
-    console.log('📝 Starting client profile save...', {
-      isCreatingNew: isCreatingNewClient,
-      existingClientId: clientId,
-      companyName: brief.companyName,
-    });
-
     try {
       let finalClientId = clientId;
 
       // Step 1: Create or update client
       if (isCreatingNewClient) {
-        console.log('🆕 Creating new client...');
         try {
           const client = await createClientMutation.mutateAsync({
             name: brief.companyName,
@@ -227,7 +217,6 @@ export default function Wizard() {
             customerQuestions: brief.customerQuestions,
           });
           finalClientId = client.id;
-          console.log('✅ Client created:', finalClientId);
         } catch (error: unknown) {
           console.error('❌ Client creation failed:', error);
           const errorMsg =
@@ -244,7 +233,6 @@ export default function Wizard() {
         alert('Please select an existing client or create a new one.');
         return;
       } else {
-        console.log('🔄 Updating existing client...', clientId);
         try {
           // Always update existing client with all fields from the form
           await updateClientMutation.mutateAsync({
@@ -259,7 +247,6 @@ export default function Wizard() {
             customerQuestions: brief.customerQuestions,
           });
           finalClientId = clientId;
-          console.log('✅ Client updated:', finalClientId);
         } catch (error: unknown) {
           console.error('❌ Client update failed:', error);
           const errorMsg =
@@ -280,7 +267,6 @@ export default function Wizard() {
         return;
       }
 
-      console.log('📋 Creating project for client...', finalClientId);
       const projectInput: CreateProjectInput = {
         name: `${brief.companyName} - Content Project`,
         clientId: finalClientId,
@@ -295,7 +281,6 @@ export default function Wizard() {
 
       try {
         await createProjectMutation.mutateAsync(projectInput);
-        console.log('✅ Project created successfully');
       } catch (error: unknown) {
         console.error('❌ Project creation failed:', error);
         const errorMsg =
@@ -313,7 +298,6 @@ export default function Wizard() {
       setClientBrief(brief);
 
       // Move to next step
-      console.log('✅ All save operations successful, advancing to research step');
       advanceToStep('research');
     } catch (error: unknown) {
       // This catch should rarely be hit since we have specific catches above

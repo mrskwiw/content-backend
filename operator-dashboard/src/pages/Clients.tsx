@@ -179,7 +179,7 @@ export default function Clients() {
             Manage client relationships and project history
           </p>
         </div>
-        <Button variant="primary" onClick={() => {/* TODO: Open add client modal */}}>
+        <Button variant="primary" onClick={() => navigate('/dashboard/wizard', { state: { createNewClient: true } })}>
           <Plus className="h-4 w-4" />
           Add Client
         </Button>
@@ -445,11 +445,22 @@ export default function Clients() {
                           {
                             label: 'Export Profile',
                             icon: 'download',
-                            onClick: () => {
-                              // TODO: Implement export functionality
-                              alert('Export functionality coming soon');
+                            onClick: async () => {
+                              try {
+                                const { blob, filename } = await clientsApi.exportProfile(client.id);
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = filename;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                              } catch (error) {
+                                console.error('Export failed:', error);
+                                alert('Failed to export client profile');
+                              }
                             },
-                            hidden: true, // Hide until implemented
                           },
                           {
                             label: 'Archive Client',

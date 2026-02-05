@@ -109,7 +109,6 @@ export async function retryChunkImport<T>(
 
   // Reload the page to get fresh HTML and JS files
   if (opts.shouldReload) {
-    console.log('Reloading page to fetch latest version...');
     window.location.reload();
     // Return a never-resolving promise to prevent further execution
     return new Promise(() => {});

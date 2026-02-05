@@ -8,7 +8,6 @@ Automation Level: 95%
 Time: 2-3 minutes automated + 30 min review
 """
 
-import json
 import re
 import statistics
 from collections import Counter
@@ -60,6 +59,7 @@ class VoiceAnalyzer(ResearchTool, CommonValidationMixin):
         """Initialize voice analyzer with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
+
     @property
     def tool_name(self) -> str:
         return "voice_analysis"
