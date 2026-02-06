@@ -19,7 +19,7 @@ from typing import List
 from backend.database import get_db
 from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
-from backend.schemas.auth import AdminUserCreate, UserResponse, UserStatsResponse
+from backend.schemas.auth import AdminUserCreate, PasswordResetRequest, UserResponse, UserStatsResponse
 from backend.services import crud
 from backend.utils.auth import get_password_hash
 from backend.utils.logger import logger
@@ -246,6 +246,56 @@ async def demote_from_admin(
     db.refresh(user)
 
     logger.info(f"User {user.email} demoted from admin by {admin.email}")
+
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+@router.post("/users/{user_id}/reset-password", response_model=UserResponse)
+def reset_user_password(
+    user_id: str,
+    request: "PasswordResetRequest",
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """
+    Admin endpoint to reset a user's password (TR-023).
+
+    Allows administrators to reset any user's password. The new password
+    must meet the same strength requirements as during registration.
+
+    Args:
+        user_id: ID of the user whose password will be reset
+        request: PasswordResetRequest containing new_password
+        admin: Current admin user (verified by require_admin dependency)
+
+    Returns:
+        UserResponse: Updated user information
+
+    Raises:
+        HTTPException 404: User not found
+        HTTPException 400: Password validation failed
+    """
+    # Find the user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found: {user_id}"
+        )
+
+    # Hash and update the password
+    user.hashed_password = get_password_hash(request.new_password)
+    db.commit()
+    db.refresh(user)
+
+    logger.info(f"Admin {admin.email} reset password for user {user.email}")
 
     return UserResponse(
         id=user.id,

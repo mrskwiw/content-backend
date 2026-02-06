@@ -222,3 +222,37 @@ class AdminUserCreate(BaseModel):
     def normalize_email(cls, v: str) -> str:
         """Normalize email to lowercase"""
         return v.lower()
+
+
+class PasswordResetRequest(BaseModel):
+    """
+    Schema for admin resetting a user's password.
+
+    Admin-only endpoint to reset user passwords.
+    Enforces password strength requirements.
+    """
+
+    new_password: str
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password strength"""
+        if not v or len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if len(v) > 200:
+            raise ValueError("Password too long (max 200 characters)")
+
+        has_upper = any(c.isupper() for c in v)
+        has_lower = any(c.islower() for c in v)
+        has_digit = any(c.isdigit() for c in v)
+
+        if not (has_upper and has_lower and has_digit):
+            raise ValueError(
+                "Password must contain at least one uppercase letter, "
+                "one lowercase letter, and one digit"
+            )
+
+        return v

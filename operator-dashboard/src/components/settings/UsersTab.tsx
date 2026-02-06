@@ -25,6 +25,7 @@ import {
   AlertCircle,
   UserX,
   UserCheck,
+  Key,
 } from 'lucide-react';
 
 // Stats Card Component
@@ -208,6 +209,7 @@ function UserActionsMenu({
   onDeactivate,
   onPromote,
   onDemote,
+  onResetPassword,
 }: {
   user: SystemUser;
   isCurrentUser: boolean;
@@ -215,6 +217,7 @@ function UserActionsMenu({
   onDeactivate: (userId: string) => void;
   onPromote: (userId: string) => void;
   onDemote: (userId: string) => void;
+  onResetPassword: (user: SystemUser) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -286,6 +289,20 @@ function UserActionsMenu({
                 Make Admin
               </button>
             )}
+
+            <div className="border-t border-neutral-200 dark:border-neutral-700" />
+
+            {/* Reset Password */}
+            <button
+              className="w-full px-4 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2"
+              onClick={() => {
+                onResetPassword(user);
+                setOpen(false);
+              }}
+            >
+              <Key className="h-4 w-4" />
+              Reset Password
+            </button>
           </div>
         </>
       )}
@@ -301,6 +318,9 @@ export default function UsersTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
+  const [newPassword, setNewPassword] = useState('');
 
   // Queries
   const { data: users = [], isLoading: usersLoading } = useQuery({
@@ -352,6 +372,17 @@ export default function UsersTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-users-stats'] });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
+      usersApi.resetPassword(userId, password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowPasswordResetModal(false);
+      setNewPassword('');
+      setSelectedUser(null);
     },
   });
 
@@ -582,6 +613,10 @@ export default function UsersTab() {
                         onDeactivate={(id) => deactivateMutation.mutate(id)}
                         onPromote={(id) => promoteMutation.mutate(id)}
                         onDemote={(id) => demoteMutation.mutate(id)}
+                        onResetPassword={(u) => {
+                          setSelectedUser(u);
+                          setShowPasswordResetModal(true);
+                        }}
                       />
                     </td>
                   </tr>
@@ -606,6 +641,89 @@ export default function UsersTab() {
           onSubmit={(data) => createMutation.mutate(data)}
           isSubmitting={createMutation.isPending}
         />
+      )}
+
+      {/* Password Reset Modal */}
+      {showPasswordResetModal && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 dark:bg-black/60">
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-neutral-900 p-6 shadow-xl border border-neutral-200 dark:border-neutral-700">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                Reset Password
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPasswordResetModal(false);
+                  setNewPassword('');
+                  setSelectedUser(null);
+                }}
+                className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded"
+              >
+                <X className="h-5 w-5 text-neutral-500" />
+              </button>
+            </div>
+
+            <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">
+              Reset password for <strong className="text-neutral-900 dark:text-neutral-100">{selectedUser.email}</strong>
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1 text-neutral-700 dark:text-neutral-300">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Enter new password"
+              />
+              {newPassword && newPassword.length < 8 && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  Password must be at least 8 characters
+                </p>
+              )}
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Must include uppercase, lowercase, and digit
+              </p>
+            </div>
+
+            {resetPasswordMutation.isError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  Failed to reset password. Please try again.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordResetModal(false);
+                  setNewPassword('');
+                  setSelectedUser(null);
+                }}
+                className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedUser && newPassword && newPassword.length >= 8) {
+                    resetPasswordMutation.mutate({
+                      userId: selectedUser.id,
+                      password: newPassword,
+                    });
+                  }
+                }}
+                disabled={!newPassword || newPassword.length < 8 || resetPasswordMutation.isPending}
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

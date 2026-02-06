@@ -74,7 +74,18 @@ export const usersApi = {
    * Demote user from admin (admin only)
    */
   async demote(userId: string): Promise<SystemUser> {
-    const { data } = await apiClient.post<SystemUser>(`/api/admin/users/${userId}/demote`);
+    const { data} = await apiClient.post<SystemUser>(`/api/admin/users/${userId}/demote`);
+    return data;
+  },
+
+  /**
+   * Reset user password (admin only)
+   */
+  async resetPassword(userId: string, newPassword: string): Promise<SystemUser> {
+    const { data } = await apiClient.post<SystemUser>(
+      `/api/admin/users/${userId}/reset-password`,
+      { new_password: newPassword }
+    );
     return data;
   },
 };
