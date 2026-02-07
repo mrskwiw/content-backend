@@ -38,7 +38,7 @@ export const briefImportService = {
 
     try {
       const response = await api.post<ParsedBriefResponse>(
-        '/briefs/parse',
+        '/api/briefs/parse',
         formData,
         {
           headers: {
