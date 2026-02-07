@@ -31,7 +31,7 @@ services:
       # CORS_ORIGINS for single-service: frontend served from same domain
       # Update after first deploy with your actual Render URL
       - key: CORS_ORIGINS
-        value: http://localhost:8000,https://content-jumpstart-api.onrender.com
+        value: http://localhost:8000,https://content-jumpstart-backend.onrender.com
       - key: PARALLEL_GENERATION
         value: true
       - key: MAX_CONCURRENT_API_CALLS
