@@ -138,8 +138,12 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     ];
 
     stringFields.forEach((field) => {
-      const importedValue = importedData.fields[field]?.value;
-      if (importedValue && !merged[field]) {
+      let importedValue = importedData.fields[field]?.value;
+      if (importedValue) {
+        // Handle tonePreference being returned as array - take first element
+        if (field === 'tonePreference' && Array.isArray(importedValue)) {
+          importedValue = importedValue[0];
+        }
         merged[field] = importedValue as any;
       }
     });
