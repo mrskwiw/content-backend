@@ -52,6 +52,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
   const platformOptions: { value: Platform; label: string }[] = [
     { value: 'linkedin', label: 'LinkedIn' },
     { value: 'twitter', label: 'Twitter' },
+    { value: 'facebook', label: 'Facebook' },
     { value: 'blog', label: 'Blog' },
     { value: 'email', label: 'Email' },
     { value: 'generic', label: 'Generic' },
