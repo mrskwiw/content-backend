@@ -41,6 +41,9 @@ export const briefImportService = {
         '/api/briefs/parse',
         formData,
         {
+          headers: {
+            'Content-Type': undefined, // Let browser set multipart/form-data with boundary
+          },
           timeout: 30000, // 30 second timeout for parsing
         }
       );
