@@ -20,7 +20,7 @@ export type RunStatus = z.infer<typeof RunStatusSchema>;
 export const DeliverableStatusSchema = z.enum(['draft', 'ready', 'delivered']);
 export type DeliverableStatus = z.infer<typeof DeliverableStatusSchema>;
 
-export const PlatformSchema = z.enum(['linkedin', 'twitter', 'blog', 'email', 'generic']);
+export const PlatformSchema = z.enum(['linkedin', 'twitter', 'facebook', 'blog', 'email', 'generic']);
 export type Platform = z.infer<typeof PlatformSchema>;
 
 export const ClientSchema = z.object({
