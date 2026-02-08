@@ -16,7 +16,7 @@ class ClientBase(BaseModel):
     business_description: Optional[str] = None
     ideal_customer: Optional[str] = None
     main_problem_solved: Optional[str] = None
-    tone_preference: Optional[str] = "professional"
+    tone_preference: Optional[str] = None
     platforms: Optional[List[str]] = None
     customer_pain_points: Optional[List[str]] = None
     customer_questions: Optional[List[str]] = None
