@@ -100,10 +100,10 @@ export type Deliverable = z.infer<typeof DeliverableSchema>;
 export const PostSummarySchema = z.object({
   id: z.string(),
   templateName: z.string().optional(),
-  wordCount: z.number().optional(),
-  readabilityScore: z.number().optional(),
+  wordCount: z.number().nullish(),
+  readabilityScore: z.number().nullish(),
   status: z.string(),
-  flags: z.array(z.string()).optional(),
+  flags: z.array(z.string()).nullish(),
   contentPreview: z.string(),
 });
 export type PostSummary = z.infer<typeof PostSummarySchema>;
@@ -115,12 +115,12 @@ export const PostSchema = PostSummarySchema.extend({
 export type Post = z.infer<typeof PostSchema>;
 
 export const QASummarySchema = z.object({
-  avgReadability: z.number().optional(),
-  avgWordCount: z.number().optional(),
+  avgReadability: z.number().nullish(),
+  avgWordCount: z.number().nullish(),
   totalPosts: z.number(),
   flaggedCount: z.number(),
   approvedCount: z.number(),
-  ctaPercentage: z.number().optional(),
+  ctaPercentage: z.number().nullish(),
   commonFlags: z.array(z.string()),
 });
 export type QASummary = z.infer<typeof QASummarySchema>;

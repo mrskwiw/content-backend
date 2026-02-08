@@ -83,7 +83,7 @@ class DeliverableResponse(DeliverableBase):
         # Ensure timezone-aware
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
+        return dt.isoformat().replace("+00:00", "Z")
 
 
 class MarkDeliveredRequest(BaseModel):
@@ -161,4 +161,4 @@ class DeliverableDetailResponse(DeliverableResponse):
         # Ensure timezone-aware
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
+        return dt.isoformat().replace("+00:00", "Z")
