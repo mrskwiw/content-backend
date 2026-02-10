@@ -56,8 +56,8 @@ export const deliverablesApi = {
       proof_url: input.proofUrl,
       proof_notes: input.proofNotes,
     };
-    const { data } = await apiClient.post<Deliverable>(
-      `/api/deliverables/${deliverableId}/deliver`,
+    const { data } = await apiClient.patch<Deliverable>(
+      `/api/deliverables/${deliverableId}/mark-delivered`,
       backendInput
     );
     return data;
