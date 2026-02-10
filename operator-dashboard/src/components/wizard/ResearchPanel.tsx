@@ -93,13 +93,23 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       return;
     }
 
+    const failed: string[] = [];
+
     for (const tool of selected) {
-      // Get tool-specific params if they exist
       const toolParams = params[tool] || params;
-      await runResearchMutation.mutateAsync({ tool, params: toolParams });
+      try {
+        await runResearchMutation.mutateAsync({ tool, params: toolParams });
+      } catch {
+        // Tool failed - record and continue; successful results still shown
+        failed.push(tool);
+      }
     }
 
-    // Automatically advance to next step after research completes
+    if (failed.length > 0 && failed.length === selected.size) {
+      alert('All research tools failed. Please check your client profile.');
+      return;
+    }
+
     if (onContinue) {
       onContinue();
     }

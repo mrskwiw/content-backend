@@ -293,8 +293,8 @@ class PlatformStrategyParams(BaseModel):
 
         v = v.strip()
 
-        if len(v) < 10:
-            raise ValueError("Content goals is too short (minimum 10 characters)")
+        if len(v) < 3:
+            raise ValueError("Content goals is too short (minimum 3 characters)")
 
         if len(v) > 1000:
             raise ValueError("Content goals is too long (maximum 1,000 characters)")

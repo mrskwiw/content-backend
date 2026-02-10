@@ -168,7 +168,12 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
 
   const handleSubmit = async () => {
     try {
-      const validated = ClientBriefSchema.parse(formData);
+      // Use lenient schema for profile saves - strict minimums are for research tools (backend enforces)
+      const ProfileSaveSchema = ClientBriefSchema.extend({
+        businessDescription: ClientBriefSchema.shape.businessDescription.min(1, 'Business description is required'),
+        idealCustomer: ClientBriefSchema.shape.idealCustomer.min(1, 'Target audience is required'),
+      });
+      const validated = ProfileSaveSchema.parse(formData);
       setErrors({});
       setIsSubmitting(true);
 
