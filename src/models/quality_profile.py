@@ -5,7 +5,7 @@ automatically regenerated. Different profiles can be created for different
 client types, industries, or quality standards.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class QualityProfile(BaseModel):
@@ -63,28 +63,28 @@ class QualityProfile(BaseModel):
     max_attempts: int = Field(2, ge=1, le=5, description="Maximum regeneration attempts per post")
     enabled: bool = Field(True, description="Whether auto-regeneration is enabled for this profile")
 
-    @validator("max_readability")
-    def readability_max_must_exceed_min(cls, v, values):
+    @field_validator("max_readability")
+    @classmethod
+    def readability_max_must_exceed_min(cls, v, info):
         """Ensure max readability is greater than min"""
-        if "min_readability" in values and v <= values["min_readability"]:
+        if "min_readability" in info.data and v <= info.data["min_readability"]:
             raise ValueError(
-                f"max_readability ({v}) must be greater than min_readability ({values['min_readability']})"
+                f"max_readability ({v}) must be greater than min_readability ({info.data['min_readability']})"
             )
         return v
 
-    @validator("max_words")
-    def max_words_must_exceed_min(cls, v, values):
+    @field_validator("max_words")
+    @classmethod
+    def max_words_must_exceed_min(cls, v, info):
         """Ensure max words is greater than min"""
-        if "min_words" in values and v <= values["min_words"]:
+        if "min_words" in info.data and v <= info.data["min_words"]:
             raise ValueError(
-                f"max_words ({v}) must be greater than min_words ({values['min_words']})"
+                f"max_words ({v}) must be greater than min_words ({info.data['min_words']})"
             )
         return v
 
-    class Config:
-        """Pydantic model configuration with example schema"""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "profile_name": "professional_linkedin",
                 "description": "Professional B2B LinkedIn content with balanced readability",
@@ -98,6 +98,7 @@ class QualityProfile(BaseModel):
                 "enabled": True,
             }
         }
+    )
 
     def to_dict(self) -> dict:
         """Convert to dictionary for API usage"""

@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ContentHealth(str, Enum):
@@ -207,8 +207,8 @@ class ContentAuditAnalysis(BaseModel):
         default_factory=dict, description="Count by performance level"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "business_name": "Acme Analytics",
                 "industry": "B2B SaaS",
@@ -223,3 +223,4 @@ class ContentAuditAnalysis(BaseModel):
                 ],
             }
         }
+    )

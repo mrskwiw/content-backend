@@ -1,13 +1,14 @@
 """
 Backend configuration settings loaded from environment variables.
 """
+
 import os
 import tempfile
 from pathlib import Path
 from typing import List
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Allow selecting an alternate env file for local/remote runs.
 ENV_FILE = os.getenv("ENV_FILE", ".env")
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     """Application settings"""
 
     # API Configuration
-    API_HOST: str = "0.0.0.0"
+    API_HOST: str = "0.0.0.0"  # nosec B104 - intentional server binding, configured via env
     API_PORT: int = 8000
     API_TITLE: str = "Content Jumpstart API"
     API_VERSION: str = "1.0.0"
@@ -85,14 +86,14 @@ class Settings(BaseSettings):
         if v.lower() in weak_keys:
             raise ValueError(
                 f"CRITICAL SECURITY ERROR: Detected weak/default SECRET_KEY '{v}'. "
-                "Generate a secure key with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+                'Generate a secure key with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
             )
 
         # Enforce minimum length (32 characters for 256-bit equivalent)
         if len(v) < 32:
             raise ValueError(
                 f"SECRET_KEY must be at least 32 characters (got {len(v)}). "
-                "Generate with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+                'Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
             )
 
         return v
@@ -128,9 +129,9 @@ class Settings(BaseSettings):
     # Week 3 optimization: Increased from initial values (100/50/20)
 
     # Cache TTLs (Time To Live) in seconds
-    CACHE_TTL_SHORT: int = 300   # 5 minutes - frequently changing data
+    CACHE_TTL_SHORT: int = 300  # 5 minutes - frequently changing data
     CACHE_TTL_MEDIUM: int = 600  # 10 minutes - semi-static data
-    CACHE_TTL_LONG: int = 3600   # 1 hour - static data
+    CACHE_TTL_LONG: int = 3600  # 1 hour - static data
 
     # Cache size limits (max entries per tier)
     # Short: Projects list, posts list, runs (high volume, frequent changes)
@@ -148,19 +149,16 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
     # Celery task configuration
-    CELERY_TASK_TRACK_STARTED: bool = True     # Track task start time
-    CELERY_TASK_SEND_SENT_EVENT: bool = True   # Send task-sent events
-    CELERY_TASK_TIME_LIMIT: int = 600          # 10 minutes max per task
-    CELERY_TASK_SOFT_TIME_LIMIT: int = 540     # 9 minutes soft limit (allows cleanup)
+    CELERY_TASK_TRACK_STARTED: bool = True  # Track task start time
+    CELERY_TASK_SEND_SENT_EVENT: bool = True  # Send task-sent events
+    CELERY_TASK_TIME_LIMIT: int = 600  # 10 minutes max per task
+    CELERY_TASK_SOFT_TIME_LIMIT: int = 540  # 9 minutes soft limit (allows cleanup)
 
     # Redis connection settings
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_MAX_CONNECTIONS: int = 50
 
-    class Config:
-        env_file = ENV_FILE
-        case_sensitive = True
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=ENV_FILE, case_sensitive=True, extra="ignore")
 
 
 # Global settings instance

@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TrendMomentum(str, Enum):
@@ -122,8 +122,8 @@ class TrendReport(BaseModel):
     # Warnings
     declining_topics: List[str] = Field(default_factory=list, description="Topics losing relevance")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "business_name": "Acme Analytics",
                 "industry": "B2B SaaS",
@@ -138,3 +138,4 @@ class TrendReport(BaseModel):
                 ],
             }
         }
+    )

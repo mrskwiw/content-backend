@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class SearchIntent(str, Enum):
@@ -103,8 +103,8 @@ class KeywordStrategy(BaseModel):
     # Strategy summary
     strategy_summary: str = Field(..., description="Executive summary of keyword strategy")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "business_name": "Acme Analytics",
                 "industry": "B2B SaaS",
@@ -124,3 +124,4 @@ class KeywordStrategy(BaseModel):
                 "strategy_summary": "Focus on mid-funnel commercial intent keywords...",
             }
         }
+    )

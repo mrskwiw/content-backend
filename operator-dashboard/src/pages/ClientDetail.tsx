@@ -33,6 +33,7 @@ import { researchApi } from '@/api/research';
 import { CopyButton } from '@/components/ui/CopyButton';
 import type { Project, PostDraft, Deliverable } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 type TabType = 'overview' | 'projects' | 'research' | 'content' | 'deliverables' | 'billing' | 'communication';
 
@@ -187,12 +188,7 @@ export default function ClientDetail() {
 
   if (clientLoading || !client) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 dark:border-primary-500 border-r-transparent"></div>
-          <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">Loading client...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Loading client..." />
     );
   }
 

@@ -1,8 +1,9 @@
 """Application configuration and environment settings"""
+
 from typing import Optional
 import logging
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = None
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-latest"  # Claude 3.5 Sonnet (latest)
 
-    @field_validator('ANTHROPIC_API_KEY')
+    @field_validator("ANTHROPIC_API_KEY")
     @classmethod
     def validate_api_key(cls, v: Optional[str]) -> Optional[str]:
         """
@@ -34,7 +35,7 @@ class Settings(BaseSettings):
             return v
 
         # Check for placeholder values
-        placeholder_values = ['your_api_key_here', 'sk-ant-placeholder', 'xxx', '']
+        placeholder_values = ["your_api_key_here", "sk-ant-placeholder", "xxx", ""]
         if v.lower() in placeholder_values or not v.strip():
             raise ValueError(
                 f"ANTHROPIC_API_KEY appears to be a placeholder value: '{v}'. "
@@ -49,7 +50,7 @@ class Settings(BaseSettings):
             )
 
         # Warn if key doesn't match expected format
-        if not v.startswith('sk-ant-'):
+        if not v.startswith("sk-ant-"):
             logger.warning(
                 f"ANTHROPIC_API_KEY does not start with expected prefix 'sk-ant-'. "
                 f"This may be an invalid key (prefix: {v[:4]}...)"
@@ -57,6 +58,7 @@ class Settings(BaseSettings):
 
         logger.info(f"ANTHROPIC_API_KEY validated (length: {len(v)} chars)")
         return v
+
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.7
     MAX_RETRIES: int = 3
@@ -107,13 +109,9 @@ class Settings(BaseSettings):
     CACHE_SYSTEM_PROMPTS: bool = True  # Cache system prompts
     CACHE_CLIENT_CONTEXT: bool = True  # Cache client brief context
 
-    class Config:
-        """Pydantic settings configuration"""
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
-        extra = "ignore"  # Ignore extra fields from backend .env
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
+    )
 
 
 # Global settings instance

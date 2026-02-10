@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgeRange(str, Enum):
@@ -190,8 +190,8 @@ class AudienceResearch(BaseModel):
         default_factory=list, description="What to avoid with this audience (3-5 items)"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "business_name": "Acme Corp",
                 "industry": "B2B SaaS",
@@ -200,3 +200,4 @@ class AudienceResearch(BaseModel):
                 "audience_size_estimate": "2.5M marketing professionals in tech sector",
             }
         }
+    )

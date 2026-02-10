@@ -32,6 +32,7 @@ import { deliverablesApi } from '@/api/deliverables';
 import { StatusProgressBar } from '@/components/ui/StatusProgressBar';
 import type { PostDraft, Project } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 type PostWithMeta = PostDraft & { templateId?: string | number; wordCount?: number; createdAt?: string };
 
@@ -75,12 +76,7 @@ export default function ProjectDetail() {
 
   if (projectLoading || !project) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 dark:border-primary-500 border-r-transparent"></div>
-          <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">Loading project...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Loading project..." />
     );
   }
 

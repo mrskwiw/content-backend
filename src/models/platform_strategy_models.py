@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class PlatformName(str, Enum):
@@ -177,8 +177,8 @@ class PlatformStrategyAnalysis(BaseModel):
         default_factory=list, description="Platform mistakes to avoid (3-5 items)"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "business_name": "Acme Analytics",
                 "industry": "B2B SaaS",
@@ -191,3 +191,4 @@ class PlatformStrategyAnalysis(BaseModel):
                 },
             }
         }
+    )

@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ContentPillar(str, Enum):
@@ -173,8 +173,8 @@ class CalendarStrategy(BaseModel):
         default_factory=list, description="Calendar mistakes to avoid (3-5 items)"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "business_name": "Acme Corp",
                 "industry": "B2B SaaS",
@@ -186,3 +186,4 @@ class CalendarStrategy(BaseModel):
                 "total_posts_90_days": 39,
             }
         }
+    )

@@ -6,9 +6,10 @@ Provides optimized pagination for large result sets:
 - Cursor pagination for large offsets (efficient, consistent)
 - Automatic strategy selection based on offset size
 """
+
 from typing import Any, Dict, List, Optional, TypeVar, Generic
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import Query
 
@@ -35,8 +36,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     items: List[T]
     metadata: PaginationMetadata
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 # Configuration
@@ -89,13 +89,10 @@ def paginate_offset(
         total_pages=total_pages,
         has_next=has_next,
         has_prev=has_prev,
-        strategy="offset"
+        strategy="offset",
     )
 
-    return {
-        "items": items,
-        "metadata": metadata
-    }
+    return {"items": items, "metadata": metadata}
 
 
 def paginate_cursor(
@@ -151,15 +148,15 @@ def paginate_cursor(
             # For DESC ordering: (created_at < cursor_timestamp) OR
             # (created_at = cursor_timestamp AND id < cursor_id)
             query = query.filter(
-                (order_field < cursor_timestamp) |
-                ((order_field == cursor_timestamp) & (id_field < cursor_id))
+                (order_field < cursor_timestamp)
+                | ((order_field == cursor_timestamp) & (id_field < cursor_id))
             )
         else:
             # For ASC ordering: (created_at > cursor_timestamp) OR
             # (created_at = cursor_timestamp AND id > cursor_id)
             query = query.filter(
-                (order_field > cursor_timestamp) |
-                ((order_field == cursor_timestamp) & (id_field > cursor_id))
+                (order_field > cursor_timestamp)
+                | ((order_field == cursor_timestamp) & (id_field > cursor_id))
             )
 
     # Apply ordering
@@ -199,13 +196,10 @@ def paginate_cursor(
         has_prev=bool(cursor),  # If cursor provided, we're not on first page
         next_cursor=next_cursor,
         prev_cursor=None,  # Prev cursor not supported in this implementation
-        strategy="cursor"
+        strategy="cursor",
     )
 
-    return {
-        "items": items,
-        "metadata": metadata
-    }
+    return {"items": items, "metadata": metadata}
 
 
 def paginate_hybrid(
@@ -246,7 +240,7 @@ def paginate_hybrid(
             cursor=cursor,
             page_size=page_size,
             order_by_field=order_by_field,
-            order_direction=order_direction
+            order_direction=order_direction,
         )
 
     # If page provided, check if it's small enough for offset pagination
@@ -255,11 +249,7 @@ def paginate_hybrid(
 
         if offset < OFFSET_THRESHOLD:
             # Small offset - use offset pagination
-            return paginate_offset(
-                query=query,
-                page=page,
-                page_size=page_size
-            )
+            return paginate_offset(query=query, page=page, page_size=page_size)
         else:
             # Large offset - switch to cursor pagination
             # We need to convert page number to cursor
@@ -270,15 +260,11 @@ def paginate_hybrid(
                 cursor=None,  # Start from beginning
                 page_size=page_size,
                 order_by_field=order_by_field,
-                order_direction=order_direction
+                order_direction=order_direction,
             )
 
     # Default: use offset pagination for first page
-    return paginate_offset(
-        query=query,
-        page=1,
-        page_size=page_size
-    )
+    return paginate_offset(query=query, page=1, page_size=page_size)
 
 
 def get_pagination_params(
@@ -302,8 +288,4 @@ def get_pagination_params(
     if page is not None:
         page = max(1, page)
 
-    return {
-        "page": page,
-        "cursor": cursor,
-        "page_size": page_size
-    }
+    return {"page": page, "cursor": cursor, "page_size": page_size}

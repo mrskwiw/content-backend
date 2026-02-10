@@ -25,6 +25,7 @@ import { DeliverableDrawer } from '@/components/deliverables/DeliverableDrawer';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatFileSize } from '@/utils/formatters';
 import { Button, Badge, Card, CardContent } from '@/components/ui';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Extract readable name from deliverable path
 function getDeliverableName(path: string): string {
@@ -309,12 +310,7 @@ export default function Deliverables() {
 
       {/* Deliverables Content */}
       <div>
-        {isLoading && (
-          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-12 text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 dark:border-primary-500 border-r-transparent"></div>
-            <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">Loading deliverables...</p>
-          </div>
-        )}
+        {isLoading && <LoadingSpinner message="Loading deliverables..." />}
 
         {isError && (
           <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">

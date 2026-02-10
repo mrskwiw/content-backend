@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
   FileText,
   Download,
@@ -515,12 +516,7 @@ export default function AuditTrail() {
 
   if (!complianceStats) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 dark:border-primary-500 border-r-transparent"></div>
-          <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">Loading audit trail...</p>
-        </div>
-      </div>
+      <LoadingSpinner message="Loading audit trail..." />
     );
   }
 
