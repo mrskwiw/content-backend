@@ -34,6 +34,7 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import type { Project, PostDraft, Deliverable } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 type TabType = 'overview' | 'projects' | 'research' | 'content' | 'deliverables' | 'billing' | 'communication';
 
@@ -115,8 +116,7 @@ export default function ClientDetail() {
       setShowDataDialog(false);
     },
     onError: (error, variables) => {
-      console.error(`Research tool "${variables.tool}" failed:`, error);
-      alert(`Failed to run research tool "${variables.tool}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`Failed to run research tool "${variables.tool}": ${getApiErrorMessage(error)}`);
     },
   });
 
@@ -180,7 +180,7 @@ export default function ClientDetail() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export client profile:', error);
-      alert(`Failed to export client profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`Failed to export client profile: ${getApiErrorMessage(error)}`);
     } finally {
       setIsExporting(false);
     }

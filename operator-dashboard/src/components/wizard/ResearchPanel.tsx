@@ -39,7 +39,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       setResults(new Map(results).set(variables.tool, data));
     },
     onError: (error, variables) => {
-      console.error(`Research tool "${variables.tool}" failed:`, error);
       alert(`Failed to run research tool "${variables.tool}": ${getApiErrorMessage(error)}`);
     },
   });

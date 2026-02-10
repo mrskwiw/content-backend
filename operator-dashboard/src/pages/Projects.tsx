@@ -11,6 +11,8 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Button, Badge, Card, CardContent, Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui';
 import { StatusProgressBar } from '@/components/ui/StatusProgressBar';
 import { QuickActionsDropdown } from '@/components/ui/QuickActionsDropdown';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 export default function Projects() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -149,8 +151,7 @@ export default function Projects() {
       alert(`Content generation started! Run ID: ${run.id}`);
     },
     onError: (error) => {
-      console.error('Generation error:', error);
-      alert(`Failed to start generation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`Failed to start generation: ${getApiErrorMessage(error)}`);
     },
   });
 

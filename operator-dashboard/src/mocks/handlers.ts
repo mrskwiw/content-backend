@@ -307,7 +307,6 @@ function delay(ms: number): Promise<void> {
 export function setupMockInterceptor(axiosInstance: AxiosInstance) {
   if (!mockEnabled) return;
 
-  console.log('🎭 Mock API enabled for development');
 
   // Intercept requests and return mock data
   axiosInstance.interceptors.request.use(

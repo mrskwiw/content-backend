@@ -25,7 +25,6 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
       setPollingEnabled(true);
     },
     onError: (error) => {
-      console.error('Failed to queue generation:', error);
       alert(`Failed to start generation: ${getApiErrorMessage(error)}`);
     },
   });
@@ -49,7 +48,6 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
       onStarted?.(runStatus);
     } else if (runStatus?.status === 'failed') {
       setPollingEnabled(false);
-      console.error('Generation failed:', runStatus.errorMessage);
     }
   }, [runStatus, onStarted]);
 

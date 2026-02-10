@@ -87,16 +87,6 @@ export default function Wizard() {
       setClientId(data.id);
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
-    onError: (error: unknown) => {
-      console.error('❌ Client creation failed:', error);
-      if (error && typeof error === 'object') {
-        console.error('Error details:', {
-          message: 'message' in error ? error.message : undefined,
-          response: 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response ? error.response.data : undefined,
-          status: 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response ? error.response.status : undefined,
-        });
-      }
-    },
   });
 
   // Mutation to update client
@@ -109,16 +99,6 @@ export default function Wizard() {
       qc.invalidateQueries({ queryKey: ['clients'] });
       qc.invalidateQueries({ queryKey: ['client', clientId] });
     },
-    onError: (error: unknown) => {
-      console.error('❌ Client update failed:', error);
-      if (error && typeof error === 'object') {
-        console.error('Error details:', {
-          message: 'message' in error ? error.message : undefined,
-          response: 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response ? error.response.data : undefined,
-          status: 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response ? error.response.status : undefined,
-        });
-      }
-    },
   });
 
   // Mutation to create project
@@ -127,16 +107,6 @@ export default function Wizard() {
     onSuccess: (data) => {
       setProjectId(data.id);
       qc.invalidateQueries({ queryKey: ['project', data.id] });
-    },
-    onError: (error: unknown) => {
-      console.error('❌ Project creation failed:', error);
-      if (error && typeof error === 'object') {
-        console.error('Error details:', {
-          message: 'message' in error ? error.message : undefined,
-          response: 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response ? error.response.data : undefined,
-          status: 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response ? error.response.status : undefined,
-        });
-      }
     },
   });
 
