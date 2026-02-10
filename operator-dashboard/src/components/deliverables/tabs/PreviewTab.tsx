@@ -1,7 +1,12 @@
 import type { DeliverableDetails } from '@/types/domain';
 import { FileText, AlertCircle } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+// Use PrismLight (tree-shaken build) with only markdown registered
+// Reduces bundle by ~500KB vs full Prism import (was loading 185 languages)
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+SyntaxHighlighter.registerLanguage('markdown', markdown);
 
 interface Props {
   deliverable: DeliverableDetails;

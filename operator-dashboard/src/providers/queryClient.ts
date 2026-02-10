@@ -13,17 +13,15 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Data considered fresh for 10 minutes (doubled from 5 min)
-      // Reduces unnecessary API calls by 50% for frequently accessed data
-      staleTime: 10 * 60 * 1000, // 600,000ms = 10 minutes
+      // Data considered fresh for 30 seconds
+      // Balances performance with freshness for operator workflow (creating/updating frequently)
+      staleTime: 30 * 1000, // 30,000ms = 30 seconds
 
-      // Only refetch on window focus if data is stale
-      // Prevents unnecessary refetches when switching tabs
-      refetchOnWindowFocus: false,
+      // Refetch on window focus if data is stale - ensures fresh data after tab switch
+      refetchOnWindowFocus: true,
 
-      // Don't refetch when component mounts (rely on staleTime instead)
-      // Prevents duplicate requests on navigation
-      refetchOnMount: false,
+      // Refetch on mount if stale - ensures navigation shows current data
+      refetchOnMount: true,
 
       // Smart retry with exponential backoff
       // Attempt 1: immediate, Attempt 2: 1s delay, Attempt 3: 2s delay

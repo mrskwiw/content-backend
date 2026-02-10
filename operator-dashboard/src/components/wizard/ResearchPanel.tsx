@@ -2,6 +2,7 @@ import { useState, memo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { ResearchDataCollectionPanel } from './ResearchDataCollectionPanel';
 
 interface Props {
@@ -39,7 +40,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     },
     onError: (error, variables) => {
       console.error(`Research tool "${variables.tool}" failed:`, error);
-      alert(`Failed to run research tool "${variables.tool}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`Failed to run research tool "${variables.tool}": ${getApiErrorMessage(error)}`);
     },
   });
 

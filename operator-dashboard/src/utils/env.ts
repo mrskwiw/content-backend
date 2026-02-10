@@ -56,7 +56,7 @@ export function getApiBaseUrl(): string {
 
   // If explicitly set to empty string, use relative URLs (for Vite proxy)
   if (hasApiUrl && value === '') {
-    console.log('VITE_API_URL set to empty string; using relative URLs (Vite proxy)');
+    if (import.meta.env.DEV) console.log('VITE_API_URL set to empty string; using relative URLs (Vite proxy)');
     return '';
   }
 
@@ -65,7 +65,7 @@ export function getApiBaseUrl(): string {
     // Production: use relative URLs (same origin as backend)
     // Development: use localhost
     if (mode === 'production') {
-      console.log('VITE_API_URL not set in production; using relative URLs (same origin)');
+      if (import.meta.env.DEV) console.log('VITE_API_URL not set in production; using relative URLs (same origin)');
       return '';  // Relative URLs eliminate CORS
     } else {
       console.warn('VITE_API_URL not set; using default http://localhost:8000');

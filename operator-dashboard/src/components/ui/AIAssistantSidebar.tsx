@@ -22,8 +22,8 @@ export default function AIAssistantSidebar() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  // Get current page context from URL
-  const getCurrentPage = () => {
+  // Get current page context from URL - memoized to be stable for useCallback deps
+  const getCurrentPage = useCallback(() => {
     const path = location.pathname;
     if (path.includes('/wizard')) return 'wizard';
     if (path.includes('/projects')) return 'projects';
@@ -32,7 +32,7 @@ export default function AIAssistantSidebar() {
     if (path.includes('/deliverables')) return 'deliverables';
     if (path.includes('/settings')) return 'settings';
     return 'overview';
-  };
+  }, [location.pathname]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function AIAssistantSidebar() {
     } catch (error) {
       console.error('Failed to load context suggestions:', error);
     }
-  }, [location.pathname]); // Dependencies: location changes trigger new suggestions
+  }, [location.pathname, getCurrentPage]); // Dependencies: location changes trigger new suggestions
 
   // Load context suggestions when sidebar opens or page changes
   useEffect(() => {

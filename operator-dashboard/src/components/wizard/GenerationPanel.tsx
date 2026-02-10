@@ -4,6 +4,7 @@ import { generatorApi } from '@/api/generator';
 import { runsApi } from '@/api/runs';
 import type { GenerateAllInput, Run } from '@/types/domain';
 import { Play, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 interface Props {
   projectId: string;
@@ -25,7 +26,7 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
     },
     onError: (error) => {
       console.error('Failed to queue generation:', error);
-      alert(`Failed to start generation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`Failed to start generation: ${getApiErrorMessage(error)}`);
     },
   });
 
