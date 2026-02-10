@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatorApi } from '@/api/generator';
 import { runsApi } from '@/api/runs';
@@ -17,6 +17,12 @@ interface Props {
 export function GenerationPanel({ projectId, clientId, templateQuantities, customTopics, onStarted }: Props) {
   const [runId, setRunId] = useState<string | null>(null);
   const [pollingEnabled, setPollingEnabled] = useState(false);
+  // Ref to prevent onStarted firing multiple times when parent re-renders
+  const onStartedCalledRef = useRef(false);
+  const onStartedRef = useRef(onStarted);
+  useEffect(() => { onStartedRef.current = onStarted; }, [onStarted]);
+  // Reset the guard when a new run starts
+  useEffect(() => { onStartedCalledRef.current = false; }, [runId]);
 
   const generate = useMutation({
     mutationFn: (input: GenerateAllInput) => generatorApi.generateAll(input),
@@ -41,23 +47,28 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
     },
   });
 
-  // Handle status changes
+  // Handle status changes — use ref for onStarted to avoid effect loop when parent re-renders
   useEffect(() => {
-    if (runStatus?.status === 'succeeded') {
+    if (runStatus?.status === 'succeeded' && !onStartedCalledRef.current) {
+      onStartedCalledRef.current = true;
       setPollingEnabled(false);
-      onStarted?.(runStatus);
+      onStartedRef.current?.(runStatus);
     } else if (runStatus?.status === 'failed') {
       setPollingEnabled(false);
     }
-  }, [runStatus, onStarted]);
+  }, [runStatus]);
 
   const isGenerating = generate.isPending || pollingEnabled;
+  // Keep button disabled after success to prevent accidental re-generation
+  const isSucceeded = runStatus?.status === 'succeeded';
   const statusMessage = runStatus?.status === 'running'
     ? 'Generating posts...'
     : runStatus?.status === 'pending'
     ? 'Queued...'
     : generate.isPending
     ? 'Starting...'
+    : isSucceeded
+    ? 'Loading results...'
     : null;
 
   return (
@@ -70,7 +81,7 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
           </p>
         </div>
         <button
-          disabled={isGenerating}
+          disabled={isGenerating || isSucceeded}
           onClick={() =>
             generate.mutate({
               projectId,
@@ -84,14 +95,14 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
         >
           {isGenerating ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : runStatus?.status === 'succeeded' ? (
-            <CheckCircle2 className="h-4 w-4" />
+          ) : isSucceeded ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : runStatus?.status === 'failed' ? (
             <XCircle className="h-4 w-4" />
           ) : (
             <Play className="h-4 w-4" />
           )}
-          {isGenerating ? statusMessage : runStatus?.status === 'succeeded' ? 'Complete' : 'Generate All'}
+          {isGenerating ? statusMessage : isSucceeded ? 'Loading results...' : runStatus?.status === 'failed' ? 'Failed' : 'Generate All'}
         </button>
       </div>
       {generate.error && (
@@ -104,9 +115,9 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
           Generation failed: {runStatus.errorMessage}
         </div>
       )}
-      {runStatus?.status === 'succeeded' && (
+      {isSucceeded && (
         <div className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          Generation completed successfully!
+          Generation complete! Loading quality results...
         </div>
       )}
     </div>

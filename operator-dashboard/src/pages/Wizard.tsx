@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { WizardStepper } from '@/components/wizard/WizardStepper';
@@ -131,6 +131,17 @@ export default function Wizard() {
   // Extract posts from paginated response (Week 3 optimization)
   const posts = postsResponse?.items ?? [];
   const flagged = posts.filter((p) => p.status === 'flagged' || (p.flags && p.flags.length > 0));
+  // Track if generation has completed so quality gate shows immediately
+  const [generationCompleted, setGenerationCompleted] = useState(false);
+  const qcRef = useRef(qc);
+  useEffect(() => { qcRef.current = qc; }, [qc]);
+  const refetchPostsRef = useRef(refetchPosts);
+  useEffect(() => { refetchPostsRef.current = refetchPosts; }, [refetchPosts]);
+  const handleGenerationStarted = useCallback(() => {
+    setGenerationCompleted(true);
+    qcRef.current.invalidateQueries({ queryKey: ['runs', { projectId }] });
+    refetchPostsRef.current();
+  }, [projectId]);
 
   // Populate form with selected client's data when loading existing client
   useEffect(() => {
@@ -462,17 +473,14 @@ export default function Wizard() {
       {activeStep === 'quality' && projectId && clientId && (
         <div className="space-y-4">
           {/* Show GenerationPanel if no posts exist, otherwise show Quality view */}
-          {(!posts || posts.length === 0) ? (
+          {(!generationCompleted && (!posts || posts.length === 0)) ? (
             <div className="grid gap-4 lg:grid-cols-2">
               <GenerationPanel
                 projectId={projectId}
                 clientId={clientId}
                 templateQuantities={templateQuantities}
                 customTopics={customTopics}
-                onStarted={() => {
-                  qc.invalidateQueries({ queryKey: ['runs', { projectId }] });
-                  refetchPosts();
-                }}
+                onStarted={handleGenerationStarted}
               />
               <Card>
                 <CardContent className="p-6">
