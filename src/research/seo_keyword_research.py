@@ -86,7 +86,7 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
         target_audience = inputs["target_audience"]
         main_topics = inputs["main_topics"]
         competitors = inputs.get("competitors", [])
-        industry = inputs.get("industry", "Not specified")
+        industry = inputs.get("industry") or "Not specified"
 
         logger.info(f"Researching keywords for {len(main_topics)} topics")
 

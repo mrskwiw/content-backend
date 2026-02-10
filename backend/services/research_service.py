@@ -7,6 +7,7 @@ Handles:
 - Research tool execution
 - Output file management
 """
+
 import sys
 from pathlib import Path
 from typing import Dict, Optional
@@ -68,13 +69,14 @@ except ImportError as e:
 
 # IMPORTANT: Use relative imports to avoid SQLAlchemy table redefinition errors
 # Absolute imports (backend.models) cause circular dependencies in production
-from backend.models import Project, Client
-from backend.services import crud
+from backend.models import Project, Client  # noqa: E402
+from backend.services import crud  # noqa: E402
 
 # Logger import with fallback
 try:
     import sys
     from pathlib import Path
+
     # Add src to path for logger
     project_root = Path(__file__).parent.parent.parent
     src_path = project_root / "src"
@@ -83,6 +85,7 @@ try:
     from utils.logger import logger
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
 
 
@@ -131,7 +134,9 @@ class ResearchService:
 
         # Check if research tools are available
         if not RESEARCH_TOOLS_AVAILABLE:
-            logger.warning(f"Research tools not available - returning demo response for '{tool_name}'")
+            logger.warning(
+                f"Research tools not available - returning demo response for '{tool_name}'"
+            )
             # Return demo response with realistic sample data
             return self._get_demo_response(tool_name, project_id, client)
 
@@ -285,11 +290,14 @@ class ResearchService:
         }
 
         # Get tool-specific data or generic response
-        tool_data = demo_data.get(tool_name, {
-            "summary": f"Analysis completed for {client_name}",
-            "status": "Demo data generated",
-            "recommendations": ["Full analysis available with API configuration"],
-        })
+        tool_data = demo_data.get(
+            tool_name,
+            {
+                "summary": f"Analysis completed for {client_name}",
+                "status": "Demo data generated",
+                "recommendations": ["Full analysis available with API configuration"],
+            },
+        )
 
         base_response["data"] = tool_data
         base_response["outputs"] = {}  # No file outputs for demo mode
@@ -337,7 +345,9 @@ class ResearchService:
 
         elif tool_name == "seo_keyword_research":  # Fixed: was "seo_keyword"
             # SEO keyword research needs industry/niche
-            inputs["industry"] = params.get("industry", "")
+            inputs["industry"] = (
+                params.get("industry") or client.business_description or "General business"
+            )
             inputs["target_keywords"] = params.get("target_keywords", [])
             inputs["main_topics"] = params.get("main_topics", [])  # Required by tool
 
@@ -351,7 +361,9 @@ class ResearchService:
 
         elif tool_name == "market_trends":
             # Market trends needs industry context
-            inputs["industry"] = params.get("industry", "")
+            inputs["industry"] = (
+                params.get("industry") or client.business_description or "General business"
+            )
 
         return inputs
 
