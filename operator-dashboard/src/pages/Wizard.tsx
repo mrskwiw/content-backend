@@ -134,18 +134,22 @@ export default function Wizard() {
   const flagged = posts.filter((p) => p.status === 'flagged' || (p.flags && p.flags.length > 0));
   // Track if generation has completed so quality gate shows immediately
   const [generationCompleted, setGenerationCompleted] = useState(false);
+  const [postPollTimedOut, setPostPollTimedOut] = useState(false);
   const qcRef = useRef(qc);
   useEffect(() => { qcRef.current = qc; }, [qc]);
   const refetchPostsRef = useRef(refetchPosts);
   useEffect(() => { refetchPostsRef.current = refetchPosts; }, [refetchPosts]);
 
   // Poll for posts every 2s after generation completes until they arrive.
-  // A single refetch() can race with DB writes; this guarantees the UI unblocks.
+  // Generation can take 60-120s; use a 5-minute cap to match GenerationPanel safety.
   useEffect(() => {
     if (!generationCompleted || posts.length > 0) return;
+    setPostPollTimedOut(false);
     const interval = setInterval(() => { refetchPostsRef.current(); }, 2000);
-    // Safety: give up after 60s so the spinner never hangs forever
-    const timeout = setTimeout(() => clearInterval(interval), 60_000);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setPostPollTimedOut(true);
+    }, 5 * 60 * 1000);
     return () => { clearInterval(interval); clearTimeout(timeout); };
   }, [generationCompleted, posts.length]);
   const handleGenerationStarted = useCallback(() => {
@@ -504,8 +508,25 @@ export default function Wizard() {
                 </CardContent>
               </Card>
             </div>
-          ) : (generationCompleted && posts.length === 0) ? (
+          ) : (generationCompleted && posts.length === 0 && !postPollTimedOut) ? (
             <LoadingSpinner message="Loading quality results..." />
+          ) : (generationCompleted && posts.length === 0 && postPollTimedOut) ? (
+            <Card>
+              <CardContent className="p-6 text-center space-y-3">
+                <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">
+                  Generation completed but no posts were found.
+                </p>
+                <p className="text-xs text-neutral-500">
+                  The run succeeded but posts may not have been saved. Check server logs or try generating again.
+                </p>
+                <button
+                  onClick={() => { setGenerationCompleted(false); setPostPollTimedOut(false); }}
+                  className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                >
+                  Try Again
+                </button>
+              </CardContent>
+            </Card>
           ) : (
             <>
               <QualityGatePanel
