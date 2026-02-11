@@ -26,7 +26,7 @@ interface ClientBriefFormData {
   tonePreference: string;
   platforms: string[];
   customerPainPoints: string[];
-  customerQuestions: Array<{ question: string; answer: string }>;
+  customerQuestions: string[];
 }
 
 /**
@@ -116,7 +116,7 @@ export function AIDiscoveryPanel({ onDataExtracted, onComplete, onCancel }: AIDi
 
       // Notify parent of extracted data
       if (onDataExtracted) {
-        onDataExtracted(response.extractedFields as any);
+        onDataExtracted(response.extractedFields as Partial<ClientBriefFormData>);
       }
 
       setIsProcessing(false);
