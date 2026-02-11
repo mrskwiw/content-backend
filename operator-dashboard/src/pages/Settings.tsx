@@ -209,7 +209,7 @@ export default function Settings() {
   // Database backup mutation
   const downloadBackupMutation = useMutation({
     mutationFn: async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       const response = await fetch('/api/database/backup', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -217,8 +217,9 @@ export default function Settings() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to download backup');
+        let detail = `Request failed: ${response.status} ${response.statusText}`;
+        try { const err = await response.json(); detail = err.detail || detail; } catch { /* not JSON */ }
+        throw new Error(detail);
       }
 
       const blob = await response.blob();
@@ -237,12 +238,15 @@ export default function Settings() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     },
+    onError: (error: Error) => {
+      alert(`Backup failed: ${error.message}`);
+    },
   });
 
   // Database restore mutation
   const restoreDatabaseMutation = useMutation({
     mutationFn: async (file: File) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       const formData = new FormData();
       formData.append('file', file);
 
