@@ -24,7 +24,15 @@ export const postsApi = {
    * @returns Paginated response with posts and metadata
    */
   async list(filters?: PostFilters): Promise<PaginatedResponse<PostDraft>> {
-    const { data } = await apiClient.get<PaginatedResponse<PostDraft>>('/api/posts/', { params: filters });
+    // Convert camelCase filter keys to snake_case for backend compatibility
+    const params: Record<string, unknown> = {};
+    if (filters) {
+      const { projectId, runId, ...rest } = filters;
+      if (projectId !== undefined) params['project_id'] = projectId;
+      if (runId !== undefined) params['run_id'] = runId;
+      Object.assign(params, rest);
+    }
+    const { data } = await apiClient.get<PaginatedResponse<PostDraft>>('/api/posts/', { params });
     return data;
   },
 
