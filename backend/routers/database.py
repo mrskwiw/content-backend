@@ -64,6 +64,17 @@ def get_database_path() -> Path:
 
     # Extract file path from sqlite:///path/to/db.db
     db_path = db_url.replace("sqlite:///", "")
+    # In-memory SQLite has no file to back up
+    if db_path == ":memory:":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Cannot backup an in-memory database. The application is currently using a "
+                "temporary in-memory SQLite database, which means the configured database "
+                "(PostgreSQL or file-based SQLite) was unavailable at startup. "
+                "Check DATABASE_URL in your .env file and ensure the database is accessible."
+            ),
+        )
 
     # Convert to absolute path
     abs_path = Path(db_path).resolve()

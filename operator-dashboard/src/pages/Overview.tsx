@@ -124,8 +124,10 @@ export default function Overview() {
       ) / 100
     : 0;
 
-  // NEW: Calculate revenue (mock data for now - would come from billing API)
-  const mockMonthlyRevenue = completedProjects * 1800; // Avg $1,800/project
+  // Calculate revenue from actual project pricing data
+  const totalRevenue = projects
+    .filter(p => p.status === "delivered" || p.status === "exported")
+    .reduce((sum, p) => sum + (p.totalPrice ?? 0), 0);
 
   // Client metrics
   const totalClients = clients.length;
@@ -250,7 +252,7 @@ export default function Overview() {
         />
         <StatCard
           title="Revenue This Month"
-          value={`$${mockMonthlyRevenue.toLocaleString()}`}
+          value={`$${totalRevenue.toLocaleString()}`}
           icon={DollarSign}
           color="emerald"
           trend={`${completedProjects} completed`}

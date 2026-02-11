@@ -43,12 +43,15 @@ export const ProjectSchema = z.object({
   clientId: z.string(),
   name: z.string(),
   status: ProjectStatusSchema,
-  templates: z.array(z.string()),
+  templates: z.array(z.string()).optional().nullable(),
   platforms: z.array(PlatformSchema),
   tone: z.string().optional(),
   lastRunAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),
   createdAt: z.string().datetime().optional(),
+  totalPrice: z.number().optional().nullable(),
+  numPosts: z.number().int().optional().nullable(),
+  pricePerPost: z.number().optional().nullable(),
 });
 export type Project = z.infer<typeof ProjectSchema>;
 
