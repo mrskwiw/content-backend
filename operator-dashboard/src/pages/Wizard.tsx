@@ -17,6 +17,7 @@ import type { ClientBrief, PostDraft } from '@/types/domain';
 import type { CreateProjectInput } from '@/api/projects';
 import type { PaginatedResponse } from '@/types/pagination';
 import { Button, Card, CardContent, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 type StepKey = 'profile' | 'research' | 'templates' | 'quality' | 'export';
 
@@ -493,6 +494,8 @@ export default function Wizard() {
                 </CardContent>
               </Card>
             </div>
+          ) : (generationCompleted && posts.length === 0) ? (
+            <LoadingSpinner message="Loading quality results..." />
           ) : (
             <>
               <QualityGatePanel
