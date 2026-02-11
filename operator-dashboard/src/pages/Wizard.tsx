@@ -138,6 +138,16 @@ export default function Wizard() {
   useEffect(() => { qcRef.current = qc; }, [qc]);
   const refetchPostsRef = useRef(refetchPosts);
   useEffect(() => { refetchPostsRef.current = refetchPosts; }, [refetchPosts]);
+
+  // Poll for posts every 2s after generation completes until they arrive.
+  // A single refetch() can race with DB writes; this guarantees the UI unblocks.
+  useEffect(() => {
+    if (!generationCompleted || posts.length > 0) return;
+    const interval = setInterval(() => { refetchPostsRef.current(); }, 2000);
+    // Safety: give up after 60s so the spinner never hangs forever
+    const timeout = setTimeout(() => clearInterval(interval), 60_000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [generationCompleted, posts.length]);
   const handleGenerationStarted = useCallback(() => {
     setGenerationCompleted(true);
     qcRef.current.invalidateQueries({ queryKey: ['runs', { projectId }] });
