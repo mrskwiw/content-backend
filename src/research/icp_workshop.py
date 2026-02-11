@@ -8,6 +8,7 @@ Price: $600
 Security: Phase 2 - Comprehensive input validation (TR-019)
 """
 
+import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -23,6 +24,7 @@ from ..models.icp_workshop_models import (
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
+from ..utils.anthropic_client import get_default_client
 
 
 class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
@@ -32,6 +34,7 @@ class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
         """Initialize ICP Workshop with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
+        self.client = get_default_client()  # Needed for API calls
 
     @property
     def tool_name(self) -> str:
@@ -103,31 +106,35 @@ class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
 
         # Step 1: Demographics/Firmographics
         demographics = self._gather_demographics(
-            business_description, target_audience, existing_customer_data
+            self.client, business_description, target_audience, existing_customer_data
         )
 
         print("[2/6] Building psychographic profile...")
 
         # Step 2: Psychographics
         psychographics = self._gather_psychographics(
-            business_description, demographics, existing_customer_data
+            self.client, business_description, demographics, existing_customer_data
         )
 
         print("[3/6] Analyzing behavioral patterns...")
 
         # Step 3: Behavioral
-        behavioral = self._gather_behavioral(business_description, demographics, psychographics)
+        behavioral = self._gather_behavioral(
+            self.client, business_description, demographics, psychographics
+        )
 
         print("[4/6] Identifying situational factors...")
 
         # Step 4: Situational
-        situational = self._gather_situational(business_description, demographics, psychographics)
+        situational = self._gather_situational(
+            self.client, business_description, demographics, psychographics
+        )
 
         print("[5/6] Defining success criteria...")
 
         # Step 5: Success Criteria
         success_criteria = self._gather_success_criteria(
-            business_description, demographics, psychographics
+            self.client, business_description, demographics, psychographics
         )
 
         print("[6/6] Synthesizing insights and recommendations...")
@@ -139,6 +146,7 @@ class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
             messaging_recommendations,
             content_topics,
         ) = self._synthesize_profile(
+            self.client,
             business_name,
             demographics,
             psychographics,
@@ -163,7 +171,7 @@ class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
         )
 
         # Generate next steps
-        next_steps = self._generate_next_steps(profile)
+        next_steps = self._generate_next_steps(self.client, profile)
 
         # Create workshop analysis
         analysis = ICPWorkshopAnalysis(
@@ -177,6 +185,7 @@ class ICPWorkshopFacilitator(ResearchTool, CommonValidationMixin):
 
     def _gather_demographics(
         self,
+        client: Any,
         business_description: str,
         target_audience: str,
         existing_data: str,
@@ -226,6 +235,7 @@ Focus on the IDEAL customer, not the average customer."""
 
     def _gather_psychographics(
         self,
+        client: Any,
         business_description: str,
         demographics: Demographics,
         existing_data: str,
@@ -257,9 +267,11 @@ Return JSON with:
 
 Focus on deep motivations, not surface-level wants."""
 
-        data = self._call_claude_api(
-            prompt, max_tokens=3000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=3000
         )
+
+        data = self._extract_json_from_response(response)
 
         return Psychographics(
             goals=data.get("goals", []),
@@ -271,6 +283,7 @@ Focus on deep motivations, not surface-level wants."""
 
     def _gather_behavioral(
         self,
+        client: Any,
         business_description: str,
         demographics: Demographics,
         psychographics: Psychographics,
@@ -297,9 +310,11 @@ Return JSON with:
 - influencers: array of strings
 - platforms_active_on: array of strings"""
 
-        data = self._call_claude_api(
-            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2500
         )
+
+        data = self._extract_json_from_response(response)
 
         return Behavioral(
             buying_process=data.get("buying_process"),
@@ -311,6 +326,7 @@ Return JSON with:
 
     def _gather_situational(
         self,
+        client: Any,
         business_description: str,
         demographics: Demographics,
         psychographics: Psychographics,
@@ -336,9 +352,11 @@ Return JSON with:
 - competitive_pressures: array of strings
 - current_solutions: string"""
 
-        data = self._call_claude_api(
-            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2500
         )
+
+        data = self._extract_json_from_response(response)
 
         return Situational(
             pain_triggers=data.get("pain_triggers", []),
@@ -350,6 +368,7 @@ Return JSON with:
 
     def _gather_success_criteria(
         self,
+        client: Any,
         business_description: str,
         demographics: Demographics,
         psychographics: Psychographics,
@@ -375,9 +394,11 @@ Return JSON with:
 - implementation_timeline: string
 - success_indicators: array of strings"""
 
-        data = self._call_claude_api(
-            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2500
         )
+
+        data = self._extract_json_from_response(response)
 
         return SuccessCriteria(
             definition_of_success=data.get("definition_of_success"),
@@ -389,6 +410,7 @@ Return JSON with:
 
     def _synthesize_profile(
         self,
+        client: Any,
         business_name: str,
         demographics: Demographics,
         psychographics: Psychographics,
@@ -427,9 +449,11 @@ Return JSON with:
 - messaging_recommendations: array of strings
 - content_topics: array of strings"""
 
-        data = self._call_claude_api(
-            prompt, max_tokens=3000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=3000
         )
+
+        data = self._extract_json_from_response(response)
 
         return (
             data.get("one_sentence_summary", ""),
@@ -438,7 +462,7 @@ Return JSON with:
             data.get("content_topics", []),
         )
 
-    def _generate_next_steps(self, profile: IdealCustomerProfile) -> list[str]:
+    def _generate_next_steps(self, client: Any, profile: IdealCustomerProfile) -> list[str]:
         """Generate recommended next steps"""
         prompt = f"""Based on this ICP, recommend 5-7 immediate next steps.
 
@@ -455,9 +479,11 @@ Provide actionable next steps like:
 
 Return JSON array of strings."""
 
-        data = self._call_claude_api(
-            prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error=[]
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=1500
         )
+
+        data = self._extract_json_from_response(response)
         return list(data) if isinstance(data, list) else []
 
     def generate_reports(self, analysis: ICPWorkshopAnalysis) -> Dict[str, Path]:
@@ -509,26 +535,26 @@ Return JSON array of strings."""
 **Team Structure:** {profile.demographics.team_structure or 'Not specified'}
 
 **Decision-Maker Roles:**
-{self._format_markdown_list(profile.demographics.job_titles)}
+{self._format_list(profile.demographics.job_titles)}
 
 **Technologies Used:**
-{self._format_markdown_list(profile.demographics.technologies_used)}
+{self._format_list(profile.demographics.technologies_used)}
 
 ---
 
 ## Psychographics
 
 ### Goals & Objectives
-{self._format_markdown_list(profile.psychographics.goals)}
+{self._format_list(profile.psychographics.goals)}
 
 ### Challenges & Frustrations
-{self._format_markdown_list(profile.psychographics.challenges)}
+{self._format_list(profile.psychographics.challenges)}
 
 ### Core Values & Priorities
-{self._format_markdown_list(profile.psychographics.values)}
+{self._format_list(profile.psychographics.values)}
 
 ### Decision-Making Factors
-{self._format_markdown_list(profile.psychographics.decision_factors)}
+{self._format_list(profile.psychographics.decision_factors)}
 
 **Aspirations:** {profile.psychographics.aspirations or 'Not specified'}
 
@@ -540,23 +566,23 @@ Return JSON array of strings."""
 {profile.behavioral.buying_process or 'Not specified'}
 
 **Content Consumption:**
-{self._format_markdown_list(profile.behavioral.content_consumption)}
+{self._format_list(profile.behavioral.content_consumption)}
 
 **Research Habits:**
 {profile.behavioral.research_habits or 'Not specified'}
 
 **Trusted Influencers:**
-{self._format_markdown_list(profile.behavioral.influencers)}
+{self._format_list(profile.behavioral.influencers)}
 
 **Active Platforms:**
-{self._format_markdown_list(profile.behavioral.platforms_active_on)}
+{self._format_list(profile.behavioral.platforms_active_on)}
 
 ---
 
 ## Situational Factors
 
 **Pain Point Triggers:**
-{self._format_markdown_list(profile.situational.pain_triggers)}
+{self._format_list(profile.situational.pain_triggers)}
 
 **Timing & Seasonality:**
 {profile.situational.timing_seasonality or 'Not specified'}
@@ -565,7 +591,7 @@ Return JSON array of strings."""
 {profile.situational.budget_constraints or 'Not specified'}
 
 **Competitive Pressures:**
-{self._format_markdown_list(profile.situational.competitive_pressures)}
+{self._format_list(profile.situational.competitive_pressures)}
 
 **Current Solutions:**
 {profile.situational.current_solutions or 'Not specified'}
@@ -578,7 +604,7 @@ Return JSON array of strings."""
 {profile.success_criteria.definition_of_success or 'Not specified'}
 
 **KPIs Tracked:**
-{self._format_markdown_list(profile.success_criteria.kpis_tracked)}
+{self._format_list(profile.success_criteria.kpis_tracked)}
 
 **ROI Expectations:**
 {profile.success_criteria.roi_expectations or 'Not specified'}
@@ -587,31 +613,31 @@ Return JSON array of strings."""
 {profile.success_criteria.implementation_timeline or 'Not specified'}
 
 **Success Indicators:**
-{self._format_markdown_list(profile.success_criteria.success_indicators)}
+{self._format_list(profile.success_criteria.success_indicators)}
 
 ---
 
 ## Key Insights
 
-{self._format_markdown_list(profile.key_insights)}
+{self._format_list(profile.key_insights)}
 
 ---
 
 ## Messaging Recommendations
 
-{self._format_markdown_list(profile.messaging_recommendations)}
+{self._format_list(profile.messaging_recommendations)}
 
 ---
 
 ## Recommended Content Topics
 
-{self._format_markdown_list(profile.content_topics)}
+{self._format_list(profile.content_topics)}
 
 ---
 
 ## Next Steps
 
-{self._format_markdown_list(analysis.next_steps, ordered=True)}
+{self._format_list(analysis.next_steps, numbered=True)}
 
 ---
 
@@ -671,3 +697,33 @@ RECOMMENDED CONTENT TOPICS
         text += "\n\nSee icp_profile.md for complete details.\n"
 
         return text
+
+    def _format_list(self, items: list[str], numbered: bool = False) -> str:
+        """Format list for markdown"""
+        if not items:
+            return "None specified\n"
+
+        if numbered:
+            return "\n".join([f"{i}. {item}" for i, item in enumerate(items, 1)])
+        else:
+            return "\n".join([f"- {item}" for item in items])
+
+    def _extract_json_from_response(self, text: str) -> Any:
+        """Extract JSON from Claude response"""
+        try:
+            # Try to parse entire response as JSON
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Look for JSON in code blocks
+            import re
+
+            json_match = re.search(r"```(?:json)?\s*(\{.*\}|\[.*\])\s*```", text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(1))
+
+            # Try to find JSON object/array
+            json_match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(1))
+
+            raise ValueError(f"Could not extract JSON from response: {text[:200]}")

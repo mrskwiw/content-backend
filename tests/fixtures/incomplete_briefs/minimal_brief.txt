@@ -1,8 +1,0 @@
-# Minimal Client Brief
-
-## Basic Information
-
-**Company Name:** TechStart Inc
-
-**One-sentence description:** We build software
-

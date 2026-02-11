@@ -19,6 +19,7 @@ from ..models.market_trends_models import (
 )
 from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
+from ..utils.anthropic_client import get_default_client
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 
@@ -30,6 +31,7 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
         """Initialize Market Trends Researcher with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
+        self.client = get_default_client()
 
     @property
     def tool_name(self) -> str:

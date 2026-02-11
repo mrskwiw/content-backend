@@ -99,3 +99,12 @@ operator-dashboard/node_modules/
 operator-dashboard/dist/
 operator-dashboard/.env
 operator-dashboard/.env.local
+
+# Database files (backups, temp, test DBs)
+*.db
+pre_restore_backup_*.db
+temp_restore_*.db
+test_*.db
+
+# Cache directories
+.cache/

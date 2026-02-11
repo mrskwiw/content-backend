@@ -23,6 +23,12 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
   useEffect(() => { onStartedRef.current = onStarted; }, [onStarted]);
   // Reset the guard when a new run starts
   useEffect(() => { onStartedCalledRef.current = false; }, [runId]);
+  // Safety: stop polling after 5 minutes to prevent infinite spinner
+  useEffect(() => {
+    if (!pollingEnabled) return;
+    const timeout = setTimeout(() => setPollingEnabled(false), 5 * 60 * 1000);
+    return () => clearTimeout(timeout);
+  }, [pollingEnabled]);
 
   const generate = useMutation({
     mutationFn: (input: GenerateAllInput) => generatorApi.generateAll(input),
@@ -35,16 +41,13 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
     },
   });
 
-  // Poll for run status
+  // Poll for run status every 2s while pollingEnabled; effect handles stopping
   const { data: runStatus } = useQuery({
     queryKey: ['run-status', runId],
     queryFn: () => (runId ? runsApi.get(runId) : null),
     enabled: pollingEnabled && !!runId,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      // Poll every 2 seconds while running, stop when succeeded/failed
-      return status === 'running' || status === 'pending' ? 2000 : false;
-    },
+    refetchInterval: 2000,
+    staleTime: 0,
   });
 
   // Handle status changes — use ref for onStarted to avoid effect loop when parent re-renders

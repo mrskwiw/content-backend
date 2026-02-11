@@ -32,12 +32,13 @@ from ..validators.research_input_validator import (
     ResearchInputValidator,
     validate_content_samples,
 )
+from ..utils.anthropic_client import get_default_client
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 
 # Try to import textstat for readability scoring
 try:
-    import textstat
+    import textstat  # type: ignore[import-untyped]
 
     HAS_TEXTSTAT = True
 except ImportError:
@@ -59,6 +60,7 @@ class VoiceAnalyzer(ResearchTool, CommonValidationMixin):
         """Initialize voice analyzer with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
+        self.client = get_default_client()  # Needed for API calls
 
     @property
     def tool_name(self) -> str:
@@ -553,7 +555,7 @@ Focus on objective patterns in the writing, not what the content is about."""
                     PersonalityTrait(trait) for trait in result.get("personality_traits", [])
                 ]
 
-                return result
+                return dict(result)
 
         except Exception as e:
             logger.warning(f"Claude analysis failed: {e}, using fallback")

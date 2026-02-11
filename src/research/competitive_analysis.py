@@ -22,6 +22,7 @@ from ..validators.research_input_validator import (
     ResearchInputValidator,
     validate_competitor_list,
 )
+from ..utils.anthropic_client import get_default_client
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 import re
@@ -69,6 +70,7 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
         """Initialize competitive analyzer with input validator"""
         super().__init__(project_id=project_id, config=config)
         self.validator = ResearchInputValidator(strict_mode=False)
+        self.client = get_default_client()
 
     @property
     def tool_name(self) -> str:

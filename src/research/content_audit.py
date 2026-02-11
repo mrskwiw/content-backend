@@ -29,6 +29,7 @@ from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
+from ..utils.anthropic_client import get_default_client
 
 
 class ContentAuditor(ResearchTool, CommonValidationMixin):
@@ -257,6 +258,7 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
         performance_metrics: Dict[str, Any],
     ) -> List[ContentPiece]:
         """Analyze each content piece"""
+        client = get_default_client()
 
         # Prepare content list for analysis
         content_list = "\n".join(
@@ -266,12 +268,29 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
             ]
         )
 
-        # TODO: Use _call_claude_api() to get real analysis instead of mock data
-        # prompt = f"""Analyze these content pieces for a business:
-        # BUSINESS: {business_description}
-        # TARGET AUDIENCE: {target_audience}
-        # CONTENT INVENTORY: {content_list}
-        # ..."""
+        prompt = f"""Analyze these content pieces for a business:
+
+BUSINESS: {business_description}
+
+TARGET AUDIENCE: {target_audience}
+
+CONTENT INVENTORY:
+{content_list}
+
+For each piece, provide:
+1. Performance level (top_performer, good_performer, average, underperforming)
+2. Health status (excellent, good, needs_update, needs_refresh, archive)
+3. Engagement score (0-100)
+4. Strengths (2-3 items)
+5. Weaknesses (2-3 items)
+6. Recommended action (Keep/Update/Refresh/Archive/Consolidate)
+7. Action priority (High/Medium/Low)
+8. Specific updates needed (2-3 items)
+
+Provide analysis in JSON array format."""
+
+        client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=16000)
+
         # Parse response and create ContentPiece objects
         analyzed_content = []
         for i, content_data in enumerate(content_inventory):
@@ -315,13 +334,31 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
         self, business_description: str, content_pieces: List[ContentPiece]
     ) -> List[TopicPerformance]:
         """Analyze performance by topic area"""
+        client = get_default_client()
 
         content_titles = "\n".join(
             [f"- {p.title} (Performance: {p.performance_level.value})" for p in content_pieces]
         )
 
-        # TODO: Use _call_claude_api() to get real analysis instead of mock data
-        # prompt for future implementation (currently using mock data)
+        prompt = f"""Analyze these content pieces and group them into 5-7 topic clusters:
+
+BUSINESS: {business_description}
+
+CONTENT:
+{content_titles}
+
+For each topic cluster, provide:
+1. Topic name
+2. Content count
+3. Average performance (top_performer, good_performer, average, underperforming)
+4. Top performing piece in this topic
+5. Underperforming pieces (if any)
+6. Strategy recommendation
+
+Return as JSON array of topic performance objects."""
+
+        client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
+
         # For now, return sample data
         return [
             TopicPerformance(
@@ -338,6 +375,7 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
         self, content_pieces: List[ContentPiece], target_audience: str
     ) -> List[RefreshOpportunity]:
         """Identify content worth refreshing"""
+        client = get_default_client()
 
         # Find pieces that need updates
         needs_refresh = [
@@ -353,8 +391,25 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
             [f"- {p.title} (Last updated: {p.last_updated or 'Unknown'})" for p in needs_refresh]
         )
 
-        # TODO: Use _call_claude_api() to get real analysis instead of mock data
-        # prompt for future implementation (currently using mock data)
+        prompt = f"""Identify the top 5-7 content refresh opportunities:
+
+TARGET AUDIENCE: {target_audience}
+
+CONTENT TO CONSIDER:
+{content_list}
+
+For each refresh opportunity, provide:
+1. Content title
+2. Last updated date
+3. Why it needs refresh
+4. Refresh approach (what to update)
+5. Estimated impact (High/Medium/Low)
+6. Estimated effort (Small/Medium/Large)
+
+Return as JSON array."""
+
+        client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
+
         # Return sample data
         return (
             [
@@ -378,12 +433,36 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
         if not top_performers:
             return []
 
+        client = get_default_client()
+
         content_list = "\n".join(
             [f"- {p.title} ({p.content_type.value})" for p in top_performers[:5]]
         )
 
-        # TODO: Use _call_claude_api() to get real analysis instead of mock data
-        # prompt for future implementation (currently using mock data)
+        prompt = f"""Identify 5-7 repurposing opportunities from these top performers:
+
+TARGET AUDIENCE: {target_audience}
+
+TOP PERFORMING CONTENT:
+{content_list}
+
+For each opportunity, suggest:
+1. Source content
+2. Repurpose into (new format)
+3. Target platform
+4. Why repurpose
+5. Estimated reach
+
+Examples:
+- Blog post → LinkedIn carousel
+- Case study → Video testimonial
+- Guide → Email series
+- Webinar → Blog series
+
+Return as JSON array."""
+
+        client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
+
         # Return sample data
         return [
             RepurposeOpportunity(
@@ -419,11 +498,30 @@ class ContentAuditor(ResearchTool, CommonValidationMixin):
         self, business_description: str, target_audience: str, existing_content: List[ContentPiece]
     ) -> List[ContentGap]:
         """Identify gaps in content coverage"""
+        client = get_default_client()
 
         content_topics = list(set([p.title for p in existing_content]))[:20]
 
-        # TODO: Use _call_claude_api() to get real analysis instead of mock data
-        # prompt for future implementation (currently using mock data)
+        prompt = f"""Identify 5-7 content gaps based on existing content:
+
+BUSINESS: {business_description}
+TARGET AUDIENCE: {target_audience}
+
+EXISTING CONTENT TOPICS:
+{chr(10).join(['- ' + t for t in content_topics])}
+
+What content is missing that would serve this audience?
+
+For each gap:
+1. Gap description
+2. Content type needed (blog, guide, video, etc.)
+3. Priority (High/Medium/Low)
+4. Reason why this gap matters
+
+Return as JSON array."""
+
+        client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
+
         # Return sample data
         return [
             ContentGap(
@@ -677,13 +775,12 @@ RECOMMENDATION: Focus on refreshing existing high-potential content before creat
 ## Repurposing Opportunities ({len(analysis.repurpose_opportunities)})
 
 """
-        repurpose_opp: RepurposeOpportunity
-        for repurpose_opp in analysis.repurpose_opportunities:
+        for reuse_opp in analysis.repurpose_opportunities:
             md += f"""
-### {repurpose_opp.source_content}
-→ **{repurpose_opp.repurpose_into}** on {repurpose_opp.target_platform}
-- **Why:** {repurpose_opp.why_repurpose}
-- **Estimated Reach:** {repurpose_opp.estimated_reach}
+### {reuse_opp.source_content}
+→ **{reuse_opp.repurpose_into}** on {reuse_opp.target_platform}
+- **Why:** {reuse_opp.why_repurpose}
+- **Estimated Reach:** {reuse_opp.estimated_reach}
 """
 
         md += f"""

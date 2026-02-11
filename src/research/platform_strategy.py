@@ -25,6 +25,7 @@ from ..models.platform_strategy_models import (
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
+from ..utils.anthropic_client import get_default_client
 
 
 class PlatformStrategist(ResearchTool, CommonValidationMixin):
@@ -34,6 +35,7 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         """Initialize Platform Strategist with input validator"""
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
+        self.client = get_default_client()  # Needed for API calls
 
     @property
     def tool_name(self) -> str:
@@ -121,29 +123,31 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
 
         # Step 1: Analyze audience platform behavior
         print("[Step 1/5] Analyzing target audience platform behavior...")
-        audience_behavior = self._analyze_audience_behavior(business_description, target_audience)
+        audience_behavior = self._analyze_audience_behavior(
+            self.client, business_description, target_audience
+        )
 
         # Step 2: Generate platform recommendations
         print("[Step 2/5] Evaluating platform fit and recommendations...")
         platform_recommendations = self._generate_platform_recommendations(
-            business_description, target_audience, audience_behavior, content_goals
+            self.client, business_description, target_audience, audience_behavior, content_goals
         )
 
         # Step 3: Determine optimal platform mix
         print("[Step 3/5] Determining optimal platform mix...")
         platform_mix = self._determine_platform_mix(
-            platform_recommendations, target_audience, content_goals
+            self.client, platform_recommendations, target_audience, content_goals
         )
 
         # Step 4: Create content distribution strategy
         print("[Step 4/5] Creating content distribution strategy...")
         content_distribution = self._create_distribution_strategy(
-            platform_mix, business_description, target_audience
+            self.client, platform_mix, business_description, target_audience
         )
 
         # Step 5: Generate quick wins
         print("[Step 5/5] Identifying quick wins...")
-        quick_wins = self._generate_quick_wins(platform_mix, platform_recommendations)
+        quick_wins = self._generate_quick_wins(self.client, platform_mix, platform_recommendations)
 
         # Analyze current state if provided
         current_strengths: list[str] = []
@@ -151,12 +155,13 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         if current_platforms:
             print("[Analysis] Analyzing current platform strategy...")
             current_strengths, current_gaps = self._analyze_current_state(
-                current_platforms, platform_recommendations, platform_mix
+                self.client, current_platforms, platform_recommendations, platform_mix
             )
 
         # Generate strategic insights
         print("[Strategy] Generating strategic insights...")
         key_insights, mistakes_to_avoid = self._generate_strategic_insights(
+            self.client,
             business_description,
             target_audience,
             platform_mix,
@@ -166,13 +171,13 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         # Create implementation plans
         print("[Planning] Creating implementation plans...")
         thirty_day_plan, ninety_day_plan = self._create_implementation_plans(
-            platform_mix, platform_recommendations, quick_wins
+            self.client, platform_mix, platform_recommendations, quick_wins
         )
 
         # Generate executive summary
         print("[Summary] Generating executive summary...")
         executive_summary = self._generate_executive_summary(
-            business_name, target_audience, platform_mix, platform_recommendations
+            self.client, business_name, target_audience, platform_mix, platform_recommendations
         )
 
         # Build complete analysis
@@ -199,7 +204,7 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         return analysis
 
     def _analyze_audience_behavior(
-        self, business_description: str, target_audience: str
+        self, client: Any, business_description: str, target_audience: str
     ) -> List[AudienceBehavior]:
         """Analyze where target audience is active"""
         prompt = f"""Analyze where this target audience is most active and how they engage with content.
@@ -255,6 +260,7 @@ Focus on platforms where the audience is ACTUALLY active, not theoretical presen
 
     def _generate_platform_recommendations(
         self,
+        client: Any,
         business_description: str,
         target_audience: str,
         audience_behavior: List[AudienceBehavior],
@@ -305,9 +311,12 @@ Return JSON object with these fields:
 - estimated_effort: string
 - expected_roi: string"""
 
-            rec_data = self._call_claude_api(
-                prompt, max_tokens=3000, temperature=0.4, extract_json=True, fallback_on_error={}
+            response = client.create_message(
+                messages=[{"role": "user", "content": prompt}], max_tokens=3000
             )
+
+            # Parse response
+            rec_data = self._extract_json_from_response(response)
 
             try:
                 # Map formats
@@ -343,6 +352,7 @@ Return JSON object with these fields:
 
     def _determine_platform_mix(
         self,
+        client: Any,
         recommendations: List[PlatformRecommendation],
         target_audience: str,
         content_goals: str,
@@ -382,9 +392,12 @@ Return JSON with:
 - avoid_platforms: array of platform names
 - rationale: explanation of this mix"""
 
-        mix_data = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2000
         )
+
+        # Parse response
+        mix_data = self._extract_json_from_response(response)
 
         # Handle rationale - could be string or dict
         rationale = mix_data.get("rationale", "")
@@ -410,6 +423,7 @@ Return JSON with:
 
     def _create_distribution_strategy(
         self,
+        client: Any,
         platform_mix: PlatformMix,
         business_description: str,
         target_audience: str,
@@ -440,9 +454,12 @@ Return JSON with:
 - repurposing_strategy: explanation
 - time_savings: explanation"""
 
-        dist_data = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2000
         )
+
+        # Parse response
+        dist_data = self._extract_json_from_response(response)
 
         # Handle repurposing_strategy - could be string or dict
         repurposing_strategy = dist_data.get("repurposing_strategy", "")
@@ -464,7 +481,7 @@ Return JSON with:
         )
 
     def _generate_quick_wins(
-        self, platform_mix: PlatformMix, recommendations: List[PlatformRecommendation]
+        self, client: Any, platform_mix: PlatformMix, recommendations: List[PlatformRecommendation]
     ) -> List[QuickWin]:
         """Identify immediate actions to get started"""
         prompt = f"""Identify 3-5 quick wins to get started on these platforms.
@@ -482,9 +499,12 @@ Return JSON array with objects containing:
 - timeframe: when to complete
 - expected_outcome: what success looks like"""
 
-        wins_data = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error=[]
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2000
         )
+
+        # Parse response
+        wins_data = self._extract_json_from_response(response)
 
         quick_wins = []
         for win in wins_data:
@@ -505,6 +525,7 @@ Return JSON array with objects containing:
 
     def _analyze_current_state(
         self,
+        client: Any,
         current_platforms: List[str],
         recommendations: List[PlatformRecommendation],
         platform_mix: PlatformMix,
@@ -528,14 +549,18 @@ Return JSON with:
 - strengths: array of strings
 - gaps: array of strings"""
 
-        analysis_data = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2000
         )
+
+        # Parse response
+        analysis_data = self._extract_json_from_response(response)
 
         return (analysis_data.get("strengths", []), analysis_data.get("gaps", []))
 
     def _generate_strategic_insights(
         self,
+        client: Any,
         business_description: str,
         target_audience: str,
         platform_mix: PlatformMix,
@@ -559,14 +584,18 @@ Return JSON with:
 - key_insights: array of strings
 - mistakes_to_avoid: array of strings"""
 
-        insights_data = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2000
         )
+
+        # Parse response
+        insights_data = self._extract_json_from_response(response)
 
         return (insights_data.get("key_insights", []), insights_data.get("mistakes_to_avoid", []))
 
     def _create_implementation_plans(
         self,
+        client: Any,
         platform_mix: PlatformMix,
         recommendations: List[PlatformRecommendation],
         quick_wins: List[QuickWin],
@@ -588,14 +617,18 @@ Return JSON with:
 - thirty_day_plan: array of strings
 - ninety_day_plan: array of strings"""
 
-        plans_data = self._call_claude_api(
-            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=2000
         )
+
+        # Parse response
+        plans_data = self._extract_json_from_response(response)
 
         return (plans_data.get("thirty_day_plan", []), plans_data.get("ninety_day_plan", []))
 
     def _generate_executive_summary(
         self,
+        client: Any,
         business_name: str,
         target_audience: str,
         platform_mix: PlatformMix,
@@ -618,11 +651,11 @@ Summarize:
 2. Recommended platform focus
 3. Expected outcomes"""
 
-        response = self._call_claude_api(
-            prompt, max_tokens=1000, temperature=0.4, extract_json=False, fallback_on_error=""
+        response = client.create_message(
+            messages=[{"role": "user", "content": prompt}], max_tokens=1000
         )
 
-        return str(response).strip()
+        return str(response.strip())
 
     def generate_reports(self, analysis: PlatformStrategyAnalysis) -> Dict[str, Path]:
         """Generate output files"""
@@ -706,13 +739,13 @@ Summarize:
 **Fit Level:** {rec.fit_level.value.replace('_', ' ').title()} | **Priority:** {rec.priority}
 
 **Why Use This Platform:**
-{self._format_markdown_list(rec.why_use)}
+{self._format_list(rec.why_use)}
 
 **Concerns/Limitations:**
-{self._format_markdown_list(rec.why_not_use)}
+{self._format_list(rec.why_not_use)}
 
 **Recommended Formats:**
-{self._format_markdown_list([f.value.replace('_', ' ').title() for f in rec.recommended_formats])}
+{self._format_list([f.value.replace('_', ' ').title() for f in rec.recommended_formats])}
 
 **Posting Frequency:** {rec.posting_frequency}
 
@@ -721,7 +754,7 @@ Summarize:
 **Primary Goal:** {rec.primary_goal}
 
 **Success Metrics:**
-{self._format_markdown_list(rec.success_metrics)}
+{self._format_list(rec.success_metrics)}
 
 **Effort Required:** {rec.estimated_effort} | **Expected ROI:** {rec.expected_roi}
 
@@ -734,7 +767,7 @@ Summarize:
 **Source Platform:** {analysis.content_distribution.source_platform.value.title()}
 
 **Distribution Flow:**
-{self._format_markdown_list(analysis.content_distribution.distribution_flow)}
+{self._format_list(analysis.content_distribution.distribution_flow)}
 
 **Repurposing Strategy:**
 {analysis.content_distribution.repurposing_strategy}
@@ -765,10 +798,10 @@ Summarize:
 **Current Platforms:** {', '.join(analysis.current_platforms)}
 
 ### What's Working
-{self._format_markdown_list(analysis.current_strengths)}
+{self._format_list(analysis.current_strengths)}
 
 ### Gaps to Address
-{self._format_markdown_list(analysis.current_gaps)}
+{self._format_list(analysis.current_gaps)}
 """
 
         md += f"""
@@ -776,13 +809,13 @@ Summarize:
 
 ## Strategic Insights
 
-{self._format_markdown_list(analysis.key_insights)}
+{self._format_list(analysis.key_insights)}
 
 ---
 
 ## Common Mistakes to Avoid
 
-{self._format_markdown_list(analysis.common_mistakes_to_avoid)}
+{self._format_list(analysis.common_mistakes_to_avoid)}
 
 ---
 
@@ -790,11 +823,11 @@ Summarize:
 
 ### 30-Day Plan
 
-{self._format_markdown_list(analysis.thirty_day_plan, ordered=True)}
+{self._format_list(analysis.thirty_day_plan, numbered=True)}
 
 ### 90-Day Plan
 
-{self._format_markdown_list(analysis.ninety_day_plan, ordered=True)}
+{self._format_list(analysis.ninety_day_plan, numbered=True)}
 
 ---
 
@@ -848,6 +881,36 @@ QUICK WINS
         if not platforms:
             return "None\n"
         return "\n".join([f"- {p.value.title()}" for p in platforms])
+
+    def _format_list(self, items: List[str], numbered: bool = False) -> str:
+        """Format list for markdown"""
+        if not items:
+            return "None specified\n"
+
+        if numbered:
+            return "\n".join([f"{i}. {item}" for i, item in enumerate(items, 1)])
+        else:
+            return "\n".join([f"- {item}" for item in items])
+
+    def _extract_json_from_response(self, text: str) -> Any:
+        """Extract JSON from Claude response"""
+        try:
+            # Try to parse entire response as JSON
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Look for JSON in code blocks (use greedy matching for nested structures)
+            import re
+
+            json_match = re.search(r"```(?:json)?\s*(\{.*\}|\[.*\])\s*```", text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(1))
+
+            # Try to find JSON object/array (greedy matching)
+            json_match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(1))
+
+            raise ValueError(f"Could not extract JSON from response: {text[:200]}")
 
     def _map_platform_name(self, name: str) -> PlatformName:
         """Map string to PlatformName enum"""
