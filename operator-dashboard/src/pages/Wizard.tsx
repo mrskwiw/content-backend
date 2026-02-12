@@ -358,12 +358,11 @@ export default function Wizard() {
                   <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Select Existing Client
                   </label>
-                  <Select value={clientId || ''} onValueChange={(value) => setClientId(value || null)}>
+                  <Select value={clientId ?? undefined} onValueChange={(value) => setClientId(value || null)}>
                     <SelectTrigger>
                       <SelectValue placeholder="-- Select a client --" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">-- Select a client --</SelectItem>
                       {(existingClients || []).map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.name}
@@ -392,20 +391,6 @@ export default function Wizard() {
                   <Button
                     variant="primary"
                     onClick={() => {
-                      // Validate client has required data before proceeding
-                      const businessDesc = selectedClient?.businessDescription || '';
-                      const targetAudience = selectedClient?.idealCustomer || '';
-
-                      if (businessDesc.length < 70) {
-                        alert('Client profile incomplete: Business description must be at least 70 characters (required for research tools). Please complete the client profile below before continuing.');
-                        return;
-                      }
-
-                      if (targetAudience.length < 20) {
-                        alert('Client profile incomplete: Target audience description must be at least 20 characters (required for research tools). Please complete the client profile below before continuing.');
-                        return;
-                      }
-
                       // Create project with minimal info for existing client
                       const projectInput: CreateProjectInput = {
                         name: `${selectedClient?.name || 'Client'} - Content Project`,

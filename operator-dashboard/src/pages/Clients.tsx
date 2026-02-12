@@ -32,14 +32,12 @@ interface ClientWithMetrics {
   completedProjects: number;
   totalRevenue: number;
   lastActivity?: Date;
-  packageTier?: string;
 }
 
 export default function Clients() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [packageFilter, setPackageFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'projects' | 'revenue' | 'activity'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -83,11 +81,6 @@ export default function Clients() {
         ? new Date(clientProjects[0].lastRunAt!)
         : undefined;
 
-      // Mock package tier (would come from client data)
-      const packageTier = completedProjects > 5 ? 'Premium' :
-                         completedProjects > 2 ? 'Professional' :
-                         'Starter';
-
       return {
         id: client.id,
         name: client.name,
@@ -99,7 +92,6 @@ export default function Clients() {
         completedProjects,
         totalRevenue,
         lastActivity,
-        packageTier
       };
     });
   }, [clients, projects]);
@@ -120,11 +112,6 @@ export default function Clients() {
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(client => client.status === statusFilter);
-    }
-
-    // Package tier filter
-    if (packageFilter !== 'all') {
-      filtered = filtered.filter(client => client.packageTier === packageFilter);
     }
 
     // Sort
@@ -150,7 +137,7 @@ export default function Clients() {
     });
 
     return filtered;
-  }, [clientsWithMetrics, searchQuery, statusFilter, packageFilter, sortBy, sortOrder]);
+  }, [clientsWithMetrics, searchQuery, statusFilter, sortBy, sortOrder]);
 
   const toggleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
@@ -270,17 +257,6 @@ export default function Clients() {
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
-
-        <select
-          value={packageFilter}
-          onChange={(e) => setPackageFilter(e.target.value)}
-          className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 px-4 py-2 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-        >
-          <option value="all">All Packages</option>
-          <option value="Starter">Starter</option>
-          <option value="Professional">Professional</option>
-          <option value="Premium">Premium</option>
-        </select>
       </div>
 
       {/* Clients Table */}
@@ -299,7 +275,6 @@ export default function Clients() {
                   </div>
                 </TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Package</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead
                   onClick={() => toggleSort('projects')}
@@ -334,12 +309,12 @@ export default function Clients() {
             <TableBody>
               {filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center">
                       <Users className="h-12 w-12 text-neutral-300 dark:text-neutral-600 mb-2" />
                       <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">No clients found</p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {searchQuery || statusFilter !== 'all' || packageFilter !== 'all'
+                        {searchQuery || statusFilter !== 'all'
                           ? 'Try adjusting your filters'
                           : 'Add your first client to get started'}
                       </p>
@@ -376,17 +351,6 @@ export default function Clients() {
                       ) : (
                         <span className="text-sm text-neutral-400 dark:text-neutral-500">No email</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          client.packageTier === 'Premium' ? 'purple' :
-                          client.packageTier === 'Professional' ? 'primary' :
-                          'default'
-                        }
-                      >
-                        {client.packageTier}
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className={`inline-flex items-center gap-1 text-xs font-semibold

@@ -206,38 +206,41 @@ export default function Settings() {
     },
   });
 
+  // Shared helper: request a backup from the API and immediately push it to the
+  // browser as a file download. Called by the manual button AND automatically
+  // before every restore so the container-volatile server copy is never the
+  // only copy.
+  const triggerBackupDownload = async (): Promise<void> => {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch('/api/database/backup', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      let detail = `Request failed: ${response.status} ${response.statusText}`;
+      try { const err = await response.json(); detail = err.detail || detail; } catch { /* not JSON */ }
+      throw new Error(detail);
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get('Content-Disposition');
+    const filename = contentDisposition
+      ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+      : `jumpstart_backup_${new Date().toISOString().slice(0, 10)}.db`;
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   // Database backup mutation
   const downloadBackupMutation = useMutation({
-    mutationFn: async () => {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/database/backup', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        let detail = `Request failed: ${response.status} ${response.statusText}`;
-        try { const err = await response.json(); detail = err.detail || detail; } catch { /* not JSON */ }
-        throw new Error(detail);
-      }
-
-      const blob = await response.blob();
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition
-        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-        : `jumpstart_backup_${new Date().toISOString().slice(0, 10)}.db`;
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    },
+    mutationFn: triggerBackupDownload,
     onError: (error: Error) => {
       alert(`Backup failed: ${error.message}`);
     },
@@ -246,6 +249,10 @@ export default function Settings() {
   // Database restore mutation
   const restoreDatabaseMutation = useMutation({
     mutationFn: async (file: File) => {
+      // Always download a backup before restoring — container storage is
+      // volatile so the server-side safety copy may not survive a restart.
+      await triggerBackupDownload();
+
       const token = localStorage.getItem('access_token');
       const formData = new FormData();
       formData.append('file', file);

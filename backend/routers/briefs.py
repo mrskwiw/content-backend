@@ -1,5 +1,6 @@
 """Briefs router"""
 
+import asyncio
 import sys
 import time
 from pathlib import Path
@@ -238,31 +239,49 @@ async def parse_brief_file(
             },
         )
 
-    # Parse with BriefParserAgent (use sanitized content)
+    # Parse with BriefParserAgent: run 3 attempts in parallel, keep the best result.
+    # parse_brief() is synchronous; run_in_executor moves each call to a thread so all
+    # three Claude API requests are in-flight concurrently.
     try:
         # Import here to avoid circular dependency
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
         from src.agents.brief_parser import BriefParserAgent
 
         parser = BriefParserAgent()
-        parsed_brief = parser.parse_brief(sanitized_content)  # Use sanitized content
+        loop = asyncio.get_event_loop()
+        attempts = await asyncio.gather(
+            *[loop.run_in_executor(None, parser.parse_brief, sanitized_content) for _ in range(3)],
+            return_exceptions=True,
+        )
 
-        # Convert ClientBrief to field extractions with confidence scoring
-        fields_with_confidence = _add_confidence_scores(parsed_brief, text_content)
+        # Score each successful attempt; discard failures
+        best_fields = None
+        best_score = -1
+        for attempt in attempts:
+            if isinstance(attempt, Exception):
+                logger.warning(f"Parse attempt failed (will use best of remaining): {attempt}")
+                continue
+            fields = _add_confidence_scores(attempt, text_content)
+            score = _score_fields(fields)
+            logger.info(f"Parse attempt score: {score}")
+            if score > best_score:
+                best_score = score
+                best_fields = fields
+
+        if best_fields is None:
+            raise RuntimeError("All 3 parse attempts failed")
 
         # Generate warnings for missing/low-confidence fields
-        warnings = _generate_warnings(fields_with_confidence)
+        warnings = _generate_warnings(best_fields)
 
         # Calculate metadata
         parse_time_ms = int((time.time() - start_time) * 1000)
-        fields_extracted = sum(
-            1 for field in fields_with_confidence.values() if field.confidence != "low"
-        )
-        fields_total = len(fields_with_confidence)
+        fields_extracted = sum(1 for field in best_fields.values() if field.confidence != "low")
+        fields_total = len(best_fields)
 
         return ParsedBriefResponse(
             success=True,
-            fields=fields_with_confidence,
+            fields=best_fields,
             warnings=warnings,
             metadata={
                 "filename": file.filename,
@@ -282,6 +301,16 @@ async def parse_brief_file(
                 "details": {"filename": file.filename, "error": str(e)},
             },
         )
+
+
+def _score_fields(fields: dict) -> int:
+    """Score extracted fields by confidence quality to select the best parse attempt.
+
+    Weights: high = 3, medium = 1, low = 0.
+    A result with more high-confidence fields beats one with many medium fields.
+    """
+    weights = {"high": 3, "medium": 1, "low": 0}
+    return sum(weights.get(f.confidence, 0) for f in fields.values())
 
 
 def _add_confidence_scores(parsed_brief, original_text: str) -> dict:
