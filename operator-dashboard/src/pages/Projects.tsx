@@ -317,8 +317,8 @@ export default function Projects() {
                   </TableCell>
                   <TableCell>
                     <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                      {project.templates.slice(0, 2).join(', ')}
-                      {project.templates.length > 2 ? ` +${project.templates.length - 2}` : ''}
+                      {(project.templates ?? []).slice(0, 2).join(', ')}
+                      {(project.templates ?? []).length > 2 ? ` +${(project.templates ?? []).length - 2}` : ''}
                     </div>
                   </TableCell>
                   <TableCell>
