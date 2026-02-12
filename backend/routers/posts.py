@@ -11,7 +11,7 @@ from backend.middleware.authorization import (
 from backend.schemas.post import PostResponse, PostUpdate
 from backend.services import crud
 from sqlalchemy.orm import Session
-from backend.utils.caching import CacheConfig, create_cacheable_response
+from fastapi.responses import JSONResponse
 from backend.utils.pagination import paginate_hybrid, get_pagination_params
 
 from backend.database import get_db
@@ -161,12 +161,7 @@ async def list_posts(
     # Prepare response with pagination metadata
     response_data = {"items": posts_data, "metadata": paginated["metadata"].model_dump(mode="json")}
 
-    # Return cacheable response with ETag
-    return create_cacheable_response(
-        data=response_data,
-        cache_config=CacheConfig.POSTS,
-        request=request,
-    )
+    return JSONResponse(content=response_data)
 
 
 @router.get("/{post_id}")
@@ -183,22 +178,10 @@ async def get_post(
 
     Rate limit: 1000/hour (cheap read operation)
     Authorization: TR-021 - User must own post's project
-
-    Caching:
-    - max-age: 300 seconds (5 minutes)
-    - ETag support for 304 Not Modified responses
     """
     # TR-021: post already verified by dependency
-
-    # Convert to dict for caching
     post_data = PostResponse.model_validate(post).model_dump(mode="json")
-
-    # Return cacheable response
-    return create_cacheable_response(
-        data=post_data,
-        cache_config=CacheConfig.POSTS,
-        request=request,
-    )
+    return JSONResponse(content=post_data)
 
 
 @router.patch("/{post_id}")

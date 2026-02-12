@@ -5,6 +5,7 @@ Projects router - CRUD operations for projects.
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import JSONResponse, Response
 from backend.middleware.auth_dependency import get_current_user
 from backend.middleware.authorization import (
     verify_project_ownership,
@@ -13,7 +14,6 @@ from backend.middleware.authorization import (
 from backend.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from backend.services import crud
 from sqlalchemy.orm import Session
-from backend.utils.caching import CacheConfig, CacheInvalidator, create_cacheable_response
 from backend.utils.pagination import paginate_hybrid, get_pagination_params
 
 from backend.database import get_db
@@ -68,6 +68,7 @@ async def list_projects(
     # PERFORMANCE: Eager load related data, but skip posts for list view (60% faster)
     # Post count comes from num_posts field, no need to load all 30 posts
     from sqlalchemy.orm import joinedload
+
     query = query.options(
         joinedload(Project.client),
         joinedload(Project.brief),
@@ -104,12 +105,7 @@ async def list_projects(
         "metadata": paginated["metadata"].model_dump(mode="json"),
     }
 
-    # Return cacheable response
-    return create_cacheable_response(
-        data=response_data,
-        cache_config=CacheConfig.PROJECTS,
-        request=request,
-    )
+    return JSONResponse(content=response_data)
 
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
@@ -149,18 +145,8 @@ async def create_project(
     # TR-021: Create project with user_id for ownership
     db_project = crud.create_project(db, project, user_id=current_user.id)
 
-    # Create response with cache invalidation headers
-    from fastapi.responses import JSONResponse
-
     project_data = ProjectResponse.model_validate(db_project).model_dump(by_alias=True, mode="json")
-    response = JSONResponse(content=project_data, status_code=status.HTTP_201_CREATED)
-
-    # Add cache invalidation headers
-    invalidation_headers = CacheInvalidator.get_invalidation_header(["projects"])
-    for key, value in invalidation_headers.items():
-        response.headers[key] = value
-
-    return response
+    return JSONResponse(content=project_data, status_code=status.HTTP_201_CREATED)
 
 
 @router.get("/{project_id}")
@@ -177,22 +163,10 @@ async def get_project(
 
     Rate limit: 100/hour per IP+user (standard operation)
     Authorization: TR-021 - User must own project
-
-    Caching:
-    - max-age: 300 seconds (5 minutes)
-    - ETag support for 304 Not Modified responses
     """
     # TR-021: project already verified by dependency
-
-    # Convert to dict for caching (use by_alias=True for camelCase output)
     project_data = ProjectResponse.model_validate(project).model_dump(by_alias=True, mode="json")
-
-    # Return cacheable response
-    return create_cacheable_response(
-        data=project_data,
-        cache_config=CacheConfig.PROJECTS,
-        request=request,
-    )
+    return JSONResponse(content=project_data)
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
@@ -222,20 +196,10 @@ async def update_project(
             detail=f"Project {project_id} not found",
         )
 
-    # Create response with cache invalidation headers
-    from fastapi.responses import JSONResponse
-
     project_data = ProjectResponse.model_validate(updated_project).model_dump(
         by_alias=True, mode="json"
     )
-    response = JSONResponse(content=project_data, status_code=200)
-
-    # Add cache invalidation headers
-    invalidation_headers = CacheInvalidator.get_invalidation_header(["projects"])
-    for key, value in invalidation_headers.items():
-        response.headers[key] = value
-
-    return response
+    return JSONResponse(content=project_data)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -263,14 +227,4 @@ async def delete_project(
             detail=f"Project {project_id} not found",
         )
 
-    # Create 204 response with cache invalidation headers
-    from fastapi.responses import Response
-
-    response = Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    # Add cache invalidation headers
-    invalidation_headers = CacheInvalidator.get_invalidation_header(["projects"])
-    for key, value in invalidation_headers.items():
-        response.headers[key] = value
-
-    return response
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
