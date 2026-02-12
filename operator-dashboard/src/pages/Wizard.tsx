@@ -34,39 +34,27 @@ export default function Wizard() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  // Wizard state persistence - restore from localStorage on refresh
   const STORAGE_KEY = 'wizard_state_v1';
-  const savedState = (() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  })();
 
   const [projectId, setProjectId] = useState<string | null>(
-    (location.state as { projectId?: string })?.projectId || savedState?.projectId || null
+    (location.state as { projectId?: string })?.projectId ?? null
   );
   const [clientId, setClientId] = useState<string | null>(
-    (location.state as { clientId?: string })?.clientId || savedState?.clientId || null
+    (location.state as { clientId?: string })?.clientId ?? null
   );
 
-  const [activeStep, setActiveStep] = useState<StepKey>(savedState?.activeStep || 'profile');
-  const [maxReachedStep, setMaxReachedStep] = useState<StepKey>(savedState?.maxReachedStep || 'profile');
-  const [clientBrief, setClientBrief] = useState<ClientBrief | null>(savedState?.clientBrief || null);
-  const [selectedTemplates, setSelectedTemplates] = useState<number[]>(savedState?.selectedTemplates || []);
-  const [isCreatingNewClient, setIsCreatingNewClient] = useState<boolean>(savedState?.isCreatingNewClient ?? true);
+  const [activeStep, setActiveStep] = useState<StepKey>('profile');
+  const [maxReachedStep, setMaxReachedStep] = useState<StepKey>('profile');
+  const [clientBrief, setClientBrief] = useState<ClientBrief | null>(null);
+  const [selectedTemplates, setSelectedTemplates] = useState<number[]>([]);
+  const [isCreatingNewClient, setIsCreatingNewClient] = useState<boolean>(true);
 
   // Template quantities state (new pricing model)
-  const [templateQuantities, setTemplateQuantities] = useState<Record<number, number>>(savedState?.templateQuantities || {});
-  const [includeResearch, setIncludeResearch] = useState<boolean>(savedState?.includeResearch || false);
-  const [totalPrice, setTotalPrice] = useState<number>(savedState?.totalPrice || 0);
-  const [customTopics, setCustomTopics] = useState<string[]>(savedState?.customTopics || []);  // NEW: topic override for generation
+  const [templateQuantities, setTemplateQuantities] = useState<Record<number, number>>({});
+  const [includeResearch, setIncludeResearch] = useState<boolean>(false);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [customTopics, setCustomTopics] = useState<string[]>([]);  // NEW: topic override for generation
 
-  // Persist wizard state to localStorage whenever it changes
-  useEffect(() => {
-    const state = { projectId, clientId, activeStep, maxReachedStep, clientBrief, selectedTemplates, isCreatingNewClient, templateQuantities, includeResearch, totalPrice, customTopics };
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* storage full */ }
-  }, [projectId, clientId, activeStep, maxReachedStep, clientBrief, selectedTemplates, isCreatingNewClient, templateQuantities, includeResearch, totalPrice, customTopics]);
 
   // Query to list existing clients
   const { data: existingClients } = useQuery({
