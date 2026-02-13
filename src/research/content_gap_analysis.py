@@ -221,6 +221,21 @@ class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
         logger.info(f"Content gap analysis complete. {total_gaps} gaps identified.")
         return analysis
 
+    def _parse_json(self, response: str) -> Any:
+        """Parse JSON from a Claude response, stripping markdown code fences.
+
+        Claude sometimes wraps JSON in ```json...``` fences.  Strip them so
+        json.loads always receives raw JSON regardless of LLM output format.
+        """
+        lines = response.strip().splitlines()
+        # Drop opening fence line (```json or ```)
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        # Drop closing fence line (```)
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        return json.loads(chr(10).join(lines).strip())
+
     def _analyze_current_coverage(
         self, business_description: str, current_content_topics: Any
     ) -> Dict[str, Any]:
@@ -253,7 +268,7 @@ Return as JSON with these exact keys: coverage_areas, depth_assessment, formats,
         )
 
         try:
-            result: Dict[str, Any] = json.loads(response)
+            result: Dict[str, Any] = self._parse_json(response)
             return result
         except (json.JSONDecodeError, KeyError, IndexError, AttributeError):
             return {
@@ -295,7 +310,7 @@ Return as JSON with keys: content_strengths, popular_topics, formats_used, gaps_
             )
 
             try:
-                data = json.loads(response)
+                data = self._parse_json(response)
                 analyses.append(
                     CompetitorContentAnalysis(
                         competitor_name=competitor,
@@ -367,7 +382,7 @@ Return as JSON array of gap objects."""
         )
 
         try:
-            gaps_data = json.loads(response)
+            gaps_data = self._parse_json(response)
             if isinstance(gaps_data, dict) and "gaps" in gaps_data:
                 gaps_data = gaps_data["gaps"]
 
@@ -430,7 +445,7 @@ Return as JSON array of format gap objects."""
         )
 
         try:
-            gaps_data = json.loads(response)
+            gaps_data = self._parse_json(response)
             if isinstance(gaps_data, dict) and "formats" in gaps_data:
                 gaps_data = gaps_data["formats"]
 
@@ -474,7 +489,7 @@ Return as JSON array of buyer journey gap objects."""
         )
 
         try:
-            gaps_data = json.loads(response)
+            gaps_data = self._parse_json(response)
             if isinstance(gaps_data, dict) and "stages" in gaps_data:
                 gaps_data = gaps_data["stages"]
 

@@ -6,7 +6,6 @@ import { Project } from '@/types/domain';
 import { format } from 'date-fns';
 import { RefreshCw, Filter, Play, Sparkles, FileText, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { NewProjectDialog } from '@/components/projects/NewProjectDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Button, Badge, Card, CardContent, Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui';
 import { StatusProgressBar } from '@/components/ui/StatusProgressBar';
@@ -20,7 +19,6 @@ export default function Projects() {
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<Project['status'] | ''>('');
-  const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -208,7 +206,7 @@ export default function Projects() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="primary" size="sm" onClick={() => setNewProjectOpen(true)}>
+              <Button variant="primary" size="sm" onClick={() => navigate('/dashboard/wizard')}>
                 New Project
               </Button>
             </div>
@@ -417,11 +415,6 @@ export default function Projects() {
         </CardContent>
       </Card>
 
-      <NewProjectDialog
-        open={newProjectOpen}
-        onOpenChange={setNewProjectOpen}
-        onSuccess={(project) => navigate('/dashboard/wizard', { state: { projectId: project.id } })}
-      />
     </div>
   );
 }
