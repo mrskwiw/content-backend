@@ -12,7 +12,11 @@ from ..config.brand_frameworks import (
 )
 from ..config.hook_frameworks import build_hook_guidance
 from ..config.constants import AI_TELL_PHRASES, MAX_POST_WORD_COUNT, MIN_POST_WORD_COUNT
-from ..config.platform_specs import get_platform_prompt_guidance, get_platform_target_length
+from ..config.platform_specs import (
+    PLATFORM_LENGTH_SPECS,
+    get_platform_prompt_guidance,
+    get_platform_target_length,
+)
 from ..config.prompts import SystemPrompts
 from ..models.client_brief import ClientBrief, Platform
 from ..models.client_memory import ClientMemory
@@ -799,9 +803,7 @@ class ContentGeneratorAgent:
 
         # Use cached system prompt if available, otherwise build it
         # Note: When using cached prompt, platform info is already embedded from the cache
-        system_prompt = cached_system_prompt or self._build_system_prompt(
-            client_brief, Platform.LINKEDIN
-        )
+        system_prompt = cached_system_prompt or self._build_system_prompt(client_brief, platform)
 
         # Generate post content via API
         try:
@@ -885,9 +887,7 @@ class ContentGeneratorAgent:
 
         # Use cached system prompt if available, otherwise build it
         # Note: When using cached prompt, platform info is already embedded from the cache
-        system_prompt = cached_system_prompt or self._build_system_prompt(
-            client_brief, Platform.LINKEDIN
-        )
+        system_prompt = cached_system_prompt or self._build_system_prompt(client_brief, platform)
 
         # For blog posts, use a minimal template structure to allow full-length content
         # LinkedIn templates constrain length to 200-300 words, which kills blogs
@@ -1199,10 +1199,6 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
         # Add platform-specific guidance with enhanced emphasis
         platform_guidance = get_platform_prompt_guidance(platform)
         target_length = get_platform_target_length(platform)
-        from ..config.platform_specs import PLATFORM_LENGTH_SPECS
-
-        PLATFORM_LENGTH_SPECS.get(platform, {})
-
         # Add prominent platform header
         prompt += f"\n\n{'=' * 60}"
         prompt += f"\nPLATFORM-SPECIFIC REQUIREMENTS FOR {platform.value.upper()}"
@@ -1682,13 +1678,22 @@ If your draft is under 1500 words after Section 4, you MUST:
                 post.flag_for_review(f"Contains AI tell: '{tell}'")
                 return
 
-        # Check if post is too short or too long using constants
-        if post.word_count < MIN_POST_WORD_COUNT:
-            post.flag_for_review(f"Post too short: {post.word_count} words")
+        # Use platform-specific word count limits when available
+        platform = post.target_platform
+        if platform and platform in PLATFORM_LENGTH_SPECS:
+            specs = PLATFORM_LENGTH_SPECS[platform]
+            min_words = specs["min_words"]
+            max_words = specs["max_words"]
+        else:
+            min_words = MIN_POST_WORD_COUNT
+            max_words = MAX_POST_WORD_COUNT
+
+        if post.word_count < min_words:
+            post.flag_for_review(f"Post too short: {post.word_count} words (min: {min_words})")
             return
 
-        if post.word_count > MAX_POST_WORD_COUNT:
-            post.flag_for_review(f"Post too long: {post.word_count} words")
+        if post.word_count > max_words:
+            post.flag_for_review(f"Post too long: {post.word_count} words (max: {max_words})")
             return
 
         # Check if CTA is present when expected
