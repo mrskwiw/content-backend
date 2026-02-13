@@ -283,8 +283,14 @@ export default function Projects() {
               )}
               {isError && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-rose-600 dark:text-rose-400 py-6">
-                    Failed to load projects.
+                  <TableCell colSpan={6} className="py-6 text-center">
+                    <p className="text-rose-600 dark:text-rose-400">Failed to load projects.</p>
+                    <button
+                      className="mt-2 text-sm text-blue-600 hover:underline dark:text-blue-400"
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </button>
                   </TableCell>
                 </TableRow>
               )}

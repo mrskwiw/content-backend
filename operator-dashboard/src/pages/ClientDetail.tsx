@@ -70,7 +70,7 @@ export default function ClientDetail() {
   };
 
   // Fetch client data
-  const { data: client, isLoading: clientLoading } = useQuery({
+  const { data: client, isLoading: clientLoading, isError: clientError } = useQuery({
     queryKey: ['client', clientId],
     queryFn: () => clientsApi.get(clientId!),
     enabled: !!clientId,
@@ -186,9 +186,26 @@ export default function ClientDetail() {
     }
   };
 
-  if (clientLoading || !client) {
+  if (clientLoading) {
+    return <LoadingSpinner message="Loading client..." />;
+  }
+
+  if (clientError || !client) {
     return (
-      <LoadingSpinner message="Loading client..." />
+      <div className="flex flex-col items-center justify-center p-12 text-center">
+        <p className="text-lg font-medium text-neutral-700 dark:text-neutral-300">
+          Client not found
+        </p>
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+          This client may have been deleted or you don&apos;t have access.
+        </p>
+        <button
+          className="mt-4 text-sm text-blue-600 hover:underline dark:text-blue-400"
+          onClick={() => navigate('/dashboard/clients')}
+        >
+          Back to Clients
+        </button>
+      </div>
     );
   }
 

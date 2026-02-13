@@ -220,20 +220,27 @@ async def restore_database_from_backup(
 
         if _is_in_memory_db():
             # ── In-memory path ────────────────────────────────────────────────
-            # Load the backup file into the live in-memory engine.
-            # sqlite3 backup() replaces all content in the destination connection.
+            # Load the backup file into the live in-memory engine via sqlite3 backup API.
+            # Do NOT call engine.dispose() here — in-memory SQLite has no file lock to
+            # release, and dispose() invalidates connections held by other SQLAlchemy
+            # sessions in this same request (e.g. the auth dependency), causing
+            # "can't checkout a detached connection fairy" on every subsequent request.
             logger.info("Restoring backup into in-memory SQLite engine")
-            db.close()
-            engine.dispose()
 
             src_conn = sqlite3.connect(str(temp_path))
-            dest_conn = engine.raw_connection()
+            dest_fairy = engine.raw_connection()
             try:
-                src_conn.backup(dest_conn)
-                dest_conn.commit()
+                # engine.raw_connection() returns a _ConnectionFairy (SQLAlchemy proxy).
+                # sqlite3.Connection.backup() requires a real sqlite3.Connection as
+                # target — unwrap via driver_connection (SA 2.0) or connection (SA 1.4).
+                actual_dest = (
+                    getattr(dest_fairy, "driver_connection", None) or dest_fairy.connection
+                )
+                src_conn.backup(actual_dest)
+                dest_fairy.commit()
             finally:
                 src_conn.close()
-                dest_conn.close()
+                dest_fairy.close()
 
             return {
                 "message": "Database restored into in-memory engine successfully. "
@@ -249,7 +256,9 @@ async def restore_database_from_backup(
             pre_restore_backup = backup_dir / f"pre_restore_backup_{timestamp}.db"
 
             try:
-                db.close()
+                # engine.dispose() releases the OS file lock so shutil.move can swap the file.
+                # Do NOT call db.close() here — let the get_db dependency lifecycle handle it;
+                # premature close leaves the session in an inconsistent state.
                 engine.dispose()
                 shutil.copy2(db_path, pre_restore_backup)
                 shutil.move(str(temp_path), str(db_path))
