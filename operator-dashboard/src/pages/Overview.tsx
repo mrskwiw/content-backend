@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { projectsApi } from '@/api/projects';
 import { deliverablesApi } from '@/api/deliverables';
 import { runsApi } from '@/api/runs';
+import { postsApi } from '@/api/posts';
 import { clientsApi } from '@/api/clients';
 import type { Project, Deliverable, Run, Client } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
@@ -87,6 +88,11 @@ export default function Overview() {
     queryFn: () => runsApi.list({}),
   });
 
+  const { data: recentPostsResponse } = useQuery({
+    queryKey: ['posts', 'overview-quality'],
+    queryFn: () => postsApi.list({ page_size: 100 }),
+  });
+
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: () => clientsApi.list(),
@@ -111,23 +117,23 @@ export default function Overview() {
   ).length;
   const pendingDeliverables = deliverables.filter(d => d.status === 'ready').length;
 
-  // NEW: Calculate quality score (average of recent runs)
-  const recentRuns = runs.slice(-10); // Last 10 runs
-  const avgQualityScore = recentRuns.length > 0
+  // Quality score: average readabilityScore from recent posts (posts carry QA data, runs do not)
+  const recentPosts = recentPostsResponse?.items ?? [];
+  const scoredPosts = recentPosts.filter(p => p.readabilityScore != null);
+  const avgQualityScore = scoredPosts.length > 0
     ? Math.round(
-        (recentRuns.reduce((sum, run) => {
-          const quality = (run as { qualityScore?: number }).qualityScore ?? 0;
-          return sum + quality;
-        }, 0) /
-          recentRuns.length) *
-          100
-      ) / 100
+        (scoredPosts.reduce((sum, p) => sum + (p.readabilityScore ?? 0), 0) / scoredPosts.length) * 10
+      ) / 10
     : 0;
 
-  // Calculate revenue from actual project pricing data
+  // MSRP: sum totalPrice for completed projects; fall back to numPosts × pricePerPost
+  // for projects created before the pricing builder (totalPrice was not stored then).
   const totalRevenue = projects
-    .filter(p => p.status === "delivered" || p.status === "exported")
-    .reduce((sum, p) => sum + (p.totalPrice ?? 0), 0);
+    .filter(p => p.status === 'delivered' || p.status === 'exported')
+    .reduce((sum, p) => {
+      if (p.totalPrice != null) return sum + p.totalPrice;
+      return sum + (p.numPosts ?? 0) * (p.pricePerPost ?? 40);
+    }, 0);
 
   // Client metrics
   const totalClients = clients.length;
