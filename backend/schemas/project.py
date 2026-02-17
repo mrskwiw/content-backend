@@ -12,6 +12,7 @@ from backend.utils.input_validators import (
     validate_integer_field,
     validate_float_field,
 )
+from src.config.pricing import KNOWN_TOOL_IDS, calculate_tools_cost
 
 
 class ProjectBase(BaseModel):
@@ -48,6 +49,33 @@ class ProjectBase(BaseModel):
         default=None,
         validation_alias=AliasChoices("totalPrice", "total_price"),
         description="Total project price (auto-calculated)",
+    )
+
+    # Pricing breakdown fields (granular cost tracking)
+    posts_cost: Optional[float] = Field(
+        default=None,
+        validation_alias=AliasChoices("postsCost", "posts_cost"),
+        description="Post generation cost (num_posts * price_per_post)",
+    )
+    research_addon_cost: Optional[float] = Field(
+        default=None,
+        validation_alias=AliasChoices("researchAddonCost", "research_addon_cost"),
+        description="Per-post topic research cost (num_posts * research_price_per_post)",
+    )
+    tools_cost: Optional[float] = Field(
+        default=None,
+        validation_alias=AliasChoices("toolsCost", "tools_cost"),
+        description="Research tool cost after bundle discounts",
+    )
+    discount_amount: Optional[float] = Field(
+        default=None,
+        validation_alias=AliasChoices("discountAmount", "discount_amount"),
+        description="Bundle discount savings amount",
+    )
+    selected_tools: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("selectedTools", "selected_tools"),
+        description="List of selected research tool IDs",
     )
 
     # Configuration - None defaults so actual DB values are not overridden
@@ -134,21 +162,57 @@ class ProjectBase(BaseModel):
 
         return v
 
+    @field_validator("selected_tools")
+    @classmethod
+    def validate_selected_tools(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Validate selected_tools: max 20 items, each must be a known tool ID."""
+        if v is None:
+            return v
+
+        if len(v) > 20:
+            raise ValueError("selected_tools cannot contain more than 20 items")
+
+        unknown = [tid for tid in v if tid not in KNOWN_TOOL_IDS]
+        if unknown:
+            raise ValueError(f"Unknown tool IDs: {', '.join(unknown)}")
+
+        return v
+
     @model_validator(mode="after")
     def calculate_derived_fields(self):
-        """Auto-calculate num_posts and total_price from template_quantities"""
+        """Auto-calculate pricing breakdown fields from inputs."""
 
-        # Calculate num_posts if not provided
+        # --- num_posts ---
         if self.num_posts is None and self.template_quantities:
             self.num_posts = sum(self.template_quantities.values())
 
-        # Calculate total_price if not provided
-        if self.total_price is None and self.num_posts and self.num_posts > 0:
-            price_per_post = self.price_per_post if self.price_per_post is not None else 40.0
-            research_price = (
-                self.research_price_per_post if self.research_price_per_post is not None else 0.0
+        price_per_post = self.price_per_post if self.price_per_post is not None else 40.0
+        research_price = (
+            self.research_price_per_post if self.research_price_per_post is not None else 0.0
+        )
+        num_posts = self.num_posts or 0
+
+        # --- posts_cost ---
+        if self.posts_cost is None and num_posts > 0:
+            self.posts_cost = num_posts * price_per_post
+
+        # --- research_addon_cost ---
+        if self.research_addon_cost is None:
+            self.research_addon_cost = num_posts * research_price if research_price > 0 else 0.0
+
+        # --- tools_cost / discount_amount from selected_tools ---
+        if self.selected_tools is not None and self.tools_cost is None:
+            result = calculate_tools_cost(self.selected_tools)
+            self.tools_cost = result["tools_cost"]
+            self.discount_amount = result["discount_amount"]
+
+        # --- total_price ---
+        if self.total_price is None and num_posts > 0:
+            self.total_price = (
+                (self.posts_cost or 0.0)
+                + (self.research_addon_cost or 0.0)
+                + (self.tools_cost or 0.0)
             )
-            self.total_price = self.num_posts * (price_per_post + research_price)
 
         return self
 
@@ -200,6 +264,23 @@ class ProjectUpdate(BaseModel):
     )
     total_price: Optional[float] = Field(
         default=None, validation_alias=AliasChoices("totalPrice", "total_price")
+    )
+
+    # Pricing breakdown fields
+    posts_cost: Optional[float] = Field(
+        default=None, validation_alias=AliasChoices("postsCost", "posts_cost")
+    )
+    research_addon_cost: Optional[float] = Field(
+        default=None, validation_alias=AliasChoices("researchAddonCost", "research_addon_cost")
+    )
+    tools_cost: Optional[float] = Field(
+        default=None, validation_alias=AliasChoices("toolsCost", "tools_cost")
+    )
+    discount_amount: Optional[float] = Field(
+        default=None, validation_alias=AliasChoices("discountAmount", "discount_amount")
+    )
+    selected_tools: Optional[List[str]] = Field(
+        default=None, validation_alias=AliasChoices("selectedTools", "selected_tools")
     )
 
     # Configuration
@@ -274,6 +355,22 @@ class ProjectUpdate(BaseModel):
                 min_value=0,
                 max_value=100,
             )
+
+        return v
+
+    @field_validator("selected_tools")
+    @classmethod
+    def validate_selected_tools(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Validate selected_tools: max 20 items, each must be a known tool ID."""
+        if v is None:
+            return v
+
+        if len(v) > 20:
+            raise ValueError("selected_tools cannot contain more than 20 items")
+
+        unknown = [tid for tid in v if tid not in KNOWN_TOOL_IDS]
+        if unknown:
+            raise ValueError(f"Unknown tool IDs: {', '.join(unknown)}")
 
         return v
 

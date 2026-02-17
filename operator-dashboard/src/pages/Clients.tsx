@@ -70,8 +70,10 @@ export default function Clients() {
         p.status === 'delivered' || p.status === 'exported'
       ).length;
 
-      // Mock revenue calculation (would come from billing API)
-      const totalRevenue = completedProjects * 1800; // Avg $1,800/project
+      // Revenue from actual project total_price stored at creation time
+      const totalRevenue = clientProjects
+        .filter(p => p.status === 'delivered' || p.status === 'exported')
+        .reduce((sum, p) => sum + (p.totalPrice ?? 0), 0);
 
       // Last activity from most recent project update
       const lastActivity = clientProjects
@@ -210,7 +212,7 @@ export default function Clients() {
                 <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Revenue</div>
+                <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Total MSRP</div>
                 <div className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
                   ${totalRevenue.toLocaleString()}
                 </div>
@@ -290,7 +292,7 @@ export default function Clients() {
                   className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 >
                   <div className="flex items-center gap-2">
-                    Revenue
+                    MSRP
                     <ArrowUpDown className="h-3 w-3" />
                   </div>
                 </TableHead>

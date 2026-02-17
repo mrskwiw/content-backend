@@ -187,7 +187,7 @@ export default function Analytics() {
       color: 'purple',
     },
     {
-      label: 'Total Revenue',
+      label: 'Total MSRP',
       value: `$${metrics.revenue.value.toLocaleString()}`,
       change: metrics.revenue.change,
       trend: metrics.revenue.change > 0 ? 'up' : metrics.revenue.change < 0 ? 'down' : 'neutral',
@@ -215,7 +215,7 @@ export default function Analytics() {
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Analytics</h1>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Performance metrics, quality trends, and revenue reporting
+            Performance metrics, quality trends, and MSRP reporting
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -346,8 +346,8 @@ export default function Analytics() {
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-sm">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Revenue Trends</h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Monthly revenue breakdown</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">MSRP Trends</h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Monthly MSRP breakdown</p>
             </div>
             <DollarSign className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
           </div>
@@ -452,7 +452,7 @@ export default function Analytics() {
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">Revenue Per Hour</p>
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400">MSRP Per Hour</p>
                   <p className="text-2xl font-semibold text-emerald-900 dark:text-emerald-300">${timeMetrics.revenuePerHour}/h</p>
                 </div>
               </div>
@@ -518,7 +518,7 @@ export default function Analytics() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Top Clients</h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">Client performance ranked by projects and revenue</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">Client performance ranked by projects and MSRP</p>
           </div>
           <Users className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
         </div>
@@ -530,7 +530,7 @@ export default function Analytics() {
                 <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Projects</th>
                 <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Posts</th>
                 <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Avg Quality</th>
-                <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Revenue</th>
+                <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Total MSRP</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">

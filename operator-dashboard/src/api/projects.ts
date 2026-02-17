@@ -13,9 +13,15 @@ export interface CreateProjectInput {
   name: string;
   templates: string[]; // Legacy field for backward compatibility
   templateQuantities?: Record<number, number>; // New field: template_id -> quantity
+  numPosts?: number; // Total post count
   pricePerPost?: number; // Price per post ($40 base, $55 with research)
   researchPricePerPost?: number; // Research add-on price per post ($15)
   totalPrice?: number; // Total project price
+  postsCost?: number; // Post generation cost (num_posts * price_per_post)
+  researchAddonCost?: number; // Per-post topic research cost
+  toolsCost?: number; // Research tool cost after bundle discount
+  discountAmount?: number; // Bundle discount savings
+  selectedTools?: string[]; // List of selected research tool IDs
   platforms: string[];
   tone?: string;
 }
@@ -28,6 +34,11 @@ export interface UpdateProjectInput {
   pricePerPost?: number;
   researchPricePerPost?: number;
   totalPrice?: number;
+  postsCost?: number;
+  researchAddonCost?: number;
+  toolsCost?: number;
+  discountAmount?: number;
+  selectedTools?: string[];
   platforms?: string[];
   tone?: string;
 }
@@ -74,9 +85,15 @@ export const projectsApi = {
         Object.fromEntries(
           Object.entries(input.templateQuantities).map(([id, qty]) => [id.toString(), qty])
         ) : undefined,  // Convert to string keys for JSON
+      num_posts: input.numPosts,
       price_per_post: input.pricePerPost,
       research_price_per_post: input.researchPricePerPost,
       total_price: input.totalPrice,
+      posts_cost: input.postsCost,
+      research_addon_cost: input.researchAddonCost,
+      tools_cost: input.toolsCost,
+      discount_amount: input.discountAmount,
+      selected_tools: input.selectedTools,
       platforms: input.platforms,
       tone: input.tone,
     };
@@ -98,6 +115,11 @@ export const projectsApi = {
     if (input.pricePerPost !== undefined) backendInput.price_per_post = input.pricePerPost;
     if (input.researchPricePerPost !== undefined) backendInput.research_price_per_post = input.researchPricePerPost;
     if (input.totalPrice !== undefined) backendInput.total_price = input.totalPrice;
+    if (input.postsCost !== undefined) backendInput.posts_cost = input.postsCost;
+    if (input.researchAddonCost !== undefined) backendInput.research_addon_cost = input.researchAddonCost;
+    if (input.toolsCost !== undefined) backendInput.tools_cost = input.toolsCost;
+    if (input.discountAmount !== undefined) backendInput.discount_amount = input.discountAmount;
+    if (input.selectedTools !== undefined) backendInput.selected_tools = input.selectedTools;
     if (input.platforms !== undefined) backendInput.platforms = input.platforms;
     if (input.tone !== undefined) backendInput.tone = input.tone;
 

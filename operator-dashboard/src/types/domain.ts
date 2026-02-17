@@ -52,6 +52,11 @@ export const ProjectSchema = z.object({
   totalPrice: z.number().optional().nullable(),
   numPosts: z.number().int().optional().nullable(),
   pricePerPost: z.number().optional().nullable(),
+  postsCost: z.number().optional().nullable(),
+  researchAddonCost: z.number().optional().nullable(),
+  toolsCost: z.number().optional().nullable(),
+  discountAmount: z.number().optional().nullable(),
+  selectedTools: z.array(z.string()).optional().nullable(),
 });
 export type Project = z.infer<typeof ProjectSchema>;
 

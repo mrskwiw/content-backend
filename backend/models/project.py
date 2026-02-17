@@ -36,6 +36,13 @@ class Project(Base):
     research_price_per_post = Column(Float, default=0.0)  # NEW: Research add-on per post
     total_price = Column(Float)  # NEW: Total project price
 
+    # Pricing breakdown (granular cost tracking)
+    posts_cost = Column(Float)  # num_posts * price_per_post
+    research_addon_cost = Column(Float)  # num_posts * research_price_per_post
+    tools_cost = Column(Float)  # research tool cost after bundle discount
+    discount_amount = Column(Float)  # bundle discount savings
+    selected_tools = Column(JSON)  # List[str] of selected tool IDs
+
     # Configuration
     platforms = Column(JSON)  # Array of platform names
     tone = Column(String)  # professional, casual, etc.

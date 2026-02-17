@@ -251,7 +251,7 @@ export default function Overview() {
           trend="Average across recent projects"
         />
         <StatCard
-          title="Revenue This Month"
+          title="MSRP This Month"
           value={`$${totalRevenue.toLocaleString()}`}
           icon={DollarSign}
           color="emerald"

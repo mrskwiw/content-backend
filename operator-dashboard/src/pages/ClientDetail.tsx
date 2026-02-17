@@ -297,7 +297,7 @@ export default function ClientDetail() {
                   {packageTier}
                 </span>
                 <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  ${totalRevenue.toLocaleString()} total revenue
+                  ${totalRevenue.toLocaleString()} MSRP
                 </span>
               </div>
             </div>
@@ -1046,7 +1046,7 @@ export default function ClientDetail() {
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Revenue</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">Total MSRP</p>
                 <p className="mt-2 text-3xl font-semibold text-neutral-900 dark:text-neutral-100">
                   ${totalRevenue.toLocaleString()}
                 </p>
