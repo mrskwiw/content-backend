@@ -28,7 +28,7 @@ export default function PortfolioNotice() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-blue-50 to-purple-50 dark:from-neutral-950 dark:via-blue-950 dark:to-purple-950 p-4">
+    <div onClick={handleSkip} className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-blue-50 to-purple-50 dark:from-neutral-950 dark:via-blue-950 dark:to-purple-950 p-4 cursor-pointer">
       <div className="max-w-3xl w-full space-y-8 p-8 md:p-12 bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700">
 
         {/* Header with Icon */}
@@ -119,6 +119,11 @@ export default function PortfolioNotice() {
             <span className="text-sm">
               Redirecting to dashboard in {countdown} second{countdown !== 1 ? 's' : ''}...
             </span>
+            <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-3 flex items-center justify-center gap-2">
+              <span className="animate-pulse">✨</span>
+              <span>Click anywhere to continue immediately</span>
+              <span className="animate-pulse">✨</span>
+            </p>
           </div>
 
           <Button
