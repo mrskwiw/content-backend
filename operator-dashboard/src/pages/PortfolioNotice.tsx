@@ -8,19 +8,7 @@ export default function PortfolioNotice() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user has seen notice this session
-    const hasSeenNotice = sessionStorage.getItem('portfolio_notice_seen');
-
-    if (hasSeenNotice) {
-      // Skip notice if already seen this session
-      navigate('/dashboard', { replace: true });
-      return;
-    }
-
-    // Mark as seen
-    sessionStorage.setItem('portfolio_notice_seen', 'true');
-
-    // Countdown timer
+    // Show portfolio notice on every login (5 second countdown)
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {

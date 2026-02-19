@@ -136,7 +136,7 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
-  const isAdmin = user?.is_superuser || user?.role === 'admin';
+  const isAdmin = user?.is_superuser === true;
   const [activeTab, setActiveTab] = useState<'integrations' | 'workflows' | 'notifications' | 'preferences' | 'security' | 'database' | 'users'>('integrations');
   const [showNewApiKeyModal, setShowNewApiKeyModal] = useState(false);
   const [showKeyValue, setShowKeyValue] = useState<string | null>(null);
@@ -144,6 +144,7 @@ export default function Settings() {
   const [workflowConfigs, setWorkflowConfigs] = useState<Record<string, WorkflowRule['config']>>({});
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [showConfigureModal, setShowConfigureModal] = useState<Integration | null>(null);
 
   // Mock queries
   const { data: apiKeys = mockApiKeys } = useQuery({
@@ -311,6 +312,11 @@ export default function Settings() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  // Handle integration configuration
+  const handleConfigure = (integration: Integration) => {
+    setShowConfigureModal(integration);
+  };
+
   // Get integration status badge
   const getIntegrationBadge = (status: Integration['status']) => {
     switch (status) {
@@ -424,7 +430,10 @@ export default function Settings() {
                       {integration.status === 'error' && <AlertCircle className="h-3 w-3" />}
                       {integration.status.charAt(0).toUpperCase() + integration.status.slice(1)}
                     </span>
-                    <button className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700">
+                    <button
+                      onClick={() => handleConfigure(integration)}
+                      className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+                    >
                       {integration.configured ? 'Configure' : 'Connect'}
                     </button>
                   </div>
@@ -952,6 +961,14 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* Configure Integration Modal */}
+      {showConfigureModal && (
+        <ConfigureIntegrationModal
+          integration={showConfigureModal}
+          onClose={() => setShowConfigureModal(null)}
+        />
+      )}
+
       {/* New API Key Modal */}
       {showNewApiKeyModal && (
         <NewApiKeyModal
@@ -1028,6 +1045,92 @@ function NewApiKeyModal({
           >
             <Key className="h-4 w-4" />
             {isSubmitting ? 'Creating...' : 'Create Key'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Configure Integration Modal Component
+function ConfigureIntegrationModal({
+  integration,
+  onClose,
+}: {
+  integration: Integration;
+  onClose: () => void;
+}) {
+  const Icon = (() => {
+    switch (integration.type) {
+      case 'anthropic': return Server;
+      case 'email': return Mail;
+      case 'storage': return Database;
+      case 'analytics': return Globe;
+    }
+  })();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 dark:bg-black/60 px-4">
+      <div className="w-full max-w-md rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-2">
+              <Icon className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                Configure {integration.name}
+              </h3>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                Integration settings and credentials
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-600 dark:hover:text-neutral-300"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 p-4 mb-6">
+          <div className="flex gap-2">
+            <AlertCircle className="h-4 w-4 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-primary-900 dark:text-primary-100">
+                Feature In Development
+              </p>
+              <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
+                Integration configuration is currently being implemented. This modal confirms the button is now functional.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+            <strong className="text-neutral-900 dark:text-neutral-100">Status:</strong>{' '}
+            <span className="capitalize">{integration.status}</span>
+          </div>
+          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+            <strong className="text-neutral-900 dark:text-neutral-100">Type:</strong>{' '}
+            <span className="capitalize">{integration.type}</span>
+          </div>
+          {integration.lastSync && (
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">
+              <strong className="text-neutral-900 dark:text-neutral-100">Last Sync:</strong>{' '}
+              {new Date(integration.lastSync).toLocaleString()}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 dark:hover:bg-primary-600"
+          >
+            Close
           </button>
         </div>
       </div>

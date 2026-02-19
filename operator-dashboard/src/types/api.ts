@@ -1,11 +1,13 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
-  full_name?: string;
-  role: 'admin' | 'operator' | 'qa_reviewer' | 'account_manager';
-  is_superuser?: boolean;
-  is_active?: boolean;
+  full_name: string;
+  name?: string; // Deprecated - use full_name
+  role?: 'admin' | 'operator' | 'qa_reviewer' | 'account_manager'; // Not used in backend - check is_superuser instead
+  is_superuser: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface AuthTokens {
