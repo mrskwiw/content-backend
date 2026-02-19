@@ -7,6 +7,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load page components with automatic retry on chunk load failures
 const Login = lazyWithRetry(() => import('@/pages/Login'));
+const PortfolioNotice = lazyWithRetry(() => import('@/pages/PortfolioNotice'));
 const Overview = lazyWithRetry(() => import('@/pages/Overview'));
 const Projects = lazyWithRetry(() => import('@/pages/Projects'));
 const ProjectDetail = lazyWithRetry(() => import('@/pages/ProjectDetail'));
@@ -56,6 +57,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: withSuspense(Login),
+  },
+  {
+    path: '/portfolio-notice',
+    element: withSuspense(PortfolioNotice),
   },
   {
     path: '/dashboard',

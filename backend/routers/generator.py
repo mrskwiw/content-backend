@@ -31,7 +31,9 @@ class GenerateAllInput(BaseModel):
     project_id: str
     client_id: str
     is_batch: bool = True
-    num_posts: Optional[int] = None  # Number of posts to generate (defaults to project setting or 30)
+    num_posts: Optional[int] = (
+        None  # Number of posts to generate (defaults to project setting or 30)
+    )
     template_quantities: Optional[dict[str, int]] = (
         None  # Optional template quantities from frontend
     )
@@ -49,7 +51,7 @@ class ExportInput(BaseModel):
     """Input for export endpoint"""
 
     project_id: str
-    format: str = "txt"  # txt, docx
+    format: str = "txt"  # txt, md, docx
     include_audit_log: bool = False
 
 

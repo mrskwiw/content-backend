@@ -12,7 +12,7 @@ export interface DeliverableFilters {
 export interface CreateDeliverableInput {
   projectId: string;
   clientId: string;
-  format: 'txt' | 'docx';
+  format: 'txt' | 'md' | 'docx';
   path: string;
   runId?: string;
 }

@@ -92,7 +92,7 @@ export const DeliverableSchema = z.object({
   id: z.string(),
   projectId: z.string(),
   clientId: z.string(),
-  format: z.enum(['txt', 'docx']),
+  format: z.enum(['txt', 'md', 'docx']),
   path: z.string(),
   createdAt: z.string().datetime(),
   status: DeliverableStatusSchema,
@@ -179,7 +179,7 @@ export type RegenerateInput = z.infer<typeof RegenerateSchema>;
 export const ExportSchema = z.object({
   projectId: z.string(),
   clientId: z.string(),
-  format: z.enum(['txt', 'docx']),
+  format: z.enum(['txt', 'md', 'docx']),
   includeAuditLog: z.boolean().default(false),
 });
 export type ExportInput = z.infer<typeof ExportSchema>;
