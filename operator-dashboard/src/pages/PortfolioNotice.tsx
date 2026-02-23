@@ -1,26 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Rocket, AlertTriangle, CheckCircle, Code, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 export default function PortfolioNotice() {
-  const [countdown, setCountdown] = useState(5);
   const navigate = useNavigate();
 
+  // Handle keyboard navigation
   useEffect(() => {
-    // Show portfolio notice on every login (5 second countdown)
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate('/dashboard', { replace: true });
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const handleKeyPress = (e: KeyboardEvent) => {
+      navigate('/dashboard', { replace: true });
+    };
 
-    return () => clearInterval(timer);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, [navigate]);
 
   const handleSkip = () => {
@@ -109,29 +102,19 @@ export default function PortfolioNotice() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400">
-            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {countdown}
-              </span>
-            </div>
-            <span className="text-sm">
-              Redirecting to dashboard in {countdown} second{countdown !== 1 ? 's' : ''}...
-            </span>
-            <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-3 flex items-center justify-center gap-2">
-              <span className="animate-pulse">✨</span>
-              <span>Click anywhere to continue immediately</span>
-              <span className="animate-pulse">✨</span>
-            </p>
-          </div>
+        <div className="flex flex-col items-center justify-center gap-4">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center justify-center gap-2">
+            <span className="animate-pulse">✨</span>
+            <span>Click anywhere or press any key to continue</span>
+            <span className="animate-pulse">✨</span>
+          </p>
 
           <Button
             onClick={handleSkip}
             variant="primary"
             className="group"
           >
-            Skip to Dashboard
+            Continue to Dashboard
             <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
