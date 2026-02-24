@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
 
     # Anthropic API
-    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: str
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-latest"  # Claude 3.5 Sonnet (latest)
 
     @field_validator("ANTHROPIC_API_KEY")
