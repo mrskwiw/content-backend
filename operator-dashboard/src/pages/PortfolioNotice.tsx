@@ -34,7 +34,7 @@ export default function PortfolioNotice() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 mb-4">
             <Code className="h-4 w-4 text-amber-700 dark:text-amber-400" />
             <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              Portfolio Project - Features Being Validated
+              Portfolio Project - Core Features Validated
             </span>
           </div>
 
@@ -52,7 +52,7 @@ export default function PortfolioNotice() {
             This is a demonstration project showcasing AI-driven content creation capabilities
             using Claude 3.5 Sonnet, async generation, and multi-platform support.
             <span className="block mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              Features are implemented but undergoing end-to-end validation before production use.
+              Core content generation features are tested and ready. Additional features in validation.
             </span>
           </p>
         </div>
@@ -70,7 +70,10 @@ export default function PortfolioNotice() {
                 <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
                   <li>• User authentication & login</li>
                   <li>• Dashboard navigation</li>
-                  <li>• Basic UI components</li>
+                  <li>• Content generation engine (30 posts, 15 templates)</li>
+                  <li>• Client & project management</li>
+                  <li>• Content wizard & brief parser</li>
+                  <li>• Quality validation system</li>
                 </ul>
               </div>
             </div>
@@ -88,11 +91,7 @@ export default function PortfolioNotice() {
                   Code exists but not yet fully tested end-to-end
                 </p>
                 <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
-                  <li>• Content generation engine (30 posts, 15 templates)</li>
-                  <li>• Client & project management</li>
                   <li>• Research tools (partially ready)</li>
-                  <li>• Content wizard & brief parser</li>
-                  <li>• Quality validation system</li>
                   <li>• Export & deliverables</li>
                   <li>• Analytics dashboard</li>
                   <li>• Template library</li>
