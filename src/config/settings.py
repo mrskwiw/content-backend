@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # Anthropic API
     ANTHROPIC_API_KEY: str
-    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-latest"  # Claude 3.5 Sonnet (latest)
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-5-20250929"  # Claude 3.5 Sonnet (latest)
 
     @field_validator("ANTHROPIC_API_KEY")
     @classmethod
