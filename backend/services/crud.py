@@ -13,7 +13,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 from backend.utils.query_cache import cache_short, cache_medium, invalidate_related_caches
 
-from backend.models import Brief, Client, Deliverable, Post, Project, User
+from backend.models import Brief, Client, Deliverable, Post, Project, ResearchResult, User
 
 
 # ==================== Cursor Pagination Utilities ====================
@@ -796,3 +796,98 @@ def create_user(
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+# ==================== Research Results ====================
+
+
+def get_research_result(db: Session, result_id: str) -> Optional[ResearchResult]:
+    """
+    Get research result by ID.
+
+    Args:
+        db: Database session
+        result_id: Research result ID
+
+    Returns:
+        ResearchResult instance or None if not found
+    """
+    from backend.models import ResearchResult
+
+    return db.query(ResearchResult).filter(ResearchResult.id == result_id).first()
+
+
+def get_research_results_by_project(
+    db: Session,
+    project_id: str,
+    tool_name: Optional[str] = None,
+    status: Optional[str] = None,
+) -> List[ResearchResult]:
+    """
+    Get all research results for a project.
+
+    Args:
+        db: Database session
+        project_id: Project ID
+        tool_name: Optional filter by tool name
+        status: Optional filter by status (completed, failed)
+
+    Returns:
+        List of ResearchResult instances
+    """
+    from backend.models import ResearchResult
+
+    query = db.query(ResearchResult).filter(ResearchResult.project_id == project_id)
+
+    if tool_name:
+        query = query.filter(ResearchResult.tool_name == tool_name)
+    if status:
+        query = query.filter(ResearchResult.status == status)
+
+    return query.order_by(ResearchResult.created_at.desc()).all()
+
+
+def get_research_results_by_client(
+    db: Session,
+    client_id: str,
+    tool_name: Optional[str] = None,
+) -> List[ResearchResult]:
+    """
+    Get all research results for a client.
+
+    Args:
+        db: Database session
+        client_id: Client ID
+        tool_name: Optional filter by tool name
+
+    Returns:
+        List of ResearchResult instances
+    """
+    from backend.models import ResearchResult
+
+    query = db.query(ResearchResult).filter(ResearchResult.client_id == client_id)
+    if tool_name:
+        query = query.filter(ResearchResult.tool_name == tool_name)
+
+    return query.order_by(ResearchResult.created_at.desc()).all()
+
+
+def delete_research_result(db: Session, result_id: str) -> bool:
+    """
+    Delete research result by ID.
+
+    Args:
+        db: Database session
+        result_id: Research result ID
+
+    Returns:
+        True if deleted, False if not found
+    """
+    from backend.models import ResearchResult
+
+    result = db.query(ResearchResult).filter(ResearchResult.id == result_id).first()
+    if result:
+        db.delete(result)
+        db.commit()
+        return True
+    return False

@@ -5,7 +5,8 @@ Provides type-safe input validation with length limits, sanitization,
 and security constraints for all research tools.
 """
 
-from typing import List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
@@ -383,3 +384,36 @@ class BrandArchetypeParams(BaseModel):
 
     # No additional parameters needed - uses client profile
     pass
+
+
+# ==================== Research Result Response Schemas ====================
+
+
+class ResearchResultResponse(BaseModel):
+    """Response schema for research result."""
+
+    id: str
+    user_id: str
+    client_id: str
+    project_id: Optional[str]
+    tool_name: str
+    tool_label: Optional[str]
+    tool_price: Optional[float]
+    params: Optional[Dict[str, Any]]
+    outputs: Dict[str, str]
+    data: Optional[Dict[str, Any]]
+    status: str
+    error_message: Optional[str]
+    duration_seconds: Optional[float]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResearchResultListResponse(BaseModel):
+    """Response schema for list of research results."""
+
+    results: List[ResearchResultResponse]
+    total: int
+    project_id: Optional[str]
+    client_id: Optional[str]

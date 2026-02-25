@@ -53,6 +53,7 @@ class ExportInput(BaseModel):
     project_id: str
     format: str = "txt"  # txt, md, docx
     include_audit_log: bool = False
+    include_research: bool = False  # NEW: Include research results appendix
 
 
 async def run_generation_background(
@@ -376,6 +377,7 @@ async def export_package(
             format=input.format,
             relative_path=relative_path,
             include_audit_log=input.include_audit_log,
+            include_research=input.include_research,  # NEW
             db=db,
         )
 

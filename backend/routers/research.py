@@ -26,6 +26,8 @@ from backend.schemas import (
     ICPWorkshopParams,
     StoryMiningParams,
     BrandArchetypeParams,
+    ResearchResultResponse,
+    ResearchResultListResponse,
 )
 from backend.services import crud
 from backend.services.research_service import research_service
@@ -539,6 +541,18 @@ async def run_research(
                 research_cache.put_by_key(cache_key, result)
                 logger.debug(f"Cached research result for {input.tool} (48hr TTL)")
 
+                # Store cache_key in database for tracking
+                if "result_id" in result.get("metadata", {}):
+                    from backend.models import ResearchResult
+
+                    result_id = result["metadata"]["result_id"]
+                    db_result = (
+                        db.query(ResearchResult).filter(ResearchResult.id == result_id).first()
+                    )
+                    if db_result:
+                        db_result.cache_key = cache_key
+                        db.commit()
+
             logger.info(
                 f"Research cache MISS for {input.tool} (client {input.client_id}) "
                 f"- executed ${tool.price} API call"
@@ -570,3 +584,109 @@ async def run_research(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Research execution failed: {str(e)}",
         )
+
+
+# ==================== Research Result Endpoints ====================
+
+
+@router.get("/results/project/{project_id}", response_model=ResearchResultListResponse)
+@lenient_limiter.limit("1000/hour")
+async def get_project_research_results(
+    request: Request,
+    project_id: str,
+    tool_name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get all research results for a project.
+
+    TR-021: User must own project to access research results.
+
+    Args:
+        project_id: Project ID
+        tool_name: Optional filter by tool name
+
+    Returns:
+        List of research results for the project
+    """
+    project = crud.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if not _check_ownership("Project", project, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    results = crud.get_research_results_by_project(db, project_id, tool_name=tool_name)
+
+    return ResearchResultListResponse(
+        results=[ResearchResultResponse.model_validate(r) for r in results],
+        total=len(results),
+        project_id=project_id,
+        client_id=project.client_id,
+    )
+
+
+@router.get("/results/client/{client_id}", response_model=ResearchResultListResponse)
+@lenient_limiter.limit("1000/hour")
+async def get_client_research_results(
+    request: Request,
+    client_id: str,
+    tool_name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get all research results for a client.
+
+    TR-021: User must own client to access research results.
+
+    Args:
+        client_id: Client ID
+        tool_name: Optional filter by tool name
+
+    Returns:
+        List of research results for the client
+    """
+    client = crud.get_client(db, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    if not _check_ownership("Client", client, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    results = crud.get_research_results_by_client(db, client_id, tool_name=tool_name)
+
+    return ResearchResultListResponse(
+        results=[ResearchResultResponse.model_validate(r) for r in results],
+        total=len(results),
+        client_id=client_id,
+        project_id=None,
+    )
+
+
+@router.delete("/results/{result_id}", status_code=204)
+@lenient_limiter.limit("100/hour")
+async def delete_research_result(
+    request: Request,
+    result_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete research result.
+
+    TR-021: User must own the result to delete it.
+
+    Args:
+        result_id: Research result ID
+    """
+    result = crud.get_research_result(db, result_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Research result not found")
+
+    if result.user_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    crud.delete_research_result(db, result_id)
+    return None

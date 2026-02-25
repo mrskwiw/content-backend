@@ -155,7 +155,41 @@ class ResearchService:
             tool = ToolClass(project_id=project_id)
             result = tool.execute(inputs)
 
-            # Convert result to backend format
+            # Get tool metadata for database storage
+            from backend.routers.research import RESEARCH_TOOLS
+
+            tool_class_metadata = next(
+                (t.dict() for t in RESEARCH_TOOLS if t.name == tool_name),
+                {"label": tool_name, "price": None},
+            )
+
+            # Save result to database
+            import uuid
+            from datetime import datetime
+            from backend.models import ResearchResult
+
+            research_result = ResearchResult(
+                id=f"res-{uuid.uuid4().hex[:12]}",
+                user_id=project.user_id,
+                client_id=client_id,
+                project_id=project_id,
+                tool_name=tool_name,
+                tool_label=tool_class_metadata.get("label"),
+                tool_price=tool_class_metadata.get("price"),
+                params=params,
+                outputs=result.outputs,
+                data=result.metadata.get("data"),  # Tool-specific structured data
+                status="completed" if result.success else "failed",
+                error_message=result.error,
+                duration_seconds=result.metadata.get("duration_seconds"),
+                created_at=datetime.utcnow(),
+            )
+
+            db.add(research_result)
+            db.commit()
+            db.refresh(research_result)
+
+            # Convert result to backend format with database ID
             return {
                 "success": result.success,
                 "outputs": {k: str(v) for k, v in result.outputs.items()},
@@ -163,6 +197,7 @@ class ResearchService:
                     **result.metadata,
                     "executed_at": result.executed_at.isoformat(),
                     "tool_name": result.tool_name,
+                    "result_id": research_result.id,  # Add database ID for cache storage
                 },
                 "error": result.error,
             }

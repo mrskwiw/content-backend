@@ -23,6 +23,7 @@ async def generate_export_file(
     format: str,
     relative_path: str,
     include_audit_log: bool = False,
+    include_research: bool = False,
     db: Optional[Session] = None,
 ) -> Tuple[Path, int]:
     """
@@ -35,7 +36,8 @@ async def generate_export_file(
         format: Export format ('txt', 'md', or 'docx')
         relative_path: Relative path for the output file (from data/outputs/)
         include_audit_log: Whether to include audit log in export
-        db: Database session (required if include_audit_log is True)
+        include_research: Whether to include research results appendix
+        db: Database session (required if include_audit_log or include_research is True)
 
     Returns:
         Tuple of (absolute file path, file size in bytes)
@@ -46,11 +48,17 @@ async def generate_export_file(
     full_path.parent.mkdir(parents=True, exist_ok=True)
 
     if format == "docx":
-        return await _generate_docx(posts, client, project, full_path, include_audit_log, db)
+        return await _generate_docx(
+            posts, client, project, full_path, include_audit_log, include_research, db
+        )
     elif format == "md" or format == "markdown":
-        return await _generate_markdown(posts, client, project, full_path, include_audit_log, db)
+        return await _generate_markdown(
+            posts, client, project, full_path, include_audit_log, include_research, db
+        )
     else:
-        return await _generate_txt(posts, client, project, full_path, include_audit_log, db)
+        return await _generate_txt(
+            posts, client, project, full_path, include_audit_log, include_research, db
+        )
 
 
 async def _generate_txt(
@@ -59,6 +67,7 @@ async def _generate_txt(
     project: Project,
     output_path: Path,
     include_audit_log: bool,
+    include_research: bool,
     db: Optional[Session],
 ) -> Tuple[Path, int]:
     """Generate TXT deliverable file."""
@@ -95,6 +104,20 @@ async def _generate_txt(
         lines.append("=" * 60)
         lines.append("")
 
+    # Research results (if requested)
+    if include_research and db:
+        research_sections = _generate_research_section(project.id, db)
+        if research_sections:
+            lines.append("")
+            lines.append("=" * 60)
+            lines.append("RESEARCH RESULTS")
+            lines.append("=" * 60)
+            lines.append("")
+
+            for tool_name, section_lines in research_sections.items():
+                lines.extend(section_lines)
+                lines.append("")
+
     # Audit log (if requested)
     if include_audit_log and db:
         audit_section = _generate_audit_section(project.id, db)
@@ -120,6 +143,7 @@ async def _generate_markdown(
     project: Project,
     output_path: Path,
     include_audit_log: bool,
+    include_research: bool,
     db: Optional[Session],
 ) -> Tuple[Path, int]:
     """Generate Markdown deliverable file with frontmatter."""
@@ -191,6 +215,19 @@ async def _generate_markdown(
         lines.append("---")
         lines.append("")
 
+    # Research results (if requested)
+    if include_research and db:
+        research_sections = _generate_research_section(project.id, db)
+        if research_sections:
+            lines.append("---")
+            lines.append("")
+            lines.append("## Research Results")
+            lines.append("")
+
+            for tool_name, section_lines in research_sections.items():
+                lines.extend(section_lines)
+                lines.append("")
+
     # Audit log (if requested)
     if include_audit_log and db:
         audit_section = _generate_audit_section(project.id, db)
@@ -224,6 +261,7 @@ async def _generate_docx(
     project: Project,
     output_path: Path,
     include_audit_log: bool,
+    include_research: bool,
     db: Optional[Session],
 ) -> Tuple[Path, int]:
     """Generate DOCX deliverable file."""
@@ -325,6 +363,25 @@ async def _generate_docx(
         if i % 5 == 0 and i < len(posts):
             doc.add_page_break()
 
+    # Research results (if requested)
+    if include_research and db:
+        research_sections = _generate_research_section(project.id, db)
+        if research_sections:
+            doc.add_page_break()
+            doc.add_heading("Research Results", level=1)
+
+            for tool_name, section_lines in research_sections.items():
+                for line in section_lines:
+                    if line.startswith("# "):
+                        doc.add_heading(line[2:], level=2)
+                    elif line.startswith("## "):
+                        doc.add_heading(line[3:], level=3)
+                    elif line.startswith("|"):
+                        # Table row - skip for now (complex DOCX table formatting)
+                        doc.add_paragraph(line)
+                    elif line:
+                        doc.add_paragraph(line)
+
     # Audit log (if requested)
     if include_audit_log and db:
         audit_section = _generate_audit_section(project.id, db)
@@ -373,4 +430,175 @@ def _generate_audit_section(project_id: str, db: Session) -> List[str]:
         logger.warning(f"Could not generate audit section: {e}")
         return []
 
+    return lines
+
+
+def _generate_research_section(project_id: str, db: Session) -> dict:
+    """
+    Generate research results section for deliverables.
+
+    Args:
+        project_id: Project ID
+        db: Database session
+
+    Returns:
+        Dict mapping tool_name -> list of formatted lines
+    """
+    from backend.services import crud
+
+    results = crud.get_research_results_by_project(db, project_id, status="completed")
+    if not results:
+        return {}
+
+    research_sections = {}
+
+    for result in results:
+        lines = []
+        lines.append(f"# {result.tool_label or result.tool_name}")
+        lines.append("")
+
+        # Metadata
+        if result.created_at:
+            lines.append(f"**Executed:** {result.created_at.strftime('%B %d, %Y at %H:%M')}")
+        if result.tool_price:
+            lines.append(f"**Cost:** ${result.tool_price:.2f}")
+        lines.append("")
+
+        # Format tool-specific data
+        if result.data:
+            lines.append("## Results")
+            lines.append("")
+
+            if result.tool_name == "voice_analysis":
+                lines.extend(_format_voice_analysis(result.data))
+            elif result.tool_name == "brand_archetype":
+                lines.extend(_format_brand_archetype(result.data))
+            elif result.tool_name == "seo_keyword_research":
+                lines.extend(_format_seo_keywords(result.data))
+            elif result.tool_name == "competitive_analysis":
+                lines.extend(_format_competitive_analysis(result.data))
+            elif result.tool_name == "content_gap_analysis":
+                lines.extend(_format_content_gap(result.data))
+            elif result.tool_name == "market_trends_research":
+                lines.extend(_format_market_trends(result.data))
+            else:
+                # Generic fallback for other tools
+                lines.extend(_format_generic_research(result.data))
+
+            lines.append("")
+
+        research_sections[result.tool_name] = lines
+
+    return research_sections
+
+
+def _format_voice_analysis(data: dict) -> List[str]:
+    """Format voice analysis results."""
+    lines = []
+    if "tone" in data:
+        lines.append(f"**Tone:** {data['tone']}")
+    if "readability_score" in data:
+        lines.append(f"**Readability Score:** {data['readability_score']}")
+    if "recommendations" in data and isinstance(data["recommendations"], list):
+        lines.append("")
+        lines.append("**Recommendations:**")
+        for rec in data["recommendations"]:
+            lines.append(f"- {rec}")
+    return lines
+
+
+def _format_brand_archetype(data: dict) -> List[str]:
+    """Format brand archetype results."""
+    lines = []
+    if "primary_archetype" in data:
+        lines.append(f"**Primary Archetype:** {data['primary_archetype']}")
+    if "secondary_archetype" in data:
+        lines.append(f"**Secondary Archetype:** {data['secondary_archetype']}")
+    if "content_themes" in data and isinstance(data["content_themes"], list):
+        lines.append("")
+        lines.append("**Content Themes:**")
+        for theme in data["content_themes"]:
+            lines.append(f"- {theme}")
+    return lines
+
+
+def _format_seo_keywords(data: dict) -> List[str]:
+    """Format SEO keyword results."""
+    lines = []
+    if "primary_keywords" in data and isinstance(data["primary_keywords"], list):
+        lines.append("**Primary Keywords:**")
+        lines.append("")
+        lines.append("| Keyword | Volume | Difficulty |")
+        lines.append("|---------|--------|------------|")
+        for kw in data["primary_keywords"][:10]:  # Limit to top 10
+            keyword = kw.get("keyword", "N/A")
+            volume = kw.get("volume", 0)
+            difficulty = kw.get("difficulty", "N/A")
+            lines.append(f"| {keyword} | {volume:,} | {difficulty} |")
+    return lines
+
+
+def _format_competitive_analysis(data: dict) -> List[str]:
+    """Format competitive analysis results."""
+    lines = []
+    if "competitors" in data and isinstance(data["competitors"], list):
+        lines.append("**Key Competitors:**")
+        lines.append("")
+        for comp in data["competitors"][:5]:  # Top 5
+            name = comp.get("name", "Unknown")
+            strength = comp.get("strength", "N/A")
+            lines.append(f"- **{name}** (Strength: {strength})")
+            if "key_differentiator" in comp:
+                lines.append(f"  - {comp['key_differentiator']}")
+    return lines
+
+
+def _format_content_gap(data: dict) -> List[str]:
+    """Format content gap analysis results."""
+    lines = []
+    if "gaps" in data and isinstance(data["gaps"], list):
+        lines.append("**Content Gaps Identified:**")
+        lines.append("")
+        for gap in data["gaps"][:10]:
+            if isinstance(gap, dict):
+                topic = gap.get("topic", "Unknown")
+                priority = gap.get("priority", "N/A")
+                lines.append(f"- **{topic}** (Priority: {priority})")
+            else:
+                lines.append(f"- {gap}")
+    return lines
+
+
+def _format_market_trends(data: dict) -> List[str]:
+    """Format market trends results."""
+    lines = []
+    if "trends" in data and isinstance(data["trends"], list):
+        lines.append("**Top Market Trends:**")
+        lines.append("")
+        for trend in data["trends"][:8]:
+            if isinstance(trend, dict):
+                title = trend.get("title", "Unknown")
+                impact = trend.get("impact", "N/A")
+                lines.append(f"- **{title}** (Impact: {impact})")
+            else:
+                lines.append(f"- {trend}")
+    return lines
+
+
+def _format_generic_research(data: dict) -> List[str]:
+    """Generic fallback formatter for research data."""
+    lines = []
+    for key, value in data.items():
+        if isinstance(value, list):
+            lines.append(f"**{key.replace('_', ' ').title()}:**")
+            for item in value[:10]:  # Limit to 10 items
+                lines.append(f"- {item}")
+            lines.append("")
+        elif isinstance(value, dict):
+            lines.append(f"**{key.replace('_', ' ').title()}:**")
+            for subkey, subval in value.items():
+                lines.append(f"- {subkey}: {subval}")
+            lines.append("")
+        else:
+            lines.append(f"**{key.replace('_', ' ').title()}:** {value}")
     return lines

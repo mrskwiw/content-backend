@@ -2,7 +2,6 @@
 Database configuration and session management.
 """
 
-import sys
 from typing import Generator
 
 from sqlalchemy import create_engine, text
@@ -220,11 +219,14 @@ def init_db():
                         # SECURITY: Use parameterized SQL to prevent injection (TR-015)
                         # SQLite doesn't support parameterized DDL, so we use validated identifiers
                         from sqlalchemy.sql import quoted_name
+
                         safe_col_name = quoted_name(col_name, quote=True)
                         safe_col_type = col_type  # Already validated against whitelist
 
                         # Build DDL statement with validated, quoted identifiers
-                        ddl_stmt = text(f"ALTER TABLE clients ADD COLUMN {safe_col_name} {safe_col_type}")
+                        ddl_stmt = text(
+                            f"ALTER TABLE clients ADD COLUMN {safe_col_name} {safe_col_type}"
+                        )
                         conn.execute(ddl_stmt)
                         conn.commit()
                         print(f">> Migration for {col_name} completed successfully")
@@ -271,11 +273,14 @@ def init_db():
                         # SECURITY: Use parameterized SQL to prevent injection (TR-015)
                         # SQLite doesn't support parameterized DDL, so we use validated identifiers
                         from sqlalchemy.sql import quoted_name
+
                         safe_col_name = quoted_name(col_name, quote=True)
                         safe_col_type = col_type  # Already validated against whitelist
 
                         # Build DDL statement with validated, quoted identifiers
-                        ddl_stmt = text(f"ALTER TABLE projects ADD COLUMN {safe_col_name} {safe_col_type}")
+                        ddl_stmt = text(
+                            f"ALTER TABLE projects ADD COLUMN {safe_col_name} {safe_col_type}"
+                        )
                         conn.execute(ddl_stmt)
                         conn.commit()
                         print(f">> Migration for {col_name} completed successfully")
@@ -345,3 +350,6 @@ def init_db():
                 except Exception as e:
                     print(f">> Data migration failed: {e}")
                     # Non-critical - continue startup
+
+        # NOTE: ResearchResult table is auto-created by Base.metadata.create_all()
+        # No manual migration needed - table will be created on first startup
