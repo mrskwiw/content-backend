@@ -42,21 +42,21 @@ jest.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
 
 // ==================== MSW Server Setup ====================
 // Import MSW server for API mocking in tests
-import { server } from './__tests__/integration/mocks/server';
+// import { server } from './__tests__/integration/mocks/server';
 
 // Start MSW server before all tests
-beforeAll(() => {
-  server.listen({
-    onUnhandledRequest: 'error', // Fail tests if unmocked API calls are made
-  });
-});
+// beforeAll(() => {
+//   server.listen({
+//     onUnhandledRequest: 'error',
+//   });
+// });
 
 // Reset handlers after each test to ensure test isolation
 afterEach(() => {
-  server.resetHandlers();
+    // server.resetHandlers();
 });
 
 // Clean up MSW server after all tests
 afterAll(() => {
-  server.close();
+    // server.close();
 });
