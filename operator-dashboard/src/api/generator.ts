@@ -34,6 +34,7 @@ export const generatorApi = {
       client_id: input.clientId,
       format: input.format,
       include_audit_log: input.includeAuditLog,
+      include_research: input.includeResearch,
     };
     const { data } = await apiClient.post<Deliverable>('/api/generator/export', backendInput);
     return data;

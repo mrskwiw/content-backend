@@ -22,6 +22,21 @@ export interface ResearchRunResult {
   metadata?: Record<string, unknown>;
 }
 
+export interface ResearchResultHistory {
+  id: string;
+  toolName: string;
+  toolLabel?: string;
+  createdAt: string;  // ISO 8601
+  status: string;
+  durationSeconds?: number;
+}
+
+export interface ResearchHistoryResponse {
+  results: ResearchResultHistory[];
+  total: number;
+  clientId: string;
+}
+
 export const researchApi = {
   async listTools() {
     const { data } = await apiClient.get<ResearchTool[]>('/api/research/tools');
@@ -37,6 +52,15 @@ export const researchApi = {
       params: input.params,
     };
     const { data } = await apiClient.post<ResearchRunResult>('/api/research/run', backendInput);
+    return data;
+  },
+
+  async getClientHistory(clientId: string, toolName?: string) {
+    const params = toolName ? { tool_name: toolName } : {};
+    const { data } = await apiClient.get<ResearchHistoryResponse>(
+      `/api/research/results/client/${clientId}`,
+      { params }
+    );
     return data;
   },
 };

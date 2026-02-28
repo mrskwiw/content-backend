@@ -777,12 +777,24 @@ Generate a post following this template structure, customized for this client's 
         lines = []
 
         # Priority fields (always include if present)
-        priority_fields = ["company_name", "ideal_customer", "problem_solved", "brand_voice"]
+        priority_fields = [
+            "company_name",
+            "ideal_customer",
+            "problem_solved",
+            "brand_voice",
+            "research_insights",
+        ]
         for field_name in priority_fields:
             if field_name in context and context[field_name]:
                 value = context[field_name]
                 if isinstance(value, str) and value.strip():
-                    lines.append(f"{field_name}: {value}")
+                    # Research insights formatted as standalone block
+                    if field_name == "research_insights":
+                        lines.append("")  # Blank line before
+                        lines.append(value)  # Already formatted by research_context_builder
+                        lines.append("")  # Blank line after
+                    else:
+                        lines.append(f"{field_name}: {value}")
 
         # Optional fields (only if non-empty and relevant)
         for k, v in context.items():

@@ -1,6 +1,6 @@
-import { useState, memo } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign } from 'lucide-react';
+import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign, Clock } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { ResearchDataCollectionPanel } from './ResearchDataCollectionPanel';
@@ -25,6 +25,33 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     queryKey: ['research', 'tools'],
     queryFn: () => researchApi.listTools(),
   });
+
+  // Fetch research history for current client
+  const { data: historyData } = useQuery({
+    queryKey: ['research', 'history', clientId],
+    queryFn: () => clientId ? researchApi.getClientHistory(clientId) : Promise.resolve(null),
+    enabled: !!clientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Process history into map: tool_name -> most recent run date
+  const toolHistory = useMemo(() => {
+    if (!historyData?.results) return new Map<string, Date>();
+
+    const map = new Map<string, Date>();
+    historyData.results.forEach((result) => {
+      const existingDate = map.get(result.toolName);
+      const newDate = new Date(result.createdAt);
+
+      // Keep only the most recent run
+      if (!existingDate || newDate > existingDate) {
+        map.set(result.toolName, newDate);
+      }
+    });
+
+    return map;
+  }, [historyData]);
+
 
   // Run research mutation
   const runResearchMutation = useMutation({
@@ -113,6 +140,22 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     if (onContinue) {
       onContinue();
     }
+  };
+
+
+  const formatLastRun = (date: Date | undefined): { text: string; variant: 'fresh' | 'stale' | 'never' } => {
+    if (!date) return { text: 'Never run', variant: 'never' };
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return { text: 'Today', variant: 'fresh' };
+    if (diffDays === 1) return { text: 'Yesterday', variant: 'fresh' };
+    if (diffDays < 7) return { text: `${diffDays} days ago`, variant: 'fresh' };
+    if (diffDays < 30) return { text: `${Math.floor(diffDays / 7)} weeks ago`, variant: 'fresh' };
+    if (diffDays < 365) return { text: `${Math.floor(diffDays / 30)} months ago`, variant: 'stale' };
+    return { text: 'Over a year ago', variant: 'stale' };
   };
 
   const getStatusBadge = (status?: string) => {
@@ -292,6 +335,22 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                               <span className="text-xs font-medium text-slate-700">${tool.price.toFixed(2)}</span>
                             )}
                           </div>
+                          {(() => {
+                            const lastRunDate = toolHistory.get(tool.name);
+                            const lastRun = formatLastRun(lastRunDate);
+                            const colorClass = lastRun.variant === 'fresh'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : lastRun.variant === 'stale'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-slate-500 dark:text-slate-400';
+
+                            return (
+                              <div className={`mt-2 flex items-center gap-1 text-xs ${colorClass}`}>
+                                <Clock className="h-3 w-3" />
+                                <span>Last run: {lastRun.text}</span>
+                              </div>
+                            );
+                          })()}
                           {hasResult && (
                             <div className="mt-2 rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
                               ✓ Research completed

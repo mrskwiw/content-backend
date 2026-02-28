@@ -38,6 +38,15 @@ from ..validators.prompt_injection_defense import (
 if TYPE_CHECKING:
     from ..database.project_db import ProjectDatabase
 
+# Research context integration
+try:
+    from backend.services.research_context_builder import build_research_context
+
+    RESEARCH_CONTEXT_AVAILABLE = True
+except ImportError:
+    RESEARCH_CONTEXT_AVAILABLE = False
+    build_research_context = None
+
 
 class ContentGeneratorAgent:
     """
@@ -54,6 +63,7 @@ class ContentGeneratorAgent:
         keyword_strategy: Optional[KeywordStrategy] = None,
         db: Optional["ProjectDatabase"] = None,
         use_content_skill: bool = True,
+        backend_session: Optional[Any] = None,  # SQLAlchemy Session for research context
     ):
         """
         Initialize Content Generator Agent
@@ -69,6 +79,7 @@ class ContentGeneratorAgent:
         self.template_loader = template_loader or TemplateLoader()
         self.keyword_strategy = keyword_strategy
         self.db = db
+        self.backend_session = backend_session  # For research context integration
 
         # Load content-creator skill for enhanced guidance
         self.content_skill: Optional[Skill] = None
@@ -1162,6 +1173,25 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
         # Note: Sanitization should happen before caching in the calling code
         context = base_context.copy() if base_context else client_brief.to_context_dict()
 
+        # Add research insights if available (Phase 2: Research Context Integration)
+        if (
+            RESEARCH_CONTEXT_AVAILABLE
+            and self.backend_session
+            and hasattr(client_brief, "client_id")
+        ):
+            try:
+                research_context = build_research_context(
+                    self.backend_session, client_brief.client_id
+                )
+                if research_context.get("formatted_text"):
+                    context["research_insights"] = research_context["formatted_text"]
+                    logger.info(
+                        f"Added research context: {research_context['tool_count']} tools, "
+                        f"~{research_context['total_tokens']} tokens"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not add research context: {e}")
+
         # Add variant-specific guidance
         if variant == 1:
             context["variant_guidance"] = "Use a direct, problem-focused angle"
@@ -1438,6 +1468,23 @@ If your draft is under 1500 words after Section 4, you MUST:
         skill_guidance = self._build_skill_guidance(platform)
         if skill_guidance:
             prompt += skill_guidance
+
+        # Phase 5: Add research insights guidance if available
+        if RESEARCH_CONTEXT_AVAILABLE and self.backend_session:
+            prompt += """
+
+RESEARCH INSIGHTS GUIDANCE:
+The context may include research insights from completed research tools for this client.
+If research insights are present, use them to:
+- Match the identified voice patterns and readability level
+- Naturally integrate recommended keywords where relevant
+- Address identified content gaps and differentiation opportunities
+- Align with the brand archetype and audience preferences
+
+IMPORTANT: Do NOT explicitly mention the research tools or insights in your content.
+Instead, let them inform your writing style, topic selection, and messaging naturally.
+Think of research insights as your secret knowledge about the client - use them subtly.
+"""
 
         return prompt
 

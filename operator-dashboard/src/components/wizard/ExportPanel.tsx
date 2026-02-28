@@ -11,8 +11,9 @@ interface Props {
 }
 
 export function ExportPanel({ projectId, clientId, onExported }: Props) {
-  const [format, setFormat] = useState<'txt' | 'docx'>('docx');
+  const [format, setFormat] = useState<'txt' | 'md' | 'docx'>('docx');
   const [includeAuditLog, setIncludeAuditLog] = useState(false);
+  const [includeResearch, setIncludeResearch] = useState(false);
 
   const exportMut = useMutation({
     mutationFn: (input: ExportInput) => generatorApi.exportPackage(input),
@@ -25,6 +26,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
       clientId,
       format,
       includeAuditLog,
+      includeResearch,
     });
   };
 
@@ -39,9 +41,10 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
           <select
             className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
             value={format}
-            onChange={(e) => setFormat(e.target.value as 'txt' | 'docx')}
+            onChange={(e) => setFormat(e.target.value as 'txt' | 'md' | 'docx')}
           >
             <option value="docx">DOCX</option>
+            <option value="md">Markdown</option>
             <option value="txt">TXT</option>
           </select>
           <label className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
@@ -52,6 +55,15 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
               className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
             />
             Include audit log
+          </label>
+          <label className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+            <input
+              type="checkbox"
+              checked={includeResearch}
+              onChange={(e) => setIncludeResearch(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            Include research results
           </label>
           <button
             disabled={exportMut.isPending}

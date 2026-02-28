@@ -68,6 +68,8 @@ except ImportError as e:
     logger.warning(f"Research tools not available: {str(e)}")
 
 # IMPORTANT: Use relative imports to avoid SQLAlchemy table redefinition errors
+from backend.services.research_context_builder import invalidate_cache  # noqa: E402
+
 # Absolute imports (backend.models) cause circular dependencies in production
 from backend.models import Project, Client  # noqa: E402
 from backend.services import crud  # noqa: E402
@@ -168,6 +170,20 @@ class ResearchService:
             from datetime import datetime
             from backend.models import ResearchResult
 
+            # Convert Path objects to strings for JSON serialization
+            def convert_paths_to_strings(obj):
+                """Recursively convert Path objects to strings"""
+                if isinstance(obj, dict):
+                    return {k: convert_paths_to_strings(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_paths_to_strings(item) for item in obj]
+                elif hasattr(obj, "__fspath__"):  # Path-like object
+                    return str(obj)
+                else:
+                    return obj
+
+            serializable_outputs = convert_paths_to_strings(result.outputs)
+
             research_result = ResearchResult(
                 id=f"res-{uuid.uuid4().hex[:12]}",
                 user_id=project.user_id,
@@ -177,7 +193,7 @@ class ResearchService:
                 tool_label=tool_class_metadata.get("label"),
                 tool_price=tool_class_metadata.get("price"),
                 params=params,
-                outputs=result.outputs,
+                outputs=serializable_outputs,
                 data=result.metadata.get("data"),  # Tool-specific structured data
                 status="completed" if result.success else "failed",
                 error_message=result.error,
@@ -188,6 +204,13 @@ class ResearchService:
             db.add(research_result)
             db.commit()
             db.refresh(research_result)
+
+            # Invalidate research context cache (Phase 4: Cache invalidation)
+            try:
+                invalidate_cache(client_id)
+                logger.info(f"Invalidated research context cache for client {client_id}")
+            except Exception as e:
+                logger.warning(f"Could not invalidate research context cache: {e}")
 
             # Convert result to backend format with database ID
             return {

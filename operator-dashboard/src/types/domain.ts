@@ -181,6 +181,7 @@ export const ExportSchema = z.object({
   clientId: z.string(),
   format: z.enum(['txt', 'md', 'docx']),
   includeAuditLog: z.boolean().default(false),
+  includeResearch: z.boolean().default(false),
 });
 export type ExportInput = z.infer<typeof ExportSchema>;
 
