@@ -1,7 +1,7 @@
 """Data models for content gap analysis"""
 
 from enum import Enum
-from typing import List
+from typing import List, Union, Dict, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -73,8 +73,9 @@ class BuyerJourneyGap(BaseModel):
     stage: str = Field(..., description="Awareness/Consideration/Decision")
     current_coverage: str = Field(..., description="What you have now")
     gap_description: str = Field(..., description="What's missing")
-    recommended_content: List[str] = Field(
-        default_factory=list, description="3-5 content pieces to create"
+    recommended_content: List[Union[str, Dict[str, Any]]] = Field(
+        default_factory=list,
+        description="3-5 content pieces to create (can be strings or structured dicts)",
     )
     priority: GapPriority = Field(..., description="Priority level")
 
