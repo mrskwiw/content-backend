@@ -176,10 +176,38 @@ export const RegenerateSchema = z.object({
 });
 export type RegenerateInput = z.infer<typeof RegenerateSchema>;
 
+// Export target platforms
+export const ExportTargetSchema = z.enum([
+  // Social Media
+  'linkedin-posts',
+  'linkedin-articles',
+  'twitter',
+  'twitter-threads',
+  'facebook',
+  'instagram',
+  // Publishing Platforms
+  'substack',
+  'medium',
+  'wordpress',
+  'ghost',
+  // Productivity
+  'notion',
+  // Standard Formats
+  'docx',
+  'markdown',
+  'txt',
+]);
+export type ExportTarget = z.infer<typeof ExportTargetSchema>;
+
+// Export file formats
+export const ExportFormatSchema = z.enum(['txt', 'md', 'docx', 'html', 'json', 'wxr']);
+export type ExportFormat = z.infer<typeof ExportFormatSchema>;
+
 export const ExportSchema = z.object({
   projectId: z.string(),
   clientId: z.string(),
-  format: z.enum(['txt', 'md', 'docx']),
+  format: ExportFormatSchema,
+  target: ExportTargetSchema.optional(),
   includeAuditLog: z.boolean().default(false),
   includeResearch: z.boolean().default(false),
 });
@@ -200,3 +228,21 @@ export const ClientBriefSchema = z.object({
   customerQuestions: z.array(z.string()).optional(),
 });
 export type ClientBrief = z.infer<typeof ClientBriefSchema>;
+
+export const ResearchResultSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  clientId: z.string(),
+  projectId: z.string().optional().nullable(),
+  toolName: z.string(),
+  toolLabel: z.string().optional().nullable(),
+  toolPrice: z.number().optional().nullable(),
+  params: z.record(z.string(), z.any()).optional().nullable(),
+  outputs: z.record(z.string(), z.string()),
+  data: z.record(z.string(), z.any()).optional().nullable(),
+  status: z.string(),
+  errorMessage: z.string().optional().nullable(),
+  durationSeconds: z.number().optional().nullable(),
+  createdAt: z.string().datetime(),
+});
+export type ResearchResult = z.infer<typeof ResearchResultSchema>;

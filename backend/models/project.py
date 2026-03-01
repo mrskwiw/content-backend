@@ -44,7 +44,10 @@ class Project(Base):
     selected_tools = Column(JSON)  # List[str] of selected tool IDs
 
     # Configuration
-    platforms = Column(JSON)  # Array of platform names
+    platforms = Column(JSON)  # Array of platform names (legacy - multiple platforms)
+    target_platform = Column(
+        String, default="generic"
+    )  # NEW: Single target platform for generation optimization
     tone = Column(String)  # professional, casual, etc.
 
     # Timestamps

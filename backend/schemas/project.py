@@ -80,6 +80,11 @@ class ProjectBase(BaseModel):
 
     # Configuration - None defaults so actual DB values are not overridden
     platforms: Optional[List[str]] = None
+    target_platform: Optional[str] = Field(
+        default="generic",
+        validation_alias=AliasChoices("targetPlatform", "target_platform"),
+        description="Single target platform for generation optimization",
+    )
     tone: Optional[str] = None
 
     model_config = ConfigDict(
@@ -285,6 +290,9 @@ class ProjectUpdate(BaseModel):
 
     # Configuration
     platforms: Optional[List[str]] = None
+    target_platform: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("targetPlatform", "target_platform")
+    )
     tone: Optional[str] = None
 
     model_config = ConfigDict(

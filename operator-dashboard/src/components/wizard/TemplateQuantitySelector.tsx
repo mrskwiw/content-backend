@@ -1,5 +1,6 @@
 import { useState, useMemo, memo } from 'react';
 import { Plus, Minus, DollarSign, FileText, Calculator, TrendingUp, HelpCircle, AlertCircle, X } from 'lucide-react';
+import { PlatformSelector } from './PlatformSelector';
 
 interface Template {
   id: number;
@@ -121,7 +122,14 @@ interface Props {
   initialQuantities?: Record<number, number>;
   initialIncludeResearch?: boolean;
   initialTopics?: string[];  // NEW: custom topics for generation
-  onContinue?: (quantities: Record<number, number>, includeResearch: boolean, totalPrice: number, customTopics: string[]) => void;
+  initialTargetPlatform?: string;  // NEW: target platform
+  onContinue?: (
+    quantities: Record<number, number>,
+    includeResearch: boolean,
+    totalPrice: number,
+    customTopics: string[],
+    targetPlatform: string
+  ) => void;
 }
 
 const PRICE_PER_POST = 40.0;
@@ -131,11 +139,13 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   initialQuantities = {},
   initialIncludeResearch = false,
   initialTopics = [],  // NEW
+  initialTargetPlatform = 'generic',  // NEW
   onContinue,
 }: Props) {
   const [quantities, setQuantities] = useState<Record<number, number>>(initialQuantities);
   const [includeResearch, setIncludeResearch] = useState(initialIncludeResearch);
   const [customTopics, setCustomTopics] = useState<string[]>(initialTopics);  // NEW: topic override state
+  const [targetPlatform, setTargetPlatform] = useState<string>(initialTargetPlatform);  // NEW: target platform state
 
   // Calculate totals
   const { totalPosts, totalPrice, pricePerPost } = useMemo(() => {
@@ -202,11 +212,21 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calculator className="h-5 w-5 text-blue-600" />
+    <div className="space-y-8">
+      {/* Platform Selector */}
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-sm">
+        <PlatformSelector
+          selected={targetPlatform}
+          onChange={setTargetPlatform}
+        />
+      </div>
+
+      {/* Template Quantity Selection */}
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-slate-900">Custom Template Quantities</h3>
         </div>
         <button
@@ -400,13 +420,14 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
           {totalPosts > 50 && 'Large order - generation may take longer'}
         </div>
         <button
-          onClick={() => onContinue?.(quantities, includeResearch, totalPrice, customTopics)}
+          onClick={() => onContinue?.(quantities, includeResearch, totalPrice, customTopics, targetPlatform)}
           disabled={totalPosts === 0}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue to Generation
           <span className="text-xs opacity-75">(${totalPrice.toLocaleString()})</span>
         </button>
+      </div>
       </div>
     </div>
   );

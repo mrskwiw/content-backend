@@ -38,6 +38,7 @@ class GenerateAllInput(BaseModel):
         None  # Optional template quantities from frontend
     )
     custom_topics: Optional[list[str]] = None  # NEW: topic override for content generation
+    target_platform: Optional[str] = "generic"  # NEW: target platform for generation optimization
 
 
 class RegenerateInput(BaseModel):
@@ -63,6 +64,7 @@ async def run_generation_background(
     num_posts: int = 30,
     template_quantities: Optional[dict[str, int]] = None,
     custom_topics: Optional[list[str]] = None,  # NEW: topic override for generation
+    target_platform: Optional[str] = "generic",  # NEW: target platform for generation
 ):
     """
     Background task to run content generation.
@@ -105,6 +107,7 @@ async def run_generation_background(
             num_posts=num_posts,
             template_quantities=template_quantities,
             custom_topics=sanitized_topics,  # Use sanitized topics
+            platform=target_platform,  # NEW: Pass target platform for platform-specific generation
             run_id=run_id,  # Pass run_id so posts can reference the run
         )
 
@@ -194,6 +197,9 @@ async def generate_all(
     # Determine num_posts: input > project setting > default 30
     num_posts = input.num_posts or project.num_posts or 30
 
+    # Determine target_platform: input > project setting > default 'generic'
+    target_platform = input.target_platform or project.target_platform or "generic"
+
     # Queue background task (returns immediately)
     background_tasks.add_task(
         run_generation_background,
@@ -203,6 +209,7 @@ async def generate_all(
         num_posts=num_posts,
         template_quantities=input.template_quantities,  # Pass template quantities from frontend
         custom_topics=input.custom_topics,  # NEW: pass topic override for generation
+        target_platform=target_platform,  # NEW: pass target platform for platform-specific generation
     )
 
     # Update run status to running (background task will update to succeeded/failed)

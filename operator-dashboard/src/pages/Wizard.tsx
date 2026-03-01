@@ -54,6 +54,7 @@ export default function Wizard() {
   const [includeResearch, setIncludeResearch] = useState<boolean>(false);
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [customTopics, setCustomTopics] = useState<string[]>([]);  // NEW: topic override for generation
+  const [targetPlatform, setTargetPlatform] = useState<string>('generic');  // NEW: target platform for generation
 
 
   // Query to list existing clients
@@ -445,11 +446,13 @@ export default function Wizard() {
                 initialQuantities={templateQuantities}
                 initialIncludeResearch={includeResearch}
                 initialTopics={customTopics}
-                onContinue={(quantities, research, price, topics) => {
+                initialTargetPlatform={targetPlatform}
+                onContinue={(quantities, research, price, topics, platform) => {
                   setTemplateQuantities(quantities);
                   setIncludeResearch(research);
                   setTotalPrice(price);
                   setCustomTopics(topics);
+                  setTargetPlatform(platform);
                   advanceToStep('quality');
                 }}
               />
