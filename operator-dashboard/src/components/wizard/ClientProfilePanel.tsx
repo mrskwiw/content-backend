@@ -49,15 +49,6 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     }
   }, [initialData]);
 
-  const platformOptions: { value: Platform; label: string }[] = [
-    { value: 'linkedin', label: 'LinkedIn' },
-    { value: 'twitter', label: 'Twitter' },
-    { value: 'facebook', label: 'Facebook' },
-    { value: 'blog', label: 'Blog' },
-    { value: 'email', label: 'Email' },
-    { value: 'generic', label: 'Generic' },
-  ];
-
   const toneOptions = [
     'professional',
     'conversational',
@@ -66,15 +57,6 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     'innovative',
     'educational',
   ];
-
-  const togglePlatform = (platform: Platform) => {
-    const current = formData.platforms || [];
-    if (current.includes(platform)) {
-      setFormData({ ...formData, platforms: current.filter((p) => p !== platform) });
-    } else {
-      setFormData({ ...formData, platforms: [...current, platform] });
-    }
-  };
 
   const addPainPoint = () => {
     if (painPoint.trim()) {
@@ -349,28 +331,6 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
               </option>
             ))}
           </select>
-        </div>
-
-        {/* Platform Selection */}
-        <div>
-          <label className="mb-2 block text-sm font-medium text-slate-800 dark:text-neutral-200">Platforms</label>
-          <div className="flex flex-wrap gap-2">
-            {platformOptions.map((platform) => (
-              <button
-                key={platform.value}
-                type="button"
-                onClick={() => togglePlatform(platform.value)}
-                className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                  formData.platforms?.includes(platform.value)
-                    ? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
-                }`}
-              >
-                {platform.label}
-              </button>
-            ))}
-          </div>
-          {errors.platforms && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.platforms}</p>}
         </div>
 
         {/* Customer Pain Points */}
