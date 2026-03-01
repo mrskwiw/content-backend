@@ -5,8 +5,10 @@ Handles research tool listing and execution with comprehensive input validation.
 """
 
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
@@ -690,3 +692,66 @@ async def delete_research_result(
 
     crud.delete_research_result(db, result_id)
     return None
+
+
+@router.get("/results/{result_id}/output/{output_format}")
+@lenient_limiter.limit("1000/hour")
+async def get_research_output_content(
+    request: Request,
+    result_id: str,
+    output_format: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get the content of a research result output file.
+
+    TR-021: User must own the result to access output files.
+
+    Args:
+        result_id: Research result ID
+        output_format: Format of output file (e.g., 'markdown', 'json')
+
+    Returns:
+        File content as JSON object with 'content' field for text files,
+        or parsed JSON for JSON files
+    """
+    # Get research result and verify ownership
+    result = crud.get_research_result(db, result_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Research result not found")
+
+    if result.user_id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Check if result has outputs
+    if not result.outputs or output_format not in result.outputs:
+        raise HTTPException(
+            status_code=404, detail=f"Output format '{output_format}' not found for this result"
+        )
+
+    # Get file path
+    file_path_str = result.outputs[output_format]
+    file_path = Path(file_path_str)
+
+    # Check if file exists
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Output file not found at: {file_path_str}")
+
+    # Read file content
+    try:
+        content = file_path.read_text(encoding="utf-8")
+    except Exception as e:
+        logger.error(f"Error reading output file {file_path}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to read output file")
+
+    # Return parsed JSON for JSON files, or raw content for other formats
+    if output_format == "json":
+        try:
+            parsed_content = json.loads(content)
+            return JSONResponse(content=parsed_content)
+        except json.JSONDecodeError:
+            logger.warning(f"Invalid JSON in file {file_path}, returning as text")
+            return {"content": content, "format": output_format}
+    else:
+        return {"content": content, "format": output_format}

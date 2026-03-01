@@ -15,7 +15,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       onClick={() => onOpenChange(false)}
     >
       <div
-        className="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
+        className="relative w-full max-w-lg rounded-lg bg-white dark:bg-neutral-900 p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -46,7 +46,7 @@ interface DialogTitleProps {
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
-  return <h2 className="text-lg font-semibold text-slate-900">{children}</h2>;
+  return <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{children}</h2>;
 }
 
 interface DialogDescriptionProps {
@@ -54,7 +54,7 @@ interface DialogDescriptionProps {
 }
 
 export function DialogDescription({ children }: DialogDescriptionProps) {
-  return <p className="text-sm text-slate-600">{children}</p>;
+  return <p className="text-sm text-neutral-600 dark:text-neutral-400">{children}</p>;
 }
 
 interface DialogFooterProps {

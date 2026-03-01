@@ -9,6 +9,7 @@ Week 3 Optimization: Cache sizes tuned for production load
 - Configurable via environment variables
 - Based on expected load: 10 concurrent projects, 300 posts
 """
+
 import functools
 import hashlib
 import json
@@ -33,19 +34,13 @@ def _initialize_caches() -> Dict[str, TTLCache]:
     return {
         # Short TTL for frequently changing data
         # Projects list, posts list, runs - high volume, frequent access
-        "short": TTLCache(
-            maxsize=settings.CACHE_MAX_SIZE_SHORT, ttl=settings.CACHE_TTL_SHORT
-        ),
+        "short": TTLCache(maxsize=settings.CACHE_MAX_SIZE_SHORT, ttl=settings.CACHE_TTL_SHORT),
         # Medium TTL for semi-static data
         # Individual projects, clients - moderate volume, occasional changes
-        "medium": TTLCache(
-            maxsize=settings.CACHE_MAX_SIZE_MEDIUM, ttl=settings.CACHE_TTL_MEDIUM
-        ),
+        "medium": TTLCache(maxsize=settings.CACHE_MAX_SIZE_MEDIUM, ttl=settings.CACHE_TTL_MEDIUM),
         # Long TTL for static data
         # Templates, system data - low volume, rare changes
-        "long": TTLCache(
-            maxsize=settings.CACHE_MAX_SIZE_LONG, ttl=settings.CACHE_TTL_LONG
-        ),
+        "long": TTLCache(maxsize=settings.CACHE_MAX_SIZE_LONG, ttl=settings.CACHE_TTL_LONG),
     }
 
 
@@ -74,16 +69,14 @@ def _make_cache_key(func_name: str, args: tuple, kwargs: dict) -> str:
         Unique cache key string
     """
     # Filter out non-serializable args (like database sessions)
-    filtered_kwargs = {
-        k: v for k, v in kwargs.items() if k not in ["db", "session", "engine"]
-    }
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["db", "session", "engine"]}
 
     # Create key from function name + args + kwargs
     key_data = {"func": func_name, "args": args, "kwargs": filtered_kwargs}
 
     # JSON serialize and hash
     key_json = json.dumps(key_data, sort_keys=True, default=str)
-    key_hash = hashlib.md5(key_json.encode()).hexdigest()
+    key_hash = hashlib.md5(key_json.encode(), usedforsecurity=False).hexdigest()  # nosec B324
 
     return f"{func_name}:{key_hash}"
 
@@ -132,8 +125,8 @@ def cached(ttl: str = "short", key_prefix: Optional[str] = None):
             return result
 
         # Add cache control methods to wrapped function
-        wrapper.cache_clear = lambda: clear_cache(ttl, key_prefix)
-        wrapper.cache_info = lambda: get_cache_info(ttl)
+        wrapper.cache_clear = lambda: clear_cache(ttl, key_prefix)  # type: ignore[attr-defined]
+        wrapper.cache_info = lambda: get_cache_info(ttl)  # type: ignore[attr-defined]
 
         return wrapper
 
@@ -226,9 +219,7 @@ def get_cache_info(ttl: Optional[str] = None) -> Dict[str, Any]:
 
         total_requests = stats.get("hits", 0) + stats.get("misses", 0)
         hit_rate = (
-            round((stats.get("hits", 0) / total_requests) * 100, 2)
-            if total_requests > 0
-            else 0.0
+            round((stats.get("hits", 0) / total_requests) * 100, 2) if total_requests > 0 else 0.0
         )
 
         return {

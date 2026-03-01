@@ -7,6 +7,8 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from backend.utils.logger import logger
+
 
 class LogEntry(BaseModel):
     """Schema for structured log entry"""
@@ -92,4 +94,5 @@ class RunResponse(BaseModel):
                     # Already a LogEntry
                     converted.append(item)
             return converted
-        return value
+        logger.warning(f"Unexpected logs value type: {type(value)}, returning empty list")
+        return []

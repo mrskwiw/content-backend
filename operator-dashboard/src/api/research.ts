@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { ResearchResult } from '../types/domain';
 
 export interface ResearchTool {
   name: string;
@@ -37,6 +38,12 @@ export interface ResearchHistoryResponse {
   clientId: string;
 }
 
+export interface ResearchResultListResponse {
+  results: ResearchResult[];
+  total: number;
+  clientId?: string;
+}
+
 export const researchApi = {
   async listTools() {
     const { data } = await apiClient.get<ResearchTool[]>('/api/research/tools');
@@ -51,7 +58,7 @@ export const researchApi = {
       tool: input.tool,
       params: input.params,
     };
-    const { data } = await apiClient.post<ResearchRunResult>('/api/research/run', backendInput);
+    const { data} = await apiClient.post<ResearchRunResult>('/api/research/run', backendInput);
     return data;
   },
 
@@ -60,6 +67,31 @@ export const researchApi = {
     const { data } = await apiClient.get<ResearchHistoryResponse>(
       `/api/research/results/client/${clientId}`,
       { params }
+    );
+    return data;
+  },
+
+  /**
+   * Fetch full research results for a client (includes outputs, data, etc.)
+   */
+  async getClientResearchResults(clientId: string, toolName?: string): Promise<ResearchResult[]> {
+    const params = toolName ? { tool_name: toolName } : {};
+    const { data } = await apiClient.get<ResearchResultListResponse>(
+      `/api/research/results/client/${clientId}`,
+      { params }
+    );
+    return data.results;
+  },
+
+  /**
+   * Fetch the content of a research result output file
+   */
+  async getResearchOutputContent(
+    resultId: string,
+    outputFormat: string
+  ): Promise<{ content: string; format: string }> {
+    const { data } = await apiClient.get<{ content: string; format: string }>(
+      `/api/research/results/${resultId}/output/${outputFormat}`
     );
     return data;
   },

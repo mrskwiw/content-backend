@@ -1,5 +1,6 @@
 import { useState, memo } from 'react';
 import { CheckCircle2, Circle, FileText, ArrowRight } from 'lucide-react';
+import { PlatformSelector } from './PlatformSelector';
 
 interface Template {
   id: number;
@@ -119,11 +120,18 @@ const TEMPLATES: Template[] = [
 
 interface Props {
   initialSelection?: number[];
+  targetPlatform?: string;
+  onPlatformChange?: (platform: string) => void;
   onContinue?: (selectedIds: number[]) => void;
 }
 
 // Memoized to prevent re-renders when parent updates (Performance optimization - December 25, 2025)
-export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({ initialSelection = [], onContinue }: Props) {
+export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
+  initialSelection = [],
+  targetPlatform = 'generic',
+  onPlatformChange = () => {},
+  onContinue
+}: Props) {
   const [selected, setSelected] = useState<Set<number>>(new Set(initialSelection));
 
   const toggleTemplate = (id: number) => {
@@ -172,12 +180,22 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({ ini
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-slate-900">Template Selection</h3>
-        </div>
+    <div className="space-y-8">
+      {/* Platform Selector */}
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-sm">
+        <PlatformSelector
+          selected={targetPlatform}
+          onChange={onPlatformChange}
+        />
+      </div>
+
+      {/* Template Selection */}
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-slate-900">Template Selection</h3>
+          </div>
         <div className="flex items-center gap-2">
           <button
             onClick={selectRecommended}
@@ -269,6 +287,7 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({ ini
           Continue to Generation
           <ArrowRight className="h-4 w-4" />
         </button>
+      </div>
       </div>
     </div>
   );

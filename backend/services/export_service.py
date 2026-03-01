@@ -4,6 +4,7 @@ Export service for generating deliverable files.
 Handles TXT, Markdown, and DOCX export generation from database posts.
 """
 
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -466,7 +467,7 @@ def _generate_research_section(project_id: str, db: Session) -> dict:
 
         # Format tool-specific data
         if result.data:
-            lines.append("## Results")
+            lines.append("## Executive Summary")
             lines.append("")
 
             if result.tool_name == "voice_analysis":
@@ -487,9 +488,75 @@ def _generate_research_section(project_id: str, db: Session) -> dict:
 
             lines.append("")
 
+        # Full report from output files
+        if result.outputs:
+            full_report_lines = _read_output_files(result.outputs)
+            if full_report_lines:
+                lines.append("---")
+                lines.append("")
+                lines.append("## Full Report")
+                lines.append("")
+                lines.extend(full_report_lines)
+                lines.append("")
+
         research_sections[result.tool_name] = lines
 
     return research_sections
+
+
+def _read_output_files(outputs: dict) -> List[str]:
+    """
+    Read and format output files from research tools.
+
+    Args:
+        outputs: Dict mapping format -> file path
+                 Example: {"markdown": "path/to/report.md"}
+
+    Returns:
+        List of formatted lines to include in deliverable
+    """
+    lines: List[str] = []
+
+    if not outputs or not isinstance(outputs, dict):
+        return lines
+
+    # Prefer markdown format for readability
+    if "markdown" in outputs and outputs["markdown"]:
+        markdown_path = Path(outputs["markdown"])
+        try:
+            if markdown_path.exists() and markdown_path.is_file():
+                content = markdown_path.read_text(encoding="utf-8")
+                lines.append(content)
+                logger.info(f"Included markdown output: {markdown_path}")
+            else:
+                logger.warning(f"Markdown output file not found: {markdown_path}")
+                lines.append("*Full markdown report unavailable (file not found)*")
+        except Exception as e:
+            logger.error(f"Error reading markdown output {markdown_path}: {e}")
+            lines.append(f"*Full report unavailable (error: {e})*")
+
+    # Fallback to JSON if markdown not available
+    elif "json" in outputs and outputs["json"]:
+        json_path = Path(outputs["json"])
+        try:
+            if json_path.exists() and json_path.is_file():
+                with json_path.open("r", encoding="utf-8") as f:
+                    data = json.load(f)
+                lines.append("```json")
+                lines.append(json.dumps(data, indent=2, ensure_ascii=False))
+                lines.append("```")
+                logger.info(f"Included JSON output: {json_path}")
+            else:
+                logger.warning(f"JSON output file not found: {json_path}")
+                lines.append("*Full JSON report unavailable (file not found)*")
+        except Exception as e:
+            logger.error(f"Error reading JSON output {json_path}: {e}")
+            lines.append(f"*Full report unavailable (error: {e})*")
+    else:
+        logger.info("No markdown or JSON output available")
+        lines.append("*Full report not available for this tool*")
+
+    return lines
 
 
 def _format_voice_analysis(data: dict) -> List[str]:

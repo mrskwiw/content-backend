@@ -31,7 +31,8 @@ import { postsApi } from '@/api/posts';
 import { deliverablesApi } from '@/api/deliverables';
 import { researchApi } from '@/api/research';
 import { CopyButton } from '@/components/ui/CopyButton';
-import type { Project, PostDraft, Deliverable } from '@/types/domain';
+import { ResearchResultsDrawer } from '@/components/research/ResearchResultsDrawer';
+import type { Project, PostDraft, Deliverable, ResearchResult } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { getApiErrorMessage } from '@/utils/apiError';
@@ -49,6 +50,10 @@ export default function ClientDetail() {
   const [showDataDialog, setShowDataDialog] = useState(false);
   const [researchResults, setResearchResults] = useState<Map<string, any>>(new Map());
   const [isExporting, setIsExporting] = useState(false);
+
+  // Research results drawer state
+  const [selectedResult, setSelectedResult] = useState<ResearchResult | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Data collection dialog state
   const [dialogInputValue, setDialogInputValue] = useState('');
@@ -94,6 +99,17 @@ export default function ClientDetail() {
     queryFn: () => deliverablesApi.list(),
   });
 
+  // Fetch research history
+  const {
+    data: researchHistory = [],
+    isLoading: isLoadingResearch,
+    refetch: refetchResearch
+  } = useQuery({
+    queryKey: ['research-results', clientId],
+    queryFn: () => researchApi.getClientResearchResults(clientId!),
+    enabled: !!clientId,
+  });
+
   const projects: Project[] = projectsResponse?.items ?? [];
   const posts: PostDraft[] = postsResponse?.items ?? [];
   const deliverables: Deliverable[] = deliverablesResponse ?? [];
@@ -114,6 +130,7 @@ export default function ClientDetail() {
       setResearchResults(new Map(researchResults).set(variables.tool, data));
       setSelectedTool(null);
       setShowDataDialog(false);
+      refetchResearch(); // Refetch research history to show new result
     },
     onError: (error, variables) => {
       alert(`Failed to run research tool "${variables.tool}": ${getApiErrorMessage(error)}`);
@@ -769,7 +786,12 @@ export default function ClientDetail() {
               {/* Research History */}
               <div className="mt-6 border-t border-neutral-200 dark:border-neutral-700 pt-6">
                 <h4 className="mb-4 font-medium text-neutral-900 dark:text-neutral-100">Research History</h4>
-                {researchResults.size === 0 ? (
+
+                {isLoadingResearch ? (
+                  <div className="flex justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary-600 dark:text-primary-400" />
+                  </div>
+                ) : researchHistory.length === 0 ? (
                   <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-8 text-center">
                     <FlaskConical className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
                     <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">
@@ -780,96 +802,81 @@ export default function ClientDetail() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {Array.from(researchResults.entries()).map(([toolName, result]) => (
-                      <div
-                        key={toolName}
-                        className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <FlaskConical className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                              <h5 className="font-medium text-neutral-900 dark:text-neutral-100">
-                                {toolName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                              </h5>
-                              <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/20 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
-                                <CheckCircle2 className="mr-1 h-3 w-3" />
-                                Completed
-                              </span>
-                            </div>
-                            {result.metadata && (
-                              <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                                {result.metadata.executed_at ? new Date(result.metadata.executed_at).toLocaleString() : 'Just now'}
-                                {result.metadata.note && (
-                                  <span className="ml-2 text-amber-600 dark:text-amber-400">({result.metadata.note})</span>
-                                )}
-                              </p>
-                            )}
-                            {/* Display analysis data if available */}
-                            {result.data && (
-                              <div className="mt-3 space-y-2">
-                                {result.data.summary && (
-                                  <p className="text-sm text-neutral-700 dark:text-neutral-300">{result.data.summary}</p>
-                                )}
-                                {result.data.tone && (
-                                  <div className="text-xs">
-                                    <span className="font-medium text-neutral-600 dark:text-neutral-400">Tone:</span>{' '}
-                                    <span className="text-neutral-900 dark:text-neutral-100">{result.data.tone}</span>
-                                  </div>
-                                )}
-                                {result.data.primary_archetype && (
-                                  <div className="text-xs">
-                                    <span className="font-medium text-neutral-600 dark:text-neutral-400">Primary Archetype:</span>{' '}
-                                    <span className="text-neutral-900 dark:text-neutral-100">{result.data.primary_archetype}</span>
-                                  </div>
-                                )}
-                                {result.data.recommendations && result.data.recommendations.length > 0 && (
-                                  <div className="mt-2">
-                                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">Recommendations:</p>
-                                    <ul className="text-xs text-neutral-700 dark:text-neutral-300 space-y-1 pl-4">
-                                      {result.data.recommendations.slice(0, 3).map((rec: string, idx: number) => (
-                                        <li key={idx} className="list-disc">{rec}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                {result.data.trending_topics && (
-                                  <div className="mt-2">
-                                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">Trending Topics:</p>
-                                    <div className="flex flex-wrap gap-1">
-                                      {result.data.trending_topics.map((topic: string, idx: number) => (
-                                        <span key={idx} className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2 py-0.5 text-xs text-primary-800 dark:text-primary-300">
-                                          {topic}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            {/* Legacy: Display file outputs if available */}
-                            {result.outputs && Object.keys(result.outputs).length > 0 && (
-                              <div className="mt-3 space-y-1">
-                                <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Output Files:</p>
-                                {Object.entries(result.outputs).map(([format, path]) => (
-                                  <div key={format} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                    <span className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
-                                      {format.toUpperCase()}
-                                    </span>
-                                    <span className="flex-1 truncate">{path as string}</span>
-                                    <CopyButton
-                                      text={path as string}
-                                      size="sm"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
+                        <thead className="bg-neutral-50 dark:bg-neutral-800">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                              Tool Name
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                              Date Performed
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                              Summary
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700 bg-white dark:bg-neutral-900">
+                          {researchHistory.map((result) => (
+                            <tr key={result.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                              <td className="whitespace-nowrap px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <FlaskConical className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                    {result.toolLabel || result.toolName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                                {format(new Date(result.createdAt), 'MMM d, yyyy')}
+                                <div className="text-xs text-neutral-500 dark:text-neutral-500">
+                                  {format(new Date(result.createdAt), 'h:mm a')}
+                                </div>
+                              </td>
+                              <td className="whitespace-nowrap px-6 py-4">
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                    result.status === 'completed'
+                                      ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300'
+                                      : result.status === 'failed'
+                                      ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+                                      : 'bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300'
+                                  }`}
+                                >
+                                  {result.status === 'completed' && <CheckCircle2 className="mr-1 h-3 w-3" />}
+                                  {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 max-w-md">
+                                <p className="line-clamp-2 text-sm text-neutral-700 dark:text-neutral-300">
+                                  {result.data?.summary || 'Research completed successfully'}
+                                </p>
+                              </td>
+                              <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                                <button
+                                  onClick={() => {
+                                    setSelectedResult(result);
+                                    setDrawerOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  View Results
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1254,6 +1261,16 @@ export default function ClientDetail() {
           </div>
         </div>
       )}
+
+      {/* Research Results Drawer */}
+      <ResearchResultsDrawer
+        result={selectedResult}
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setSelectedResult(null);
+        }}
+      />
     </div>
   );
 }
