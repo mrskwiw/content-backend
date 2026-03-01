@@ -623,16 +623,58 @@ def _format_competitive_analysis(data: dict) -> List[str]:
 def _format_content_gap(data: dict) -> List[str]:
     """Format content gap analysis results."""
     lines = []
-    if "gaps" in data and isinstance(data["gaps"], list):
-        lines.append("**Content Gaps Identified:**")
+
+    # Executive summary
+    if "executive_summary" in data:
+        lines.append(data["executive_summary"])
         lines.append("")
-        for gap in data["gaps"][:10]:
+
+    # Total gaps and opportunity
+    if "total_gaps_identified" in data:
+        lines.append(f"**Total Gaps Identified:** {data['total_gaps_identified']}")
+    if "estimated_opportunity" in data:
+        lines.append(f"**Estimated Opportunity:** {data['estimated_opportunity']}")
+        lines.append("")
+
+    # Critical gaps
+    critical_gaps = data.get("critical_gaps", [])
+    if critical_gaps:
+        lines.append("### Critical Priority Gaps")
+        lines.append("")
+        for gap in critical_gaps[:5]:  # Limit to 5 critical gaps
             if isinstance(gap, dict):
-                topic = gap.get("topic", "Unknown")
-                priority = gap.get("priority", "N/A")
-                lines.append(f"- **{topic}** (Priority: {priority})")
-            else:
-                lines.append(f"- {gap}")
+                title = gap.get("gap_title", "Unknown")
+                gap_type = gap.get("gap_type", "N/A")
+                description = gap.get("description", "")
+                impact = gap.get("business_impact", "")
+                lines.append(f"**{title}** ({gap_type})")
+                if description:
+                    lines.append(f"  - {description}")
+                if impact:
+                    lines.append(f"  - Impact: {impact}")
+                lines.append("")
+
+    # High priority gaps
+    high_gaps = data.get("high_priority_gaps", [])
+    if high_gaps:
+        lines.append("### High Priority Gaps")
+        lines.append("")
+        for gap in high_gaps[:3]:
+            if isinstance(gap, dict):
+                title = gap.get("gap_title", "Unknown")
+                description = gap.get("description", "")
+                lines.append(f"- **{title}**: {description}")
+        lines.append("")
+
+    # Immediate actions
+    actions = data.get("immediate_actions", [])
+    if actions:
+        lines.append("### Immediate Actions")
+        lines.append("")
+        for action in actions[:5]:
+            lines.append(f"- {action}")
+        lines.append("")
+
     return lines
 
 

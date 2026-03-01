@@ -146,6 +146,27 @@ class ResearchTool(ABC):
             # Calculate duration
             duration = (datetime.now() - start_time).total_seconds()
 
+            # Serialize analysis data for database storage
+            # Try to convert Pydantic models to dict, fallback to JSON serialization
+            try:
+                if hasattr(analysis, "model_dump"):
+                    # Pydantic v2 model
+                    analysis_data = analysis.model_dump()
+                elif hasattr(analysis, "dict"):
+                    # Pydantic v1 model
+                    analysis_data = analysis.dict()
+                elif isinstance(analysis, dict):
+                    # Already a dict
+                    analysis_data = analysis
+                else:
+                    # Try JSON serialization as fallback
+                    import json
+
+                    analysis_data = json.loads(json.dumps(analysis, default=str))
+            except Exception as e:
+                logger.warning(f"Could not serialize analysis data: {e}")
+                analysis_data = {"error": "Could not serialize analysis data"}
+
             # Create result
             result = ResearchResult(
                 tool_name=self.tool_name,
@@ -157,6 +178,7 @@ class ResearchTool(ABC):
                     "duration_seconds": duration,
                     "price": self.price,
                     "inputs_summary": self._summarize_inputs(inputs),
+                    "data": analysis_data,  # Include analysis data for database storage
                 },
             )
 
