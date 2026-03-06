@@ -100,6 +100,10 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
             business_desc, target_audience, main_topics, primary_keywords
         )
 
+        # Step 2.5: Enrich keywords with Google Trends data (if available)
+        all_keywords = primary_keywords + secondary_keywords
+        self._enrich_with_google_trends(all_keywords)
+
         # Step 3: Create keyword clusters
         clusters = self._create_keyword_clusters(main_topics, primary_keywords, secondary_keywords)
 
@@ -281,6 +285,133 @@ keyword, search_intent, difficulty, monthly_volume_estimate, relevance_score, lo
         except Exception as e:
             logger.error(f"Failed to research secondary keywords: {e}")
             return self._generate_fallback_secondary_keywords(primary_keywords)
+
+    def _enrich_with_google_trends(self, keywords: List[Keyword]) -> None:
+        """
+        Enrich keywords with Google Trends data (in-place modification).
+
+        Fetches trend data for up to 5 keywords at a time and updates:
+        - trend_score: Average interest score (0-100)
+        - trend_direction: rising/stable/declining/seasonal
+        - seasonal: Boolean indicating seasonal variation
+        - related_queries: Top related queries from Google Trends
+
+        Args:
+            keywords: List of Keyword objects to enrich (modified in-place)
+        """
+        try:
+            from pytrends.request import TrendReq
+            import time
+            import statistics
+
+            # Initialize pytrends client
+            pytrends = TrendReq(
+                hl="en-US",
+                tz=360,
+                timeout=(10, 25),
+                retries=2,
+                backoff_factor=0.5,
+            )
+
+            logger.info(f"Enriching {len(keywords)} keywords with Google Trends data")
+
+            # Process keywords in batches of 5 (Google Trends limit)
+            for i in range(0, min(len(keywords), 10), 5):  # Limit to first 10 keywords
+                batch = keywords[i : i + 5]
+                keyword_terms = [kw.keyword for kw in batch]
+
+                try:
+                    # Rate limiting - wait 2 seconds between requests
+                    if i > 0:
+                        time.sleep(2)
+
+                    # Build payload for this batch
+                    pytrends.build_payload(
+                        keyword_terms,
+                        timeframe="today 12-m",  # Last 12 months
+                        geo="",  # Worldwide
+                    )
+
+                    # Get interest over time
+                    interest_df = pytrends.interest_over_time()
+
+                    if not interest_df.empty:
+                        # Remove "isPartial" column if present
+                        if "isPartial" in interest_df.columns:
+                            interest_df = interest_df.drop("isPartial", axis=1)
+
+                        # Enrich each keyword with trends data
+                        for keyword_obj in batch:
+                            keyword_term = keyword_obj.keyword
+
+                            if keyword_term in interest_df.columns:
+                                values = interest_df[keyword_term].tolist()
+
+                                # Calculate trend score (average of recent values)
+                                if values:
+                                    keyword_obj.trend_score = float(
+                                        statistics.mean(values[-4:])
+                                    )  # Last 4 data points
+
+                                    # Determine trend direction
+                                    if len(values) >= 8:
+                                        recent_avg = statistics.mean(values[-4:])
+                                        older_avg = statistics.mean(values[-8:-4])
+
+                                        # Check for seasonality (high variance)
+                                        variance = (
+                                            statistics.stdev(values) if len(values) > 1 else 0
+                                        )
+                                        keyword_obj.seasonal = (
+                                            variance > 25
+                                        )  # High variance = seasonal
+
+                                        if keyword_obj.seasonal:
+                                            keyword_obj.trend_direction = "seasonal"
+                                        elif recent_avg > older_avg * 1.2:
+                                            keyword_obj.trend_direction = "rising"
+                                        elif recent_avg < older_avg * 0.8:
+                                            keyword_obj.trend_direction = "declining"
+                                        else:
+                                            keyword_obj.trend_direction = "stable"
+                                    else:
+                                        keyword_obj.trend_direction = "stable"
+
+                    # Get related queries (top queries only)
+                    try:
+                        related_queries = pytrends.related_queries()
+
+                        for keyword_obj in batch:
+                            keyword_term = keyword_obj.keyword
+
+                            if (
+                                keyword_term in related_queries
+                                and related_queries[keyword_term]["top"] is not None
+                            ):
+                                top_queries = related_queries[keyword_term]["top"]
+                                if not top_queries.empty:
+                                    # Get top 5 related queries
+                                    keyword_obj.related_queries = (
+                                        top_queries["query"].head(5).tolist()
+                                    )
+                    except Exception as e:
+                        logger.debug(f"Could not fetch related queries: {e}")
+
+                except Exception as e:
+                    logger.warning(f"Failed to fetch trends for batch {i//5 + 1}: {e}")
+                    continue
+
+            # Count how many keywords were enriched
+            enriched_count = sum(1 for kw in keywords if kw.trend_score is not None)
+            logger.info(
+                f"Successfully enriched {enriched_count}/{len(keywords)} keywords with Google Trends data"
+            )
+
+        except ImportError:
+            logger.warning("pytrends not installed - skipping Google Trends enrichment")
+        except Exception as e:
+            logger.error(f"Error during Google Trends enrichment: {e}")
+            # Continue without trends data - not critical to fail the entire analysis
 
     def _create_keyword_clusters(
         self,
@@ -621,6 +752,21 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
 - **Question-based:** {"Yes" if kw.question_based else "No"}
 - **Related Topics:** {", ".join(kw.related_topics)}
 """
+            # Add Google Trends data if available
+            if kw.trend_score is not None:
+                md += f"- **Google Trends Score:** {kw.trend_score:.1f}/100\n"
+            if kw.trend_direction:
+                trend_emoji = {
+                    "rising": "📈",
+                    "stable": "➡️",
+                    "declining": "📉",
+                    "seasonal": "🔄",
+                }.get(kw.trend_direction, "")
+                md += f"- **Trend Direction:** {kw.trend_direction.title()} {trend_emoji}\n"
+            if kw.seasonal:
+                md += "- **Seasonal Variation:** Yes 🔄\n"
+            if kw.related_queries:
+                md += f"- **Related Searches:** {', '.join(kw.related_queries[:3])}\n"
 
         md += f"""
 ---

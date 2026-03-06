@@ -1,7 +1,7 @@
 """Data models for SEO keyword research"""
 
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from pydantic import ConfigDict, BaseModel, Field
 
@@ -35,6 +35,21 @@ class Keyword(BaseModel):
     question_based: bool = Field(default=False, description="Is this phrased as a question?")
     related_topics: List[str] = Field(
         default_factory=list, description="Content topics this supports"
+    )
+
+    # Google Trends data (optional - may not be available for all keywords)
+    trend_score: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=100.0,
+        description="Google Trends interest score (0-100, recent avg)",
+    )
+    trend_direction: Optional[str] = Field(
+        default=None, description="Trend direction: rising, stable, declining, or seasonal"
+    )
+    seasonal: bool = Field(default=False, description="Shows seasonal variation in search interest")
+    related_queries: List[str] = Field(
+        default_factory=list, description="Top related queries from Google Trends"
     )
 
 
