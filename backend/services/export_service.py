@@ -636,6 +636,25 @@ def _format_content_gap(data: dict) -> List[str]:
         lines.append(f"**Estimated Opportunity:** {data['estimated_opportunity']}")
         lines.append("")
 
+    # Generic gaps field (for simple data structures)
+    gaps = data.get("gaps", [])
+    if gaps:
+        lines.append("**Content Gaps Identified:**")
+        lines.append("")
+        for gap in gaps:
+            if isinstance(gap, dict):
+                # Handle dict with topic/priority or similar fields
+                topic = gap.get("topic", gap.get("gap_title", "Unknown"))
+                priority = gap.get("priority", gap.get("gap_priority", ""))
+                if priority:
+                    lines.append(f"- **{topic}** (Priority: {priority})")
+                else:
+                    lines.append(f"- **{topic}**")
+            else:
+                # Handle simple string gaps
+                lines.append(f"- {gap}")
+        lines.append("")
+
     # Critical gaps
     critical_gaps = data.get("critical_gaps", [])
     if critical_gaps:
