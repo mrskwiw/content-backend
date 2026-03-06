@@ -64,7 +64,7 @@ export const RunSchema = z.object({
   id: z.string(),
   projectId: z.string(),
   isBatch: z.boolean().optional(),
-  params: z.record(z.string(), z.any()).optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
   startedAt: z.string().datetime(),
   completedAt: z.string().datetime().optional(),
   logs: z.array(z.string()).optional(),
@@ -149,7 +149,7 @@ export const AuditEntrySchema = z.object({
   targetType: z.enum(['project', 'run', 'deliverable', 'post', 'client']),
   targetId: z.string(),
   timestamp: z.string().datetime(),
-  metadata: z.record(z.string(), z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 export type AuditEntry = z.infer<typeof AuditEntrySchema>;
 
@@ -166,6 +166,7 @@ export const GenerateAllSchema = z.object({
   isBatch: z.boolean().default(true),
   templateQuantities: z.record(z.string(), z.number()).optional(),
   customTopics: z.array(z.string()).optional(),  // NEW: topic override for generation
+  targetPlatform: z.string().optional(),  // NEW: target platform for platform-specific generation
 });
 export type GenerateAllInput = z.infer<typeof GenerateAllSchema>;
 
@@ -239,7 +240,7 @@ export const ResearchResultSchema = z.object({
   toolPrice: z.number().optional().nullable(),
   params: z.record(z.string(), z.any()).optional().nullable(),
   outputs: z.record(z.string(), z.string()),
-  data: z.record(z.string(), z.any()).optional().nullable(),
+  data: z.record(z.string(), z.unknown()).optional().nullable(),
   status: z.string(),
   errorMessage: z.string().optional().nullable(),
   durationSeconds: z.number().optional().nullable(),

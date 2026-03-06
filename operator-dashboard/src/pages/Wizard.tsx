@@ -471,6 +471,7 @@ export default function Wizard() {
                 clientId={clientId}
                 templateQuantities={templateQuantities}
                 customTopics={customTopics}
+                targetPlatform={targetPlatform}
                 onStarted={handleGenerationStarted}
               />
               <Card>

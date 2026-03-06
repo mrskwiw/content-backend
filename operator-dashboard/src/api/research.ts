@@ -42,6 +42,7 @@ export interface ResearchResultListResponse {
   results: ResearchResult[];
   total: number;
   clientId?: string;
+  projectId?: string;
 }
 
 export const researchApi = {
@@ -73,14 +74,28 @@ export const researchApi = {
 
   /**
    * Fetch full research results for a client (includes outputs, data, etc.)
+   * Returns full response with results array, total count, and IDs
    */
-  async getClientResearchResults(clientId: string, toolName?: string): Promise<ResearchResult[]> {
+  async getClientResearchResults(clientId: string, toolName?: string): Promise<ResearchResultListResponse> {
     const params = toolName ? { tool_name: toolName } : {};
     const { data } = await apiClient.get<ResearchResultListResponse>(
       `/api/research/results/client/${clientId}`,
       { params }
     );
-    return data.results;
+    return data;
+  },
+
+  /**
+   * Fetch full research results for a project (includes outputs, data, etc.)
+   * Returns full response with results array, total count, and IDs
+   */
+  async getProjectResearchResults(projectId: string, toolName?: string): Promise<ResearchResultListResponse> {
+    const params = toolName ? { tool_name: toolName } : {};
+    const { data } = await apiClient.get<ResearchResultListResponse>(
+      `/api/research/results/project/${projectId}`,
+      { params }
+    );
+    return data;
   },
 
   /**
@@ -94,5 +109,12 @@ export const researchApi = {
       `/api/research/results/${resultId}/output/${outputFormat}`
     );
     return data;
+  },
+
+  /**
+   * Delete a research result
+   */
+  async deleteResult(resultId: string): Promise<void> {
+    await apiClient.delete(`/api/research/results/${resultId}`);
   },
 };

@@ -11,10 +11,11 @@ interface Props {
   clientId: string;
   templateQuantities?: Record<number, number>;
   customTopics?: string[];  // NEW: topic override for content generation
+  targetPlatform?: string;  // NEW: target platform for platform-specific generation
   onStarted?: (run: Run) => void;
 }
 
-export function GenerationPanel({ projectId, clientId, templateQuantities, customTopics, onStarted }: Props) {
+export function GenerationPanel({ projectId, clientId, templateQuantities, customTopics, targetPlatform, onStarted }: Props) {
   const [runId, setRunId] = useState<string | null>(null);
   const [pollingEnabled, setPollingEnabled] = useState(false);
   // Ref to prevent onStarted firing multiple times when parent re-renders
@@ -92,6 +93,7 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
               isBatch: true,
               templateQuantities,
               customTopics,
+              targetPlatform,
             })
           }
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"

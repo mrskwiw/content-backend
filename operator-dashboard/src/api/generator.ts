@@ -11,6 +11,7 @@ export const generatorApi = {
       is_batch: input.isBatch ?? true,
       template_quantities: input.templateQuantities,  // FIX: was missing, causing template distribution to be ignored
       custom_topics: input.customTopics,  // NEW: topic override for content generation
+      target_platform: input.targetPlatform,  // NEW: target platform for platform-specific generation
     };
     const { data } = await apiClient.post<Run>('/api/generator/generate-all', backendInput);
     return data;
