@@ -28,6 +28,7 @@ import {
   Upload,
   HardDrive,
   Users,
+  TrendingUp,
 } from 'lucide-react';
 
 // Interfaces
@@ -44,7 +45,7 @@ interface ApiKey {
 interface Integration {
   id: string;
   name: string;
-  type: 'anthropic' | 'email' | 'storage' | 'analytics';
+  type: 'anthropic' | 'pytrends' | 'email' | 'storage' | 'analytics';
   status: 'connected' | 'disconnected' | 'error';
   configured: boolean;
   lastSync?: string;
@@ -96,6 +97,14 @@ const mockIntegrations: Integration[] = [
   },
   {
     id: '2',
+    name: 'Google Trends (Pytrends)',
+    type: 'pytrends',
+    status: 'connected',
+    configured: true,
+    lastSync: new Date().toISOString(), // Will be updated by health check
+  },
+  {
+    id: '3',
     name: 'Email Service (SendGrid)',
     type: 'email',
     status: 'connected',
@@ -103,14 +112,14 @@ const mockIntegrations: Integration[] = [
     lastSync: '2025-12-17T12:00:00',
   },
   {
-    id: '3',
+    id: '4',
     name: 'Cloud Storage (S3)',
     type: 'storage',
     status: 'disconnected',
     configured: false,
   },
   {
-    id: '4',
+    id: '5',
     name: 'Analytics (Google Analytics)',
     type: 'analytics',
     status: 'error',
@@ -155,11 +164,34 @@ export default function Settings() {
     },
   });
 
-  const { data: integrations = mockIntegrations } = useQuery({
-    queryKey: ['integrations'],
+  // Fetch pytrends health status
+  const { data: pytrendsHealth } = useQuery({
+    queryKey: ['health', 'pytrends'],
     queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return mockIntegrations;
+      const response = await fetch('/api/health/pytrends');
+      if (!response.ok) throw new Error('Failed to check pytrends health');
+      return response.json();
+    },
+    enabled: activeTab === 'integrations', // Only check when on integrations tab
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const { data: integrations = mockIntegrations } = useQuery({
+    queryKey: ['integrations', pytrendsHealth],
+    queryFn: async () => {
+      // Update Google Trends status based on health check
+      return mockIntegrations.map(integration => {
+        if (integration.type === 'pytrends' && pytrendsHealth) {
+          return {
+            ...integration,
+            status: pytrendsHealth.status === 'connected' ? 'connected' :
+                    pytrendsHealth.status === 'warning' ? 'error' : 'error',
+            configured: pytrendsHealth.status === 'connected',
+            lastSync: new Date().toISOString(),
+          };
+        }
+        return integration;
+      });
     },
   });
 
@@ -334,6 +366,8 @@ export default function Settings() {
     switch (type) {
       case 'anthropic':
         return Server;
+      case 'pytrends':
+        return TrendingUp;
       case 'email':
         return Mail;
       case 'storage':
