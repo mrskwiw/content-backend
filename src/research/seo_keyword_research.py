@@ -304,14 +304,20 @@ keyword, search_intent, difficulty, monthly_volume_estimate, relevance_score, lo
             import time
             import statistics
 
-            # Initialize pytrends client
-            pytrends = TrendReq(
-                hl="en-US",
-                tz=360,
-                timeout=(10, 25),
-                retries=2,
-                backoff_factor=0.5,
-            )
+            # Initialize pytrends client with compatibility handling
+            # Note: urllib3 2.0+ uses 'allowed_methods' instead of 'method_whitelist'
+            try:
+                pytrends = TrendReq(
+                    hl="en-US",
+                    tz=360,
+                    timeout=(10, 25),
+                    retries=2,
+                    backoff_factor=0.5,
+                )
+            except TypeError:
+                # Fallback for older pytrends/urllib3 compatibility
+                # Create without retry parameters and let pytrends use defaults
+                pytrends = TrendReq(hl="en-US", tz=360, timeout=(10, 25))
 
             logger.info(f"Enriching {len(keywords)} keywords with Google Trends data")
 
