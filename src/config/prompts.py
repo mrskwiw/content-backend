@@ -47,6 +47,7 @@ Extract the following information and format it as JSON:
 {
   "company_name": "Company name",
   "business_description": "Brief description of what they do",
+  "industry": "Industry or sector (e.g., SaaS, Healthcare, Finance, E-commerce)",
   "ideal_customer": "Description of ideal customer",
   "main_problem_solved": "Main problem the business solves",
   "customer_pain_points": ["pain point 1", "pain point 2", ...],
@@ -66,6 +67,7 @@ Guidelines:
 - Capture specific phrases and language patterns they use
 - Note any personal stories or examples mentioned
 - For data_usage, choose: "minimal", "moderate", or "heavy"
+- For industry, infer from business_description if not explicitly stated (e.g., "AI platform" → "SaaS", "medical device company" → "Healthcare")
 - Be thorough but concise
 
 Return ONLY the JSON, no additional commentary."""
