@@ -125,11 +125,11 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-red-900 dark:text-red-100">Error</h3>
-                  <p className="mt-1 text-sm text-red-800 dark:text-red-200">{String(result.errorMessage)}</p>
+                  <p className="mt-1 text-sm text-red-800 dark:text-red-200">{result.errorMessage as string}</p>
                 </div>
               </div>
             </div>
-          )}
+          ) as React.ReactNode}
 
           {/* Executive Summary */}
           {result.data && typeof result.data === 'object' && 'summary' in result.data && result.data.summary && (
@@ -139,11 +139,11 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
               </h3>
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-4">
                 <p className="text-sm text-neutral-900 dark:text-neutral-100 leading-relaxed">
-                  {String(result.data.summary)}
+                  {result.data.summary as string}
                 </p>
               </div>
             </section>
-          )}
+          ) as React.ReactNode}
 
           {/* Key Findings (if available in data) */}
           {result.data?.key_findings && Array.isArray(result.data.key_findings) && (

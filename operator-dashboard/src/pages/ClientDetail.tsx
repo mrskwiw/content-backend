@@ -858,7 +858,7 @@ export default function ClientDetail() {
                               </td>
                               <td className="px-6 py-4 max-w-md">
                                 <p className="line-clamp-2 text-sm text-neutral-700 dark:text-neutral-300">
-                                  {result.data?.summary || 'Research completed successfully'}
+                                  {(result.data?.summary as string) || 'Research completed successfully'}
                                 </p>
                               </td>
                               <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
