@@ -35,7 +35,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          <FlaskConicalclassName="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <FlaskConical className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           Research Insights
         </h3>
         {completedResearch.length > 0 && onViewAll && (
@@ -51,7 +51,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
 
       {completedResearch.length === 0 ? (
         <div className="text-center py-8">
-          <FlaskConicalclassName="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
+          <FlaskConical className="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
             No research results yet
           </p>
@@ -65,7 +65,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 p-3">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
-                <FlaskConicalclassName="h-4 w-4" />
+                <FlaskConical className="h-4 w-4" />
                 <span className="text-xs font-medium">Tools Completed</span>
               </div>
               <p className="text-2xl font-bold text-amber-900 dark:text-amber-100">
