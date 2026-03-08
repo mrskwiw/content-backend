@@ -321,13 +321,13 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
   const getStatusBadge = (status?: string) => {
     if (status === 'coming_soon') {
       return (
-        <span className="inline-block rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+        <span className="inline-block rounded-md bg-slate-100 dark:bg-slate-700 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300">
           Coming Soon
         </span>
       );
     }
     return (
-      <span className="inline-block rounded-md bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
+      <span className="inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
         Available
       </span>
     );
@@ -352,9 +352,9 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-12 shadow-sm">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-        <span className="ml-2 text-sm text-slate-600">Loading research tools...</span>
+      <div className="flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-800 p-12 shadow-sm">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
+        <span className="ml-2 text-sm text-slate-600 dark:text-neutral-400">Loading research tools...</span>
       </div>
     );
   }
@@ -495,35 +495,35 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
 
   // Show tool selection step
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-800 p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FlaskConical className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-slate-900">Research Tools</h3>
+          <FlaskConical className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">Research Tools</h3>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={selectAvailable}
-            className="rounded-md border border-blue-600 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+            className="rounded-md border border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30"
           >
             Select All Available
           </button>
           <button
             onClick={clearAll}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-md border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-700"
           >
             Clear
           </button>
         </div>
       </div>
 
-      <p className="mb-6 text-sm text-slate-600">
+      <p className="mb-6 text-sm text-slate-600 dark:text-neutral-400">
         Select research tools to run for this project. Research adds depth to content generation and helps identify
         opportunities.
       </p>
 
       {totalPrice > 0 && (
-        <div className="mb-4 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <div className="mb-4 rounded-md bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-sm text-blue-800 dark:text-blue-200">
           <div className="flex items-center justify-between">
             <div>
               <strong>{selected.size} tools selected</strong>
@@ -543,15 +543,15 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
           if (categoryTools.length === 0) return null;
 
           return (
-            <div key={category.name} className="rounded-lg border border-slate-200 p-4">
+            <div key={category.name} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900">{category.label}</h4>
-                  <p className="text-xs text-slate-600">{category.description}</p>
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">{category.label}</h4>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400">{category.description}</p>
                 </div>
                 <button
                   onClick={() => selectByCategory(category.name)}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                 >
                   Select All
                 </button>
@@ -570,25 +570,25 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                       disabled={!isAvailable}
                       className={`group relative rounded-lg border-2 p-3 text-left transition-all ${
                         isSelected
-                          ? 'border-blue-600 bg-blue-50 shadow-md'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                          ? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-800 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm'
                       } ${!isAvailable && 'cursor-not-allowed opacity-60'}`}
                     >
                       <div className="flex items-start gap-2">
                         {isSelected ? (
-                          <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                          <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                         ) : (
-                          <Circle className="h-5 w-5 flex-shrink-0 text-slate-300 group-hover:text-slate-400" />
+                          <Circle className="h-5 w-5 flex-shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 dark:group-hover:text-slate-500" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <h5 className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-slate-900'}`}>
+                          <h5 className={`text-sm font-semibold ${isSelected ? 'text-blue-900 dark:text-blue-200' : 'text-slate-900 dark:text-neutral-100'}`}>
                             {tool.label}
                           </h5>
-                          {tool.description && <p className="mt-1 text-xs text-slate-600">{tool.description}</p>}
+                          {tool.description && <p className="mt-1 text-xs text-slate-600 dark:text-neutral-400">{tool.description}</p>}
                           <div className="mt-2 flex items-center justify-between gap-2">
                             {getStatusBadge(tool.status)}
                             {tool.price && (
-                              <span className="text-xs font-medium text-slate-700">${tool.price.toFixed(2)}</span>
+                              <span className="text-xs font-medium text-slate-700 dark:text-neutral-300">${tool.price.toFixed(2)}</span>
                             )}
                           </div>
                           {(() => {
