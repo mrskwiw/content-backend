@@ -52,12 +52,25 @@ interface Props {
 
 type Step = 'selection' | 'data-collection' | 'executing';
 
+interface ExecutionState {
+  currentTool: string | null;
+  completed: string[];
+  failed: Array<{ tool: string; error: string }>;
+  isComplete: boolean;
+}
+
 // Memoized to prevent re-renders when parent updates (Performance optimization - December 25, 2025)
 export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, onContinue }: Props) {
   const [step, setStep] = useState<Step>('selection');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [results, setResults] = useState<Map<string, any>>(new Map());
+  const [executionState, setExecutionState] = useState<ExecutionState>({
+    currentTool: null,
+    completed: [],
+    failed: [],
+    isComplete: false,
+  });
 
   // Fetch available research tools
   const { data: tools = [], isLoading } = useQuery({
@@ -203,23 +216,78 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       return;
     }
 
-    const failed: string[] = [];
+    // Reset execution state
+    setExecutionState({
+      currentTool: null,
+      completed: [],
+      failed: [],
+      isComplete: false,
+    });
+
+    const completed: string[] = [];
+    const failed: Array<{ tool: string; error: string }> = [];
 
     for (const tool of selected) {
+      // Update current tool being executed
+      setExecutionState(prev => ({ ...prev, currentTool: tool }));
+
       const toolParams = params[tool] || params;
       try {
-        await runResearchMutation.mutateAsync({ tool, params: toolParams });
-      } catch {
-        // Tool failed - record and continue; successful results still shown
-        failed.push(tool);
+        // Add 5 minute timeout per tool
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Tool execution timed out after 5 minutes')), 5 * 60 * 1000)
+        );
+
+        const executionPromise = runResearchMutation.mutateAsync({ tool, params: toolParams });
+
+        await Promise.race([executionPromise, timeoutPromise]);
+
+        completed.push(tool);
+        setExecutionState(prev => ({
+          ...prev,
+          completed: [...prev.completed, tool],
+          currentTool: null,
+        }));
+      } catch (error) {
+        // Tool failed - record error and continue
+        const errorMsg = error instanceof Error ? error.message : getApiErrorMessage(error);
+        failed.push({ tool, error: errorMsg });
+        setExecutionState(prev => ({
+          ...prev,
+          failed: [...prev.failed, { tool, error: errorMsg }],
+          currentTool: null,
+        }));
       }
     }
 
-    if (failed.length > 0 && failed.length === selected.size) {
-      alert('All research tools failed. Please check your client profile.');
-      return;
-    }
+    // Mark execution as complete
+    setExecutionState(prev => ({ ...prev, isComplete: true }));
 
+    // Don't auto-advance if there are failures - let user review
+    if (failed.length === 0 && onContinue) {
+      onContinue();
+    }
+  };
+
+  const handleRetryFailed = () => {
+    // Retry only the failed tools
+    const failedTools = new Set(executionState.failed.map(f => f.tool));
+    setSelected(failedTools);
+    setStep('data-collection');
+  };
+
+  const handleCancelExecution = () => {
+    // Go back to selection
+    setStep('selection');
+    setExecutionState({
+      currentTool: null,
+      completed: [],
+      failed: [],
+      isComplete: false,
+    });
+  };
+
+  const handleContinueAfterExecution = () => {
     if (onContinue) {
       onContinue();
     }
@@ -295,26 +363,121 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
 
   // Show executing step
   if (step === 'executing') {
+    const { currentTool, completed, failed, isComplete } = executionState;
+    const totalTools = selected.size;
+    const successCount = completed.length;
+    const failedCount = failed.length;
+    const inProgress = !isComplete && currentTool !== null;
+
     return (
       <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-900 p-8 shadow-sm">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400" />
+          {/* Status Icon */}
+          {inProgress && <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400" />}
+          {isComplete && failedCount === 0 && (
+            <CheckCircle2 className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+          )}
+          {isComplete && failedCount > 0 && failedCount < totalTools && (
+            <AlertCircle className="h-12 w-12 text-amber-600 dark:text-amber-400" />
+          )}
+          {isComplete && failedCount === totalTools && (
+            <AlertCircle className="h-12 w-12 text-red-600 dark:text-red-400" />
+          )}
+
+          {/* Status Message */}
           <div className="text-center">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-              Running Research Tools
+              {inProgress && 'Running Research Tools'}
+              {isComplete && failedCount === 0 && 'All Tools Completed Successfully'}
+              {isComplete && failedCount > 0 && failedCount < totalTools && 'Completed with Some Failures'}
+              {isComplete && failedCount === totalTools && 'All Tools Failed'}
             </h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              Executing {selected.size} research {selected.size === 1 ? 'tool' : 'tools'}...
-            </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-2">
-              Tools: {Array.from(selected).join(', ')}
-            </p>
+            {inProgress && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Currently executing: <span className="font-medium">{TOOL_LABELS[currentTool] || currentTool}</span>
+              </p>
+            )}
           </div>
-          <div className="mt-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 px-4 py-3 max-w-md">
-            <p className="text-sm text-blue-800 dark:text-blue-300">
-              {results.size} of {selected.size} completed
-            </p>
+
+          {/* Progress Summary */}
+          <div className="mt-4 rounded-lg bg-neutral-50 dark:bg-neutral-800 px-4 py-3 max-w-md w-full">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-neutral-600 dark:text-neutral-400">Progress:</span>
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                {successCount + failedCount} of {totalTools}
+              </span>
+            </div>
+            {successCount > 0 && (
+              <div className="flex items-center justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                <span>✓ Completed:</span>
+                <span className="font-medium">{successCount}</span>
+              </div>
+            )}
+            {failedCount > 0 && (
+              <div className="flex items-center justify-between text-sm text-red-600 dark:text-red-400">
+                <span>✗ Failed:</span>
+                <span className="font-medium">{failedCount}</span>
+              </div>
+            )}
           </div>
+
+          {/* Failed Tools Details */}
+          {failed.length > 0 && (
+            <div className="mt-4 w-full max-w-2xl rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+              <h4 className="font-medium text-red-900 dark:text-red-100 mb-2 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Failed Tools
+              </h4>
+              <div className="space-y-2">
+                {failed.map(({ tool, error }) => (
+                  <div key={tool} className="text-sm">
+                    <p className="font-medium text-red-800 dark:text-red-200">
+                      {TOOL_LABELS[tool] || tool}
+                    </p>
+                    <p className="text-red-700 dark:text-red-300 text-xs mt-1">{error}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          {isComplete && (
+            <div className="flex gap-3 mt-6">
+              {failedCount > 0 && (
+                <button
+                  onClick={handleRetryFailed}
+                  className="rounded-lg bg-amber-600 dark:bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 dark:hover:bg-amber-600"
+                >
+                  Retry Failed Tools
+                </button>
+              )}
+              <button
+                onClick={handleCancelExecution}
+                className="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+              >
+                Back to Selection
+              </button>
+              {successCount > 0 && (
+                <button
+                  onClick={handleContinueAfterExecution}
+                  className="rounded-lg bg-emerald-600 dark:bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 dark:hover:bg-emerald-600"
+                >
+                  Continue with {successCount} {successCount === 1 ? 'Result' : 'Results'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Cancel Button while executing */}
+          {!isComplete && (
+            <button
+              onClick={handleCancelExecution}
+              className="mt-4 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 underline"
+            >
+              Cancel Execution
+            </button>
+          )}
         </div>
       </div>
     );
