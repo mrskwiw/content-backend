@@ -2,6 +2,7 @@ import { useState, memo, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign, Clock, Link2, AlertCircle } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';
+import { clientsApi } from '@/api/clients';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { ResearchDataCollectionPanel } from './ResearchDataCollectionPanel';
 
@@ -92,6 +93,14 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     queryFn: () => projectId ? researchApi.getClientHistory(projectId) : Promise.resolve(null),
     enabled: !!projectId,
     staleTime: 60 * 1000, // 1 minute
+  });
+
+  // Fetch client data for pre-populating research tool inputs
+  const { data: clientData } = useQuery({
+    queryKey: ['client', clientId],
+    queryFn: () => clientId ? clientsApi.get(clientId) : Promise.resolve(null),
+    enabled: !!clientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Process history into map: tool_name -> most recent run date
@@ -355,6 +364,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     return (
       <ResearchDataCollectionPanel
         selectedTools={Array.from(selected)}
+        clientData={clientData || null}
         onContinue={handleDataCollected}
         onBack={() => setStep('selection')}
       />

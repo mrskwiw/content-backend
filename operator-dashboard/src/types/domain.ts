@@ -35,6 +35,7 @@ export const ClientSchema = z.object({
   platforms: z.array(PlatformSchema).optional(),
   customerPainPoints: z.array(z.string()).optional(),
   customerQuestions: z.array(z.string()).optional(),
+  industry: z.string().optional(),
 });
 export type Client = z.infer<typeof ClientSchema>;
 
@@ -227,6 +228,7 @@ export const ClientBriefSchema = z.object({
   platforms: z.array(PlatformSchema).optional(),
   customerPainPoints: z.array(z.string()).optional(),
   customerQuestions: z.array(z.string()).optional(),
+  industry: z.string().optional(),
 });
 export type ClientBrief = z.infer<typeof ClientBriefSchema>;
 

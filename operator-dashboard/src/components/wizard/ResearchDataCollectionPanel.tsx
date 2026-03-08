@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, Button, Input, Textarea } from '@/components/ui';
 import { AlertCircle, Plus, X, FileText } from 'lucide-react';
 import { ContentAuditCollector } from './ContentAuditCollector';
+import type { Client } from '@/types/domain';
 
 interface ResearchDataCollectionPanelProps {
   selectedTools: string[];
+  clientData: Client | null;
   onContinue: (collectedData: Record<string, unknown>) => void;
   onBack: () => void;
 }
@@ -118,11 +120,22 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
 
 export function ResearchDataCollectionPanel({
   selectedTools,
+  clientData,
   onContinue,
   onBack
 }: ResearchDataCollectionPanelProps) {
   const [collectedData, setCollectedData] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-populate industry field from client data
+  useEffect(() => {
+    if (clientData?.industry && !collectedData.industry) {
+      setCollectedData(prev => ({
+        ...prev,
+        industry: clientData.industry || ''
+      }));
+    }
+  }, [clientData, collectedData.industry]);
 
   // Get all required fields for selected tools
   const requiredFields = selectedTools.flatMap(tool =>

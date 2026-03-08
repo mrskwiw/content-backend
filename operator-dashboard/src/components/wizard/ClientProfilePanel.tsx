@@ -14,6 +14,7 @@ interface Props {
 export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: _projectId, initialData, onSave }: Props) {
   const [formData, setFormData] = useState<Partial<ClientBrief>>({
     companyName: initialData?.companyName || '',
+    industry: initialData?.industry || '',
     businessDescription: initialData?.businessDescription || '',
     idealCustomer: initialData?.idealCustomer || '',
     mainProblemSolved: initialData?.mainProblemSolved || '',
@@ -38,6 +39,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     if (initialData) {
       setFormData({
         companyName: initialData.companyName || '',
+        industry: initialData.industry || '',
         businessDescription: initialData.businessDescription || '',
         idealCustomer: initialData.idealCustomer || '',
         mainProblemSolved: initialData.mainProblemSolved || '',
@@ -113,6 +115,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     // String fields: Use imported if current is empty
     const stringFields: (keyof ClientBrief)[] = [
       'companyName',
+      'industry',
       'businessDescription',
       'idealCustomer',
       'mainProblemSolved',
@@ -215,6 +218,27 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
             }`}
           />
           {errors.companyName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.companyName}</p>}
+        </div>
+
+        {/* Industry */}
+        <div>
+          <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-neutral-200">
+            <Building2 className="h-4 w-4 text-slate-600 dark:text-neutral-400" />
+            Industry
+          </label>
+          <input
+            type="text"
+            value={formData.industry}
+            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+            placeholder="e.g., SaaS, Healthcare, Finance, E-commerce"
+            className={`w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 ${
+              errors.industry ? 'border-rose-500 dark:border-rose-400' : 'border-slate-200 dark:border-slate-700'
+            }`}
+          />
+          {errors.industry && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.industry}</p>}
+          <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
+            Optional. Helps research tools provide more relevant insights. Will be auto-inferred from business description if not provided.
+          </p>
         </div>
 
         {/* Business Description */}
