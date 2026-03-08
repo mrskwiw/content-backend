@@ -178,14 +178,15 @@ export default function Settings() {
 
   const { data: integrations = mockIntegrations } = useQuery({
     queryKey: ['integrations', pytrendsHealth],
-    queryFn: async () => {
+    queryFn: async (): Promise<Integration[]> => {
       // Update Google Trends status based on health check
       return mockIntegrations.map(integration => {
         if (integration.type === 'pytrends' && pytrendsHealth) {
+          const status: Integration['status'] = pytrendsHealth.status === 'connected' ? 'connected' :
+                    pytrendsHealth.status === 'warning' ? 'error' : 'error';
           return {
             ...integration,
-            status: pytrendsHealth.status === 'connected' ? 'connected' :
-                    pytrendsHealth.status === 'warning' ? 'error' : 'error',
+            status,
             configured: pytrendsHealth.status === 'connected',
             lastSync: new Date().toISOString(),
           };
@@ -1097,9 +1098,11 @@ function ConfigureIntegrationModal({
   const Icon = (() => {
     switch (integration.type) {
       case 'anthropic': return Server;
+      case 'pytrends': return TrendingUp;
       case 'email': return Mail;
       case 'storage': return Database;
       case 'analytics': return Globe;
+      default: return Server;
     }
   })();
 

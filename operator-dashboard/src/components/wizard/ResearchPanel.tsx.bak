@@ -1,48 +1,9 @@
 import { useState, memo, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign, Clock, Link2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign, Clock } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { ResearchDataCollectionPanel } from './ResearchDataCollectionPanel';
-
-// Tool prerequisites mapping (from backend research_prerequisites.py)
-const TOOL_PREREQUISITES: Record<string, { required: string[]; recommended: string[] }> = {
-  // Tier 1 - Foundation (no prerequisites)
-  voice_analysis: { required: [], recommended: [] },
-  brand_archetype: { required: [], recommended: [] },
-  seo_keyword_research: { required: [], recommended: [] },
-  audience_research: { required: [], recommended: [] },
-  competitive_analysis: { required: [], recommended: [] },
-
-  // Tier 2 - Analysis
-  content_gap_analysis: { required: [], recommended: ['competitive_analysis', 'seo_keyword_research'] },
-  market_trends_research: { required: [], recommended: ['seo_keyword_research'] },
-  icp_workshop: { required: [], recommended: ['audience_research'] },
-  content_audit: { required: [], recommended: [] },
-
-  // Tier 3 - Strategy
-  platform_strategy: { required: ['audience_research'], recommended: ['content_gap_analysis', 'market_trends_research'] },
-  story_mining: { required: [], recommended: ['voice_analysis', 'brand_archetype'] },
-
-  // Tier 4 - Execution
-  content_calendar: { required: ['seo_keyword_research', 'platform_strategy'], recommended: ['content_gap_analysis', 'market_trends_research'] },
-};
-
-// Tool name label mapping
-const TOOL_LABELS: Record<string, string> = {
-  voice_analysis: 'Voice Analysis',
-  brand_archetype: 'Brand Archetype',
-  seo_keyword_research: 'SEO Keywords',
-  audience_research: 'Audience Research',
-  competitive_analysis: 'Competitive Analysis',
-  content_gap_analysis: 'Content Gap',
-  market_trends_research: 'Market Trends',
-  icp_workshop: 'ICP Workshop',
-  content_audit: 'Content Audit',
-  platform_strategy: 'Platform Strategy',
-  story_mining: 'Story Mining',
-  content_calendar: 'Content Calendar',
-};
 
 interface Props {
   projectId?: string;
@@ -73,14 +34,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch completed tools for current project (for prerequisite checking)
-  const { data: completedToolsData } = useQuery({
-    queryKey: ['research', 'completed', projectId],
-    queryFn: () => projectId ? researchApi.getClientHistory(projectId) : Promise.resolve(null),
-    enabled: !!projectId,
-    staleTime: 60 * 1000, // 1 minute
-  });
-
   // Process history into map: tool_name -> most recent run date
   const toolHistory = useMemo(() => {
     if (!historyData?.results) return new Map<string, Date>();
@@ -99,42 +52,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     return map;
   }, [historyData]);
 
-  // Process completed tools for prerequisite checking
-  const completedTools = useMemo(() => {
-    if (!completedToolsData?.results) return new Set<string>();
-
-    const completed = new Set<string>();
-    completedToolsData.results.forEach((result) => {
-      if (result.status === 'completed') {
-        completed.add(result.toolName);
-      }
-    });
-
-    return completed;
-  }, [completedToolsData]);
-
-  // Helper: Check if a prerequisite is fulfilled
-  const isPrerequisiteFulfilled = (prereqToolName: string): boolean => {
-    // Prerequisite is fulfilled if it's already completed OR if it's in the current selection
-    return completedTools.has(prereqToolName) || selected.has(prereqToolName);
-  };
-
-  // Helper: Get prerequisite status for a tool
-  const getPrerequisiteStatus = (toolName: string) => {
-    const prereqs = TOOL_PREREQUISITES[toolName];
-    if (!prereqs) return { fulfilled: [], unfulfilled: [], hasUnfulfilled: false, requiredUnfulfilled: [] };
-
-    const allPrereqs = [...prereqs.required, ...prereqs.recommended];
-    const fulfilled = allPrereqs.filter(p => isPrerequisiteFulfilled(p));
-    const unfulfilled = allPrereqs.filter(p => !isPrerequisiteFulfilled(p));
-
-    return {
-      fulfilled,
-      unfulfilled,
-      hasUnfulfilled: unfulfilled.length > 0,
-      requiredUnfulfilled: prereqs.required.filter(p => !isPrerequisiteFulfilled(p)),
-    };
-  };
 
   // Run research mutation
   const runResearchMutation = useMutation({
@@ -431,61 +348,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                               <div className={`mt-2 flex items-center gap-1 text-xs ${colorClass}`}>
                                 <Clock className="h-3 w-3" />
                                 <span>Last run: {lastRun.text}</span>
-                              </div>
-                            );
-                          })()}
-                          {(() => {
-                            const prereqs = TOOL_PREREQUISITES[tool.name];
-                            if (!prereqs || (prereqs.required.length === 0 && prereqs.recommended.length === 0)) {
-                              return null;
-                            }
-
-                            const status = getPrerequisiteStatus(tool.name);
-
-                            return (
-                              <div className="mt-2 space-y-1">
-                                {status.requiredUnfulfilled.length > 0 && (
-                                  <div className="flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
-                                    <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                    <span className="font-medium">Requires: {status.requiredUnfulfilled.map(p => TOOL_LABELS[p] || p).join(', ')}</span>
-                                  </div>
-                                )}
-                                {(status.fulfilled.length > 0 || status.unfulfilled.length > 0) && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {prereqs.required.map(prereqToolName => {
-                                      const isFulfilled = isPrerequisiteFulfilled(prereqToolName);
-                                      return (
-                                        <span
-                                          key={prereqToolName}
-                                          className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-semibold ${
-                                            isFulfilled
-                                              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                          }`}
-                                        >
-                                          <Link2 className="h-2.5 w-2.5" />
-                                          {TOOL_LABELS[prereqToolName] || prereqToolName}
-                                        </span>
-                                      );
-                                    })}
-                                    {prereqs.recommended.map(prereqToolName => {
-                                      const isFulfilled = isPrerequisiteFulfilled(prereqToolName);
-                                      return (
-                                        <span
-                                          key={prereqToolName}
-                                          className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-normal ${
-                                            isFulfilled
-                                              ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
-                                              : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
-                                          }`}
-                                        >
-                                          <Link2 className="h-2.5 w-2.5" />
-                                          {TOOL_LABELS[prereqToolName] || prereqToolName}
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                )}
                               </div>
                             );
                           })()}

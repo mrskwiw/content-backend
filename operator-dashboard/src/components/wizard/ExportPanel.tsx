@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatorApi } from '@/api/generator';
 import { researchApi } from '@/api/research';
 import type { ExportInput } from '@/types/domain';
-import { Download, Loader2, CheckCircle, Flask, DollarSign, Info } from 'lucide-react';
+import { Download, Loader2, CheckCircle, FlaskConical, DollarSign, Info } from 'lucide-react';
 
 interface Props {
   projectId: string;
@@ -75,7 +75,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
               onChange={(e) => setIncludeResearch(e.target.checked)}
               className="h-4 w-4 rounded border-amber-400 dark:border-amber-700 text-amber-600 focus:ring-amber-500 dark:focus:ring-amber-400"
             />
-            <Flask className="h-4 w-4" />
+            <FlaskConical className="h-4 w-4" />
             Include research results
             {completedResearch.length > 0 && (
               <span className="ml-1 rounded-full bg-amber-200 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-200">
@@ -105,7 +105,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
               </h4>
               <div className="flex items-center gap-4 mb-3 text-sm text-amber-800 dark:text-amber-200">
                 <span className="flex items-center gap-1.5">
-                  <Flask className="h-4 w-4" />
+                  <FlaskConical className="h-4 w-4" />
                   <strong>{completedResearch.length}</strong> {completedResearch.length === 1 ? 'tool' : 'tools'}
                 </span>
                 {totalInvestment > 0 && (
