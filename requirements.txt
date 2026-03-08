@@ -22,7 +22,7 @@ openpyxl==3.1.0         # Excel analytics tracker
 icalendar==5.0.11       # iCal posting schedule export
 
 # Google Trends Integration
-pytrends>=5.1.0         # Unofficial Google Trends API (5.1.0+ compatible with urllib3 2.x)
+pytrends>=4.9.2         # Unofficial Google Trends API (latest stable version)
 pandas>=1.5.0           # Required by pytrends for dataframes
 
 # Testing
