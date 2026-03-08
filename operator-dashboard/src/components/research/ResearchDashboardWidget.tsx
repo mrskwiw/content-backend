@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Flask, DollarSign, Calendar, Eye, Loader2 } from 'lucide-react';
+import { FlaskConical, DollarSign, Calendar, Eye, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { researchApi } from '@/api/research';
 
@@ -35,7 +35,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          <Flask className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <FlaskConicalclassName="h-5 w-5 text-amber-600 dark:text-amber-400" />
           Research Insights
         </h3>
         {completedResearch.length > 0 && onViewAll && (
@@ -51,7 +51,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
 
       {completedResearch.length === 0 ? (
         <div className="text-center py-8">
-          <Flask className="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
+          <FlaskConicalclassName="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
             No research results yet
           </p>
@@ -65,7 +65,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 p-3">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
-                <Flask className="h-4 w-4" />
+                <FlaskConicalclassName="h-4 w-4" />
                 <span className="text-xs font-medium">Tools Completed</span>
               </div>
               <p className="text-2xl font-bold text-amber-900 dark:text-amber-100">
@@ -119,7 +119,7 @@ export function ResearchDashboardWidget({ clientId, onViewAll }: Props) {
                 <span
                   key={result.id}
                   className="inline-flex items-center rounded-md bg-amber-100 dark:bg-amber-900/20 px-2 py-1 text-xs font-medium text-amber-900 dark:text-amber-300"
-                  title={result.toolLabel}
+                  title={result.toolLabel || undefined}
                 >
                   {result.toolLabel}
                 </span>

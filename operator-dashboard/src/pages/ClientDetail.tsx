@@ -101,7 +101,7 @@ export default function ClientDetail() {
 
   // Fetch research history
   const {
-    data: researchHistory = [],
+    data: researchData,
     isLoading: isLoadingResearch,
     refetch: refetchResearch
   } = useQuery({
@@ -113,6 +113,7 @@ export default function ClientDetail() {
   const projects: Project[] = projectsResponse?.items ?? [];
   const posts: PostDraft[] = postsResponse?.items ?? [];
   const deliverables: Deliverable[] = deliverablesResponse ?? [];
+  const researchHistory = researchData?.results ?? [];
 
   // Research tool mutation
   const runResearchMutation = useMutation({
@@ -831,7 +832,7 @@ export default function ClientDetail() {
                                 <div className="flex items-center gap-2">
                                   <FlaskConical className="h-4 w-4 text-primary-600 dark:text-primary-400" />
                                   <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                                    {result.toolLabel || result.toolName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                    {result.toolLabel || result.toolName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                                   </span>
                                 </div>
                               </td>

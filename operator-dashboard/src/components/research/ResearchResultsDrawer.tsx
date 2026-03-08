@@ -125,21 +125,21 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-red-900 dark:text-red-100">Error</h3>
-                  <p className="mt-1 text-sm text-red-800 dark:text-red-200">{result.errorMessage}</p>
+                  <p className="mt-1 text-sm text-red-800 dark:text-red-200">{String(result.errorMessage)}</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Executive Summary */}
-          {result.data?.summary && (
+          {result.data && typeof result.data === 'object' && 'summary' in result.data && result.data.summary && (
             <section className="mb-6">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Executive Summary
               </h3>
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-4">
                 <p className="text-sm text-neutral-900 dark:text-neutral-100 leading-relaxed">
-                  {result.data.summary}
+                  {String(result.data.summary)}
                 </p>
               </div>
             </section>
