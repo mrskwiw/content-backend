@@ -17,6 +17,12 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
 
   if (!open || !result) return null;
 
+  // Extract and type-cast data to avoid TypeScript unknown type errors
+  const errorMessage = result.errorMessage ? String(result.errorMessage) : null;
+  const summary = (result.data && typeof result.data === 'object' && 'summary' in result.data && result.data.summary)
+    ? String(result.data.summary)
+    : null;
+
   const formatToolName = (name: string) => {
     return name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };
@@ -119,31 +125,31 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
           {/* Error Message */}
-          {result.status === 'failed' && result.errorMessage ? (
+          {result.status === 'failed' && errorMessage && (
             <div className="mb-6 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-red-900 dark:text-red-100">Error</h3>
-                  <p className="mt-1 text-sm text-red-800 dark:text-red-200">{String(result.errorMessage)}</p>
+                  <p className="mt-1 text-sm text-red-800 dark:text-red-200">{errorMessage}</p>
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
           {/* Executive Summary */}
-          {result.data && typeof result.data === 'object' && 'summary' in result.data && result.data.summary ? (
+          {summary && (
             <section className="mb-6">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Executive Summary
               </h3>
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-4">
                 <p className="text-sm text-neutral-900 dark:text-neutral-100 leading-relaxed">
-                  {String(result.data.summary)}
+                  {summary}
                 </p>
               </div>
             </section>
-          ) : null}
+          )}
 
           {/* Key Findings (if available in data) */}
           {result.data?.key_findings && Array.isArray(result.data.key_findings) && (
