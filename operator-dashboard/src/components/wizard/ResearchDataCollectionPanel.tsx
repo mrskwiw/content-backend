@@ -65,9 +65,9 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
       label: 'Current Content Topics',
       type: 'textarea',
       required: true,
-      min: 10,
-      placeholder: 'Describe what content topics you currently cover or list specific topics...',
-      helperText: 'Describe your current content topics or provide a comma-separated list (minimum 10 characters).'
+      min: 2,
+      placeholder: 'e.g., SEO best practices, content strategy, social media marketing',
+      helperText: 'Required. Provide at least 2 topics (comma-separated) or a description of your current content topics (minimum 10 characters).'
     }]
   },
   content_audit: {
@@ -216,11 +216,34 @@ export function ResearchDataCollectionPanel({
             }
           }
         } else if (typeof processedValue === 'string') {
-          // Check minimum length
-          if (field.min && processedValue.length < field.min) {
-            newErrors[field.key] = `Minimum ${field.min} characters required`;
-            isValid = false;
-            return;
+          // Special validation for content_gap_analysis topics
+          if (field.key === 'current_content_topics') {
+            // Check if it's a comma-separated list
+            const topics = processedValue.split(',').map(item => item.trim()).filter(item => item.length > 0);
+            if (topics.length > 1 && topics.length < 2) {
+              newErrors[field.key] = 'Please enter at least 2 topics';
+              isValid = false;
+              return;
+            }
+            // If it's just one item (description), check minimum length
+            if (topics.length === 1 && processedValue.length < 10) {
+              newErrors[field.key] = 'Please enter at least 10 characters or provide 2+ topics separated by commas';
+              isValid = false;
+              return;
+            }
+            // If it looks like a list (has commas), require at least 2 topics
+            if (processedValue.includes(',') && topics.length < 2) {
+              newErrors[field.key] = 'Please enter at least 2 topics separated by commas';
+              isValid = false;
+              return;
+            }
+          } else {
+            // Check minimum length for other textarea fields
+            if (field.min && processedValue.length < field.min) {
+              newErrors[field.key] = `Minimum ${field.min} characters required`;
+              isValid = false;
+              return;
+            }
           }
         }
       }
