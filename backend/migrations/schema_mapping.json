@@ -1,0 +1,123 @@
+{
+  "current_version": 4,
+  "version_migrations": {
+    "1": {
+      "description": "Add file_size_bytes to deliverables table",
+      "deliverables": {
+        "add_columns": [
+          {
+            "name": "file_size_bytes",
+            "type": "INTEGER",
+            "nullable": true,
+            "default": null
+          }
+        ]
+      }
+    },
+    "2": {
+      "description": "Add ClientBrief fields to clients table",
+      "clients": {
+        "add_columns": [
+          {
+            "name": "business_description",
+            "type": "TEXT",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "ideal_customer",
+            "type": "TEXT",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "main_problem_solved",
+            "type": "TEXT",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "tone_preference",
+            "type": "VARCHAR",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "platforms",
+            "type": "JSON",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "customer_pain_points",
+            "type": "JSON",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "customer_questions",
+            "type": "JSON",
+            "nullable": true,
+            "default": null
+          }
+        ]
+      }
+    },
+    "3": {
+      "description": "Add template quantities and pricing to projects table",
+      "projects": {
+        "add_columns": [
+          {
+            "name": "template_quantities",
+            "type": "JSON",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "num_posts",
+            "type": "INTEGER",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "price_per_post",
+            "type": "REAL",
+            "nullable": true,
+            "default": 40.0
+          },
+          {
+            "name": "research_price_per_post",
+            "type": "REAL",
+            "nullable": true,
+            "default": 0.0
+          },
+          {
+            "name": "total_price",
+            "type": "REAL",
+            "nullable": true,
+            "default": null
+          },
+          {
+            "name": "target_platform",
+            "type": "VARCHAR",
+            "nullable": true,
+            "default": "generic"
+          }
+        ]
+      }
+    },
+    "4": {
+      "description": "Add industry field to clients table for research tools",
+      "clients": {
+        "add_columns": [
+          {
+            "name": "industry",
+            "type": "VARCHAR",
+            "nullable": true,
+            "default": null
+          }
+        ]
+      }
+    }
+  }
+}

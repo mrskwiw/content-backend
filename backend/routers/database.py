@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 from backend.database import get_db, engine
 from backend.middleware.auth_dependency import get_current_user
 from backend.models.user import User
+from backend.services.database_migrator import DatabaseMigrator
+from backend.services.schema_inspector import get_schema_version
 from backend.utils.logger import logger
 
 router = APIRouter(prefix="/database", tags=["database"])
@@ -253,28 +255,81 @@ async def restore_database_from_backup(
         else:
             # ── File-based SQLite path ────────────────────────────────────────
             db_path = get_database_path()
-            pre_restore_backup = backup_dir / f"pre_restore_backup_{timestamp}.db"
 
-            try:
-                # engine.dispose() releases the OS file lock so shutil.move can swap the file.
-                # Do NOT call db.close() here — let the get_db dependency lifecycle handle it;
-                # premature close leaves the session in an inconsistent state.
+            # Check schema versions to determine restore strategy
+            backup_version = get_schema_version(temp_path)
+            current_version = get_schema_version(db_path)
+
+            logger.info(f"Backup version: {backup_version}, Current version: {current_version}")
+
+            # Fast path: versions match, simple restore
+            if backup_version == current_version:
+                logger.info("Schema versions match, using fast restore path")
+                pre_restore_backup = backup_dir / f"pre_restore_backup_{timestamp}.db"
+
+                try:
+                    # engine.dispose() releases the OS file lock so shutil.move can swap the file.
+                    # Do NOT call db.close() here — let the get_db dependency lifecycle handle it;
+                    # premature close leaves the session in an inconsistent state.
+                    engine.dispose()
+                    shutil.copy2(db_path, pre_restore_backup)
+                    shutil.move(str(temp_path), str(db_path))
+
+                    return {
+                        "message": "Database restored successfully",
+                        "backup_created": str(pre_restore_backup),
+                        "restored_from": file.filename,
+                        "target": str(db_path),
+                        "timestamp": timestamp,
+                        "migration_applied": False,
+                        "backup_version": backup_version,
+                        "current_version": current_version,
+                    }
+
+                except Exception as e:
+                    if pre_restore_backup.exists():
+                        shutil.copy2(pre_restore_backup, db_path)
+                    raise HTTPException(status_code=500, detail=f"Database restore failed: {e}")
+
+            # Migration path: versions differ, intelligent restore with schema migration
+            else:
+                logger.info("Schema version mismatch, using intelligent migration path")
+
+                # Dispose engine before migration (releases file locks)
                 engine.dispose()
-                shutil.copy2(db_path, pre_restore_backup)
-                shutil.move(str(temp_path), str(db_path))
 
-                return {
-                    "message": "Database restored successfully",
-                    "backup_created": str(pre_restore_backup),
-                    "restored_from": file.filename,
-                    "target": str(db_path),
-                    "timestamp": timestamp,
-                }
+                # Create migrator
+                migrator = DatabaseMigrator(temp_path, db_path)
 
-            except Exception as e:
-                if pre_restore_backup.exists():
-                    shutil.copy2(pre_restore_backup, db_path)
-                raise HTTPException(status_code=500, detail=f"Database restore failed: {e}")
+                # Check if migration is possible
+                can_migrate, reason = migrator.can_migrate()
+                if not can_migrate:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Cannot migrate database: {reason}. "
+                        "Please use a backup with compatible schema version.",
+                    )
+
+                # Execute migration
+                try:
+                    result = migrator.migrate()
+
+                    return {
+                        "message": f"Database restored and migrated successfully from v{backup_version} to v{current_version}",
+                        "restored_from": file.filename,
+                        "target": str(db_path),
+                        "timestamp": timestamp,
+                        "migration_applied": True,
+                        "backup_version": backup_version,
+                        "current_version": current_version,
+                        "changes": result.get("changes", []),
+                        "rows_migrated": result.get("row_count", 0),
+                        "migration_log": result.get("log", []),
+                    }
+
+                except Exception as e:
+                    logger.error(f"Migration failed: {e}")
+                    raise HTTPException(status_code=500, detail=f"Database migration failed: {e}")
 
     except HTTPException:
         raise

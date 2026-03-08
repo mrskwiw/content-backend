@@ -138,6 +138,12 @@ def init_db():
     # Import all models to ensure they're registered with SQLAlchemy
     # This must happen before Base.metadata.create_all() or mapper configuration
     from backend.models import Project
+    from backend.migrations import load_migration_rules
+    from backend.services.schema_inspector import get_schema_version, set_schema_version
+
+    # Get current schema version
+    current_version = get_schema_version(engine)
+    print(f">> DEBUG: Current database schema version: v{current_version}")
 
     # Create all tables (handles existing indexes gracefully)
     try:
@@ -355,3 +361,18 @@ def init_db():
 
         # NOTE: ResearchResult table is auto-created by Base.metadata.create_all()
         # No manual migration needed - table will be created on first startup
+
+    # Update schema version to latest after all migrations
+    config = load_migration_rules()
+    latest_version = config["current_version"]
+
+    if current_version < latest_version:
+        set_schema_version(engine, latest_version)
+        print(f">> DEBUG: Schema version updated: v{current_version} → v{latest_version}")
+    elif current_version == latest_version:
+        print(f">> DEBUG: Schema version is current: v{latest_version}")
+    else:
+        print(
+            f">> WARNING: Database schema version v{current_version} is newer than "
+            f"expected v{latest_version}. This may indicate a downgrade."
+        )
