@@ -50,19 +50,26 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
         - Prompt injection sanitization
         - Type validation
         - Field presence checks
+
+        NEW: Auto-generates focus_areas from SEO keywords if available
+        NEW: Industry is now optional - pulls from database if not provided
         """
         # SECURITY: Validate business description with sanitization
         inputs["business_description"] = self.validate_business_description(inputs)
 
-        # SECURITY: Validate industry with sanitization
-        inputs["industry"] = self.validator.validate_text(
-            inputs.get("industry"),
-            field_name="industry",
-            min_length=2,
-            max_length=200,
-            required=True,
-            sanitize=True,
-        )
+        # SECURITY: Validate industry with sanitization (NOW OPTIONAL - auto from DB)
+        if "industry" in inputs and inputs["industry"]:
+            inputs["industry"] = self.validator.validate_text(
+                inputs.get("industry"),
+                field_name="industry",
+                min_length=2,
+                max_length=200,
+                required=False,  # Changed to optional - will pull from DB
+                sanitize=True,
+            )
+        else:
+            # Will be set from database in run_analysis
+            inputs["industry"] = None
 
         # SECURITY: Validate target audience with sanitization
         inputs["target_audience"] = self.validate_target_audience(inputs)
@@ -78,7 +85,7 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
                 sanitize=True,
             )
 
-        # SECURITY: Validate optional focus areas list
+        # SECURITY: Validate optional focus areas list (NOW AUTO-GENERATED)
         if "focus_areas" in inputs and inputs["focus_areas"]:
             inputs["focus_areas"] = self.validator.validate_list(
                 inputs.get("focus_areas"),
@@ -93,18 +100,34 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
                     sanitize=True,
                 ),
             )
+        else:
+            # Will auto-generate from SEO keywords if available
+            inputs["focus_areas"] = None
 
         return True
 
     def run_analysis(self, inputs: Dict[str, Any]) -> TrendReport:
         """Execute market trends research"""
         business_desc = inputs["business_description"]
-        industry = inputs["industry"]
+        industry = inputs.get("industry")
         target_audience = inputs["target_audience"]
         business_name = inputs.get("business_name", "Client")
-        focus_areas = inputs.get("focus_areas", [])
+        focus_areas = inputs.get("focus_areas")
 
-        logger.info(f"Researching market trends for {industry}")
+        # Auto-populate industry if not provided (should come from DB)
+        if not industry:
+            # Fallback: extract from business description
+            industry = inputs.get("industry_from_db") or "Technology"
+            logger.info(f"Using industry from database: {industry}")
+
+        # Auto-generate focus areas from SEO keywords if available and not provided
+        if not focus_areas:
+            focus_areas = self._auto_generate_focus_areas(
+                business_desc, industry, inputs.get("seo_keywords", [])
+            )
+            logger.info(f"Auto-generated {len(focus_areas)} focus areas: {focus_areas}")
+
+        logger.info(f"Researching market trends for {industry} with {len(focus_areas)} focus areas")
 
         # Step 1: Identify trending topics by category
         trend_categories = self._research_trending_topics(
@@ -156,6 +179,192 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
         )
 
         return report
+
+    def _auto_generate_focus_areas(
+        self,
+        business_description: str,
+        industry: str,
+        seo_keywords: Optional[List[str]] = None,
+    ) -> List[str]:
+        """
+        Auto-generate 3-5 focus areas for trend research.
+
+        Uses SEO keywords if available, otherwise extracts from business description.
+
+        Args:
+            business_description: Business description from database
+            industry: Industry from database
+            seo_keywords: Optional list of SEO keywords from SEO research tool
+
+        Returns:
+            List of 3-5 focus area strings
+        """
+        logger.info("Auto-generating focus areas for market trends")
+
+        # Build prompt based on available data
+        if seo_keywords and len(seo_keywords) > 0:
+            # Use SEO keywords to generate more targeted focus areas
+            keywords_text = ", ".join(seo_keywords[:10])  # Use up to 10 keywords
+            prompt = f"""Based on this business context and SEO keywords, identify 3-5 specific focus areas for market trend research.
+
+Industry: {industry}
+
+Business: {business_description}
+
+SEO Keywords: {keywords_text}
+
+Focus areas should be:
+- Specific topics or themes (2-5 words each)
+- Relevant to the business and target audience
+- Suitable for trend research (not too broad, not too narrow)
+- Aligned with the SEO keywords when possible
+
+IMPORTANT:
+- Return ONLY the focus areas, one per line
+- Each focus area should be 2-5 words
+- NO numbering, bullets, or extra formatting
+
+Example output format:
+AI automation tools
+content marketing strategies
+remote work productivity
+
+Your focus areas:"""
+        else:
+            # Fall back to extracting from business description only
+            prompt = f"""Based on this business context, identify 3-5 specific focus areas for market trend research.
+
+Industry: {industry}
+
+Business: {business_description}
+
+Focus areas should be:
+- Specific topics or themes (2-5 words each)
+- Relevant to the business and target audience
+- Suitable for trend research (not too broad, not too narrow)
+
+IMPORTANT:
+- Return ONLY the focus areas, one per line
+- Each focus area should be 2-5 words
+- NO numbering, bullets, or extra formatting
+
+Example output format:
+cloud infrastructure
+developer tools
+API integrations
+
+Your focus areas:"""
+
+        try:
+            response = self.client.create_message(
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300,
+                temperature=0.3,  # Lower temp for focused extraction
+            )
+
+            # Parse response - already a string from create_message
+            focus_areas_text = response.strip()
+            focus_areas = [
+                area.strip()
+                for area in focus_areas_text.split("\n")
+                if area.strip() and len(area.strip()) > 3
+            ]
+
+            # Limit to 5 focus areas
+            focus_areas = focus_areas[:5]
+
+            # Ensure we have at least 3 focus areas
+            if len(focus_areas) < 3:
+                logger.warning(f"AI generated only {len(focus_areas)} focus areas, using fallback")
+                focus_areas = self._fallback_focus_area_extraction(
+                    business_description, industry, seo_keywords
+                )
+
+            logger.info(f"Auto-generated {len(focus_areas)} focus areas: {focus_areas}")
+            return focus_areas
+
+        except Exception as e:
+            logger.error(f"Error auto-generating focus areas: {e}")
+            # Fallback to simple extraction
+            return self._fallback_focus_area_extraction(
+                business_description, industry, seo_keywords
+            )
+
+    def _fallback_focus_area_extraction(
+        self,
+        business_description: str,
+        industry: str,
+        seo_keywords: Optional[List[str]] = None,
+    ) -> List[str]:
+        """
+        Fallback method to extract focus areas if AI generation fails.
+
+        Uses simple keyword extraction from SEO keywords and business description.
+
+        Args:
+            business_description: Business description from database
+            industry: Industry from database
+            seo_keywords: Optional list of SEO keywords
+
+        Returns:
+            List of 3-5 focus area strings
+        """
+        focus_areas = []
+
+        # Start with industry as a focus area
+        if industry:
+            focus_areas.append(industry)
+
+        # Add SEO keywords if available (limit to 3)
+        if seo_keywords and len(seo_keywords) > 0:
+            for keyword in seo_keywords[:3]:
+                if keyword not in focus_areas:
+                    focus_areas.append(keyword)
+
+        # If still need more, extract from business description
+        if len(focus_areas) < 3:
+            # Common business keywords to look for
+            common_keywords = [
+                "AI",
+                "automation",
+                "content",
+                "marketing",
+                "sales",
+                "analytics",
+                "cloud",
+                "SaaS",
+                "platform",
+                "tools",
+                "software",
+                "technology",
+                "data",
+                "security",
+                "workflow",
+                "productivity",
+                "collaboration",
+                "customer",
+                "enterprise",
+                "business",
+                "solutions",
+                "services",
+            ]
+
+            description_lower = business_description.lower()
+            for keyword in common_keywords:
+                if keyword.lower() in description_lower and len(focus_areas) < 5:
+                    focus_areas.append(keyword)
+
+        # Ensure we have at least 3 focus areas (pad with generic ones if needed)
+        if len(focus_areas) < 3:
+            focus_areas.extend(["market trends", "industry innovations", "customer needs"])
+
+        # Return first 5 unique focus areas
+        unique_areas = []
+        for area in focus_areas:
+            if area not in unique_areas:
+                unique_areas.append(area)
+
+        return unique_areas[:5]
 
     def _research_trending_topics(
         self,

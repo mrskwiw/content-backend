@@ -70,20 +70,20 @@ export function Pagination({
   };
 
   return (
-    <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+    <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-3 sm:px-6">
       {/* Info Text */}
       <div className="flex flex-1 justify-between sm:hidden">
         <button
           onClick={handlePrevious}
           disabled={!has_prev}
-          className="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative inline-flex items-center rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous
         </button>
         <button
           onClick={handleNext}
           disabled={!has_next}
-          className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative ml-3 inline-flex items-center rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>
@@ -93,7 +93,7 @@ export function Pagination({
         <div className="flex items-center gap-4">
           {/* Total count (offset pagination only) */}
           {strategy === 'offset' && total !== undefined && (
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
               Showing page <span className="font-medium">{currentPage}</span> of{' '}
               <span className="font-medium">{total_pages}</span>
               {' • '}
@@ -103,23 +103,23 @@ export function Pagination({
 
           {/* Cursor pagination indicator */}
           {strategy === 'cursor' && (
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
               Page <span className="font-medium">{currentPage}</span>
-              <span className="ml-2 text-xs text-slate-500">(Deep pagination mode)</span>
+              <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">(Deep pagination mode)</span>
             </p>
           )}
 
           {/* Page size selector */}
           {showPageSize && onPageSizeChange && (
             <div className="flex items-center gap-2">
-              <label htmlFor="page-size" className="text-sm text-slate-700">
+              <label htmlFor="page-size" className="text-sm text-neutral-700 dark:text-neutral-300">
                 Items per page:
               </label>
               <select
                 id="page-size"
                 value={pageSize}
                 onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                className="rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                className="rounded-md border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"
               >
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -136,7 +136,7 @@ export function Pagination({
             <button
               onClick={handlePrevious}
               disabled={!has_prev}
-              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-neutral-400 dark:text-neutral-500 ring-1 ring-inset ring-neutral-300 dark:ring-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sr-only">Previous</span>
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />
@@ -149,10 +149,10 @@ export function Pagination({
                   <button
                     key={page}
                     onClick={() => onPageChange(page)}
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 ${
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-neutral-300 dark:ring-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:z-20 focus:outline-offset-0 ${
                       page === currentPage
-                        ? 'z-10 bg-blue-600 text-white hover:bg-blue-700'
-                        : 'text-slate-900'
+                        ? 'z-10 bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
+                        : 'text-neutral-900 dark:text-neutral-100'
                     }`}
                   >
                     {page}
@@ -164,7 +164,7 @@ export function Pagination({
             <button
               onClick={handleNext}
               disabled={!has_next}
-              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-neutral-400 dark:text-neutral-500 ring-1 ring-inset ring-neutral-300 dark:ring-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sr-only">Next</span>
               <ChevronRight className="h-5 w-5" aria-hidden="true" />

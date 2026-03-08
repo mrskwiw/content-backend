@@ -37,12 +37,12 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
   seo_keyword_research: {
     fields: [{
       key: 'main_topics',
-      label: 'Main Topics',
+      label: 'Main Topics (Optional - Auto-Generated)',
       type: 'text-list',
-      required: true,
-      min: 1,
-      placeholder: 'e.g., AI automation, content marketing, SEO strategy',
-      helperText: 'List the main topics you want to research keywords for (minimum 1 topic).'
+      required: false,  // Changed to optional - will auto-generate from business description
+      min: 0,
+      placeholder: 'Leave empty to auto-generate from business profile, or add custom topics',
+      helperText: '✨ Auto-generates topics from your business profile if left empty. Or manually add 1-10 custom topics to focus on.'
     }]
   },
   competitive_analysis: {
@@ -83,18 +83,18 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
   market_trends_research: {
     fields: [{
       key: 'industry',
-      label: 'Industry',
+      label: 'Industry (Optional - Auto-Populated)',
       type: 'text',
       required: false,
-      placeholder: 'e.g., SaaS, Healthcare, E-commerce',
-      helperText: 'Specify the industry for trend research (uses client profile if not provided).'
+      placeholder: 'Leave empty to use client profile industry',
+      helperText: '✨ Auto-populates from your client profile if left empty. Override if researching a different industry.'
     }, {
       key: 'focus_areas',
-      label: 'Focus Areas (Optional)',
+      label: 'Focus Areas (Optional - Auto-Generated)',
       type: 'text-list',
       required: false,
-      placeholder: 'e.g., AI tools, remote work, sustainability',
-      helperText: 'Specific areas to emphasize in trend research.'
+      placeholder: 'Leave empty to auto-generate from SEO keywords',
+      helperText: '✨ Auto-generates from SEO keywords and business profile if left empty. Or manually add 1-10 custom focus areas.'
     }]
   },
   platform_strategy: {

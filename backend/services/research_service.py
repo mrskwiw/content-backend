@@ -95,8 +95,173 @@ class ResearchService:
     """Service for research tool execution"""
 
     def __init__(self):
-        # No specific initialization needed
-        pass
+        # Initialize prerequisite checker
+        from backend.services.research_prerequisites import ResearchPrerequisites
+
+        self.prerequisites = ResearchPrerequisites()
+
+    def _fetch_prerequisite_data(
+        self, db: Session, project_id: str, tool_name: str
+    ) -> Dict[str, any]:
+        """
+        Fetch results from prerequisite tools and extract relevant data.
+
+        This enables staged execution where tools access data from previously
+        completed research stored in the database.
+
+        Args:
+            db: Database session
+            project_id: Project ID
+            tool_name: Tool requesting prerequisite data
+
+        Returns:
+            Dict of prerequisite data to merge into tool inputs
+        """
+        from backend.models import ResearchResult
+
+        # Get all prerequisites for this tool
+        all_prereqs = (
+            self.prerequisites.get_required_prerequisites(tool_name)
+            + self.prerequisites.get_recommended_prerequisites(tool_name)
+            + self.prerequisites.get_optional_prerequisites(tool_name)
+        )
+
+        if not all_prereqs:
+            return {}  # No prerequisites needed
+
+        logger.info(f"Fetching prerequisite data for {tool_name}: {all_prereqs}")
+
+        prerequisite_data = {}
+
+        for prereq_tool in all_prereqs:
+            # Fetch most recent completed result for this prerequisite
+            result = (
+                db.query(ResearchResult)
+                .filter(
+                    ResearchResult.project_id == project_id,
+                    ResearchResult.tool_name == prereq_tool,
+                    ResearchResult.status == "completed",
+                )
+                .order_by(ResearchResult.created_at.desc())
+                .first()
+            )
+
+            if not result:
+                logger.debug(f"Prerequisite {prereq_tool} not found for {tool_name}")
+                continue
+
+            # Extract relevant data based on prerequisite tool type
+            if prereq_tool == "seo_keyword_research" and result.data:
+                # Extract SEO keywords for tools that need them
+                prerequisite_data["seo_keywords"] = result.data.get("primary_keywords", [])
+                if not prerequisite_data["seo_keywords"]:
+                    # Fallback to all keywords if primary not available
+                    prerequisite_data["seo_keywords"] = result.data.get("keywords", [])
+
+                logger.info(f"Loaded {len(prerequisite_data.get('seo_keywords', []))} SEO keywords")
+
+            elif prereq_tool == "audience_research" and result.data:
+                # Extract audience personas for Platform Strategy, ICP, etc.
+                prerequisite_data["audience_personas"] = result.data.get("personas", [])
+                prerequisite_data["audience_demographics"] = result.data.get("demographics", {})
+                prerequisite_data["audience_pain_points"] = result.data.get("pain_points", [])
+
+                logger.info("Loaded audience research data")
+
+            elif prereq_tool == "competitive_analysis" and result.data:
+                # Extract competitor insights for Content Gap
+                prerequisite_data["competitor_insights"] = result.data.get("competitors", [])
+                prerequisite_data["competitor_gaps"] = result.data.get("gaps", [])
+
+                logger.info("Loaded competitive analysis data")
+
+            elif prereq_tool == "market_trends_research" and result.data:
+                # Extract trends for Platform Strategy, Content Calendar
+                prerequisite_data["market_trends"] = result.data.get("trends", [])
+                prerequisite_data["trending_topics"] = result.data.get("trending_topics", [])
+
+                logger.info("Loaded market trends data")
+
+            elif prereq_tool == "platform_strategy" and result.data:
+                # Extract platform recommendations for Content Calendar
+                prerequisite_data["platform_recommendations"] = result.data.get("platforms", [])
+                prerequisite_data["posting_frequency"] = result.data.get("frequency", {})
+
+                logger.info("Loaded platform strategy data")
+
+            elif prereq_tool == "content_gap_analysis" and result.data:
+                # Extract content gaps for Content Calendar
+                prerequisite_data["content_gaps"] = result.data.get("gaps", [])
+                prerequisite_data["priority_topics"] = result.data.get("priority_topics", [])
+
+                logger.info("Loaded content gap data")
+
+            elif prereq_tool == "voice_analysis" and result.data:
+                # Extract voice patterns for Story Mining
+                prerequisite_data["brand_voice"] = result.data.get("voice_profile", {})
+                prerequisite_data["tone_guidelines"] = result.data.get("tone", {})
+
+                logger.info("Loaded voice analysis data")
+
+            elif prereq_tool == "brand_archetype" and result.data:
+                # Extract archetype for Story Mining, Platform Strategy
+                prerequisite_data["brand_archetype"] = result.data.get("primary_archetype", "")
+                prerequisite_data["archetype_traits"] = result.data.get("traits", [])
+
+                logger.info("Loaded brand archetype data")
+
+            elif prereq_tool == "icp_workshop" and result.data:
+                # Extract ICP for Platform Strategy, Content Calendar
+                prerequisite_data["ideal_customer_profile"] = result.data.get("icp", {})
+
+                logger.info("Loaded ICP workshop data")
+
+            elif prereq_tool == "story_mining" and result.data:
+                # Extract stories for Content Calendar
+                prerequisite_data["brand_stories"] = result.data.get("stories", [])
+
+                logger.info("Loaded story mining data")
+
+        logger.info(f"Fetched prerequisite data for {tool_name}: {list(prerequisite_data.keys())}")
+        return prerequisite_data
+
+    def _get_completed_tools(self, db: Session, project_id: str) -> set[str]:
+        """Get set of tool IDs that have been completed for this project"""
+        from backend.models import ResearchResult
+
+        completed = (
+            db.query(ResearchResult.tool_name)
+            .filter(ResearchResult.project_id == project_id, ResearchResult.status == "completed")
+            .distinct()
+            .all()
+        )
+
+        return {tool[0] for tool in completed}
+
+    def check_prerequisites(
+        self, db: Session, project_id: str, tool_id: str, planned_tools: Optional[list[str]] = None
+    ) -> tuple[bool, list[str], list[str]]:
+        """
+        Check if prerequisites are met for a tool.
+
+        Args:
+            db: Database session
+            project_id: Project ID
+            tool_id: Tool to check
+            planned_tools: Optional list of tools planned to run in same batch
+
+        Returns:
+            Tuple of (can_run, missing_required, missing_recommended)
+        """
+        # Get completed tools for this project
+        completed_tools = self._get_completed_tools(db, project_id)
+
+        # If this is part of a batch run, add planned tools to completed set
+        if planned_tools:
+            completed_tools.update(planned_tools)
+
+        # Check prerequisites
+        return self.prerequisites.check_prerequisites_met(tool_id, completed_tools)
 
     async def execute_research_tool(
         self,
@@ -146,11 +311,48 @@ class ResearchService:
         if tool_name not in RESEARCH_TOOL_MAP:
             raise ValueError(f"Research tool '{tool_name}' not found")
 
+        # Check prerequisites
+        can_run, missing_required, missing_recommended = self.check_prerequisites(
+            db, project_id, tool_name
+        )
+
+        if not can_run:
+            error_msg = self.prerequisites.get_missing_prerequisites_message(
+                tool_name, missing_required, missing_recommended
+            )
+            logger.warning(f"Prerequisites not met for {tool_name}: {missing_required}")
+            return {
+                "success": False,
+                "outputs": {},
+                "metadata": {
+                    "tool_name": tool_name,
+                    "blocked": True,
+                    "missing_required": missing_required,
+                    "missing_recommended": missing_recommended,
+                },
+                "error": error_msg,
+            }
+
+        # Log if running with missing recommended prerequisites
+        if missing_recommended:
+            logger.info(
+                f"Running {tool_name} without recommended prerequisites: {missing_recommended}"
+            )
+
         # Get tool class
         ToolClass = RESEARCH_TOOL_MAP[tool_name]
 
         # Prepare inputs based on tool requirements
         inputs = self._prepare_inputs(project, client, tool_name, params or {})
+
+        # STAGED EXECUTION: Fetch data from prerequisite tools stored in database
+        prerequisite_data = self._fetch_prerequisite_data(db, project_id, tool_name)
+        inputs.update(prerequisite_data)  # Merge prerequisite data into inputs
+
+        if prerequisite_data:
+            logger.info(
+                f"Enhanced {tool_name} with prerequisite data: {list(prerequisite_data.keys())}"
+            )
 
         try:
             # Instantiate and execute tool
@@ -236,6 +438,106 @@ class ResearchService:
                 },
                 "error": str(e),
             }
+
+    async def execute_research_tools_batch(
+        self,
+        db: Session,
+        project_id: str,
+        client_id: str,
+        tool_configs: list[dict],
+    ) -> dict:
+        """
+        Execute multiple research tools in correct dependency order.
+
+        Args:
+            db: Database session
+            project_id: Project ID
+            client_id: Client ID
+            tool_configs: List of dicts with 'tool_name' and optional 'params'
+
+        Returns:
+            Dict with:
+                - execution_order: List of tool names in execution order
+                - results: Dict mapping tool_name -> execution result
+                - summary: Summary of successes/failures
+        """
+        # Extract tool names
+        tool_names = [config["tool_name"] for config in tool_configs]
+
+        # Determine execution order based on dependencies
+        ordered_tools = self.prerequisites.get_execution_order(tool_names)
+
+        logger.info(f"Batch execution order for {len(tool_names)} tools: {ordered_tools}")
+
+        # Execute tools in order
+        results = {}
+        successes = 0
+        failures = 0
+        blocked = 0
+
+        # Track which tools have completed in this batch
+        completed_in_batch = set()
+
+        for tool_name in ordered_tools:
+            # Find config for this tool
+            config = next((c for c in tool_configs if c["tool_name"] == tool_name), {})
+            params = config.get("params", {})
+
+            logger.info(
+                f"Executing {tool_name} ({ordered_tools.index(tool_name) + 1}/{len(ordered_tools)})"
+            )
+
+            # Check prerequisites considering tools completed in this batch
+            can_run, missing_required, missing_recommended = self.check_prerequisites(
+                db, project_id, tool_name, planned_tools=list(completed_in_batch)
+            )
+
+            if not can_run:
+                # Tool is blocked - missing required prerequisites
+                error_msg = self.prerequisites.get_missing_prerequisites_message(
+                    tool_name, missing_required, missing_recommended
+                )
+                logger.warning(f"Skipping {tool_name} - prerequisites not met: {missing_required}")
+                results[tool_name] = {
+                    "success": False,
+                    "blocked": True,
+                    "missing_required": missing_required,
+                    "error": error_msg,
+                }
+                blocked += 1
+                continue
+
+            # Execute tool
+            try:
+                result = await self.execute_research_tool(
+                    db, project_id, client_id, tool_name, params
+                )
+                results[tool_name] = result
+
+                if result.get("success"):
+                    successes += 1
+                    completed_in_batch.add(tool_name)
+                else:
+                    failures += 1
+
+            except Exception as e:
+                logger.error(f"Error executing {tool_name}: {e}")
+                results[tool_name] = {
+                    "success": False,
+                    "error": str(e),
+                }
+                failures += 1
+
+        return {
+            "execution_order": ordered_tools,
+            "results": results,
+            "summary": {
+                "total": len(ordered_tools),
+                "successes": successes,
+                "failures": failures,
+                "blocked": blocked,
+            },
+        }
 
     def _get_demo_response(
         self,

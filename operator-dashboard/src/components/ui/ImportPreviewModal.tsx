@@ -86,30 +86,30 @@ export function ImportPreviewModal({
           {Object.entries(importedData.fields).map(([key, data]) => (
             <div
               key={key}
-              className="border-b border-gray-200 dark:border-gray-700 pb-3"
+              className="border-b border-neutral-200 dark:border-neutral-700 pb-3"
             >
-              <p className="font-medium text-sm text-gray-900 dark:text-gray-100 mb-2">
+              <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100 mb-2">
                 {formatFieldName(key)}
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 block mb-1">
+                  <span className="text-neutral-500 dark:text-neutral-400 block mb-1">
                     Current:
                   </span>
-                  <p className="text-gray-900 dark:text-gray-100">
+                  <p className="text-neutral-900 dark:text-neutral-100">
                     {formatValue(currentData[key])}
                   </p>
                 </div>
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400 block mb-1">
+                  <span className="text-neutral-500 dark:text-neutral-400 block mb-1">
                     Imported:
                   </span>
-                  <p className="text-gray-900 dark:text-gray-100">
+                  <p className="text-neutral-900 dark:text-neutral-100">
                     {formatValue(data.value)}
                     {getConfidenceBadge(data.confidence)}
                   </p>
                   {data.source && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                       Source: {data.source}
                     </p>
                   )}
@@ -119,8 +119,8 @@ export function ImportPreviewModal({
           ))}
         </div>
 
-        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex justify-between items-center mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+          <div className="text-sm text-neutral-600 dark:text-neutral-400">
             <p>Parse time: {importedData.metadata.parseTimeMs}ms</p>
             <p>File: {importedData.metadata.filename}</p>
           </div>

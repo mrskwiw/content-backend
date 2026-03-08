@@ -755,3 +755,200 @@ async def get_research_output_content(
             return {"content": content, "format": output_format}
     else:
         return {"content": content, "format": output_format}
+
+
+# ============================================================================
+# PREREQUISITE CHECKING & BATCH EXECUTION ENDPOINTS
+# ============================================================================
+
+
+class PrerequisiteCheckRequest(BaseModel):
+    """Request to check prerequisites for tools"""
+
+    project_id: str
+    tool_names: List[str]
+
+
+class ToolPrerequisiteStatus(BaseModel):
+    """Prerequisite status for a single tool"""
+
+    tool_name: str
+    can_run: bool
+    missing_required: List[str]
+    missing_recommended: List[str]
+    error_message: Optional[str] = None
+
+
+class PrerequisiteCheckResponse(BaseModel):
+    """Response from prerequisite check"""
+
+    tools: List[ToolPrerequisiteStatus]
+    all_can_run: bool
+    blocked_tools: List[str]
+    ready_tools: List[str]
+
+
+@router.post("/check-prerequisites", response_model=PrerequisiteCheckResponse)
+@lenient_limiter.limit("100/hour")
+async def check_prerequisites(
+    request: Request,
+    prereq_request: PrerequisiteCheckRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Check if tools can run based on prerequisites.
+
+    Dynamically checks:
+    - What's already completed in database for this project
+    - What's planned in current selection
+    - Which tools are blocked vs ready
+
+    Frontend should call this BEFORE showing data collection panel.
+
+    Args:
+        prereq_request: Project ID and list of tool names to check
+
+    Returns:
+        Status for each tool including missing prerequisites
+    """
+    # Verify project ownership (TR-021: IDOR prevention)
+    project = crud.get_project(db, prereq_request.project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    _check_ownership(project, current_user, resource_type="project")
+
+    logger.info(
+        f"Checking prerequisites for {len(prereq_request.tool_names)} tools "
+        f"in project {prereq_request.project_id}"
+    )
+
+    tool_statuses = []
+    all_can_run = True
+    blocked_tools = []
+    ready_tools = []
+
+    for tool_name in prereq_request.tool_names:
+        # Check prerequisites considering both DB and planned tools
+        can_run, missing_required, missing_recommended = research_service.check_prerequisites(
+            db,
+            prereq_request.project_id,
+            tool_name,
+            planned_tools=prereq_request.tool_names,  # Tools in this batch count as "planned"
+        )
+
+        # Generate error message if blocked
+        error_message = None
+        if not can_run:
+            error_message = research_service.prerequisites.get_missing_prerequisites_message(
+                tool_name, missing_required, missing_recommended
+            )
+
+        tool_status = ToolPrerequisiteStatus(
+            tool_name=tool_name,
+            can_run=can_run,
+            missing_required=missing_required,
+            missing_recommended=missing_recommended,
+            error_message=error_message,
+        )
+
+        tool_statuses.append(tool_status)
+
+        if not can_run:
+            all_can_run = False
+            blocked_tools.append(tool_name)
+        else:
+            ready_tools.append(tool_name)
+
+    return PrerequisiteCheckResponse(
+        tools=tool_statuses,
+        all_can_run=all_can_run,
+        blocked_tools=blocked_tools,
+        ready_tools=ready_tools,
+    )
+
+
+class BatchToolConfig(BaseModel):
+    """Configuration for a single tool in batch"""
+
+    tool_name: str
+    params: Optional[Dict[str, Any]] = {}
+
+
+class BatchResearchRequest(BaseModel):
+    """Request to execute multiple research tools in batch"""
+
+    project_id: str
+    client_id: str
+    tools: List[BatchToolConfig]
+
+
+class BatchResearchResponse(BaseModel):
+    """Response from batch research execution"""
+
+    execution_order: List[str]
+    results: Dict[str, Dict[str, Any]]
+    summary: Dict[str, int]
+
+
+@router.post("/batch", response_model=BatchResearchResponse)
+@strict_limiter.limit("10/hour")  # Strict limit for expensive batch operations
+async def execute_research_batch(
+    request: Request,
+    batch_request: BatchResearchRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Execute multiple research tools in correct dependency order.
+
+    This is the MAIN endpoint frontend should use instead of calling /run multiple times.
+
+    Features:
+    - Automatic dependency ordering (Tier 1 → Tier 2 → Tier 3 → Tier 4)
+    - Tools completed in batch count as prerequisites for later tools
+    - Staged execution with data flow between tools via database
+    - Blocks tools missing required prerequisites
+    - Partial success handling (some succeed, some blocked)
+
+    Args:
+        batch_request: Project, client, and list of tools to execute
+
+    Returns:
+        Execution order, results for each tool, and summary
+    """
+    # Verify project ownership
+    project = crud.get_project(db, batch_request.project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    _check_ownership(project, current_user, resource_type="project")
+
+    # Verify client ownership
+    client = crud.get_client(db, batch_request.client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    _check_ownership(client, current_user, resource_type="client")
+
+    logger.info(
+        f"Executing batch of {len(batch_request.tools)} research tools "
+        f"for project {batch_request.project_id}"
+    )
+
+    # Convert to format expected by service
+    tool_configs = [
+        {"tool_name": tool.tool_name, "params": tool.params or {}} for tool in batch_request.tools
+    ]
+
+    # Execute batch
+    result = await research_service.execute_research_tools_batch(
+        db, batch_request.project_id, batch_request.client_id, tool_configs
+    )
+
+    return BatchResearchResponse(
+        execution_order=result["execution_order"],
+        results=result["results"],
+        summary=result["summary"],
+    )

@@ -62,7 +62,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
 
   return (
     <>
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 shadow-sm">
         <div className="flex items-center gap-2">
           {hasFlags ? (
             <AlertTriangle className="h-5 w-5 text-amber-600" />
@@ -70,8 +70,8 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
             <ShieldCheck className="h-5 w-5 text-emerald-600" />
           )}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">Quality Gate</h3>
-            <p className="text-xs text-slate-600">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Quality Gate</h3>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">
               Review all posts, edit inline, or regenerate flagged items before export.
             </p>
           </div>
@@ -79,33 +79,33 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
 
         {/* Summary Stats */}
         <div className="mt-3 flex gap-3 text-xs">
-          <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1">
-            <span className="font-semibold text-slate-700">Total: </span>
-            <span className="text-slate-900">{posts.length}</span>
+          <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 px-3 py-1">
+            <span className="font-semibold text-neutral-700 dark:text-neutral-300">Total: </span>
+            <span className="text-neutral-900 dark:text-neutral-100">{posts.length}</span>
           </div>
           {hasFlags && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1">
-              <span className="font-semibold text-amber-700">Flagged: </span>
-              <span className="text-amber-900">{flagged.length}</span>
+            <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-1">
+              <span className="font-semibold text-amber-700 dark:text-amber-300">Flagged: </span>
+              <span className="text-amber-900 dark:text-amber-100">{flagged.length}</span>
             </div>
           )}
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1">
-            <span className="font-semibold text-emerald-700">Approved: </span>
-            <span className="text-emerald-900">{approved.length}</span>
+          <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1">
+            <span className="font-semibold text-emerald-700 dark:text-emerald-300">Approved: </span>
+            <span className="text-emerald-900 dark:text-emerald-100">{approved.length}</span>
           </div>
         </div>
 
         {/* Flagged Posts Section */}
         {hasFlags && (
           <div className="mt-4">
-            <h4 className="mb-2 text-xs font-semibold text-amber-900">Flagged Posts ({flagged.length})</h4>
+            <h4 className="mb-2 text-xs font-semibold text-amber-900 dark:text-amber-100">Flagged Posts ({flagged.length})</h4>
             <div className="space-y-2">
               {flagged.map((post) => (
-                <div key={post.id} className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                <div key={post.id} className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="mb-1 flex items-center gap-2">
-                        <span className="text-xs font-semibold text-amber-900">Post {post.id}</span>
+                        <span className="text-xs font-semibold text-amber-900 dark:text-amber-100">Post {post.id}</span>
                         {post.flags && post.flags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {post.flags.map((flag, idx) => (
@@ -116,8 +116,8 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
                           </div>
                         )}
                       </div>
-                      <p className="line-clamp-2 text-xs text-amber-800">{post.content}</p>
-                      <div className="mt-1 flex gap-3 text-xs text-amber-700">
+                      <p className="line-clamp-2 text-xs text-amber-800 dark:text-amber-200">{post.content}</p>
+                      <div className="mt-1 flex gap-3 text-xs text-amber-700 dark:text-amber-300">
                         {post.length && <span>{post.length} words</span>}
                         {post.readabilityScore !== undefined && (
                           <span>Readability: {post.readabilityScore.toFixed(1)}</span>
@@ -141,7 +141,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
               <button
                 disabled={regen.isPending}
                 onClick={() => regen.mutate(flagged.map((f) => f.id))}
-                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50"
               >
                 <RotateCw className="h-4 w-4" />
                 {regen.isPending ? 'Regenerating...' : 'Regenerate all flagged'}
@@ -153,20 +153,20 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
         {/* Approved Posts Section */}
         {approved.length > 0 && (
           <div className="mt-4">
-            <h4 className="mb-2 text-xs font-semibold text-emerald-900">
+            <h4 className="mb-2 text-xs font-semibold text-emerald-900 dark:text-emerald-100">
               Approved Posts ({approved.length})
             </h4>
             <div className="space-y-2">
               {approved.map((post) => (
-                <div key={post.id} className="rounded-md border border-slate-200 bg-white p-3">
+                <div key={post.id} className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="mb-1 flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        <span className="text-xs font-semibold text-slate-900">Post {post.id}</span>
+                        <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">Post {post.id}</span>
                       </div>
-                      <p className="line-clamp-2 text-xs text-slate-700">{post.content}</p>
-                      <div className="mt-1 flex gap-3 text-xs text-slate-500">
+                      <p className="line-clamp-2 text-xs text-neutral-700 dark:text-neutral-300">{post.content}</p>
+                      <div className="mt-1 flex gap-3 text-xs text-neutral-500 dark:text-neutral-400">
                         {post.length && <span>{post.length} words</span>}
                         {post.readabilityScore !== undefined && (
                           <span>Readability: {post.readabilityScore.toFixed(1)}</span>
@@ -190,7 +190,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
         )}
 
         {regen.error && (
-          <div className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <div className="mt-3 rounded-md bg-rose-50 dark:bg-rose-900/20 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
             {(regen.error as Error).message || 'Regeneration failed'}
           </div>
         )}
@@ -216,7 +216,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
             />
 
             {editingPost && (
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-3 text-xs text-neutral-600 dark:text-neutral-400">
                 <div className="flex gap-4">
                   {editingPost.length && <span>Original: {editingPost.length} words</span>}
                   {editingPost.readabilityScore !== undefined && (
@@ -233,7 +233,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
             )}
 
             {updatePost.error && (
-              <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <div className="rounded-md bg-rose-50 dark:bg-rose-900/20 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
                 {(updatePost.error as Error).message || 'Update failed'}
               </div>
             )}

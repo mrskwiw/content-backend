@@ -43,19 +43,19 @@ export function DeliverableDrawer({ deliverable, onClose }: Props) {
   if (!deliverable) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-slate-900/30">
-      <div className="h-full w-full max-w-2xl bg-white shadow-xl flex flex-col">
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/50 dark:bg-black/60">
+      <div className="h-full w-full max-w-2xl bg-white dark:bg-neutral-900 shadow-xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
           <div>
-            <p className="text-lg font-semibold text-slate-900">
+            <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               {getDeliverableName(deliverable.path)}
             </p>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">{deliverable.id}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono mt-0.5">{deliverable.id}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-800 transition-colors p-1 rounded hover:bg-slate-100"
+            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
             aria-label="Close drawer"
           >
             <X className="h-5 w-5" />
@@ -66,18 +66,18 @@ export function DeliverableDrawer({ deliverable, onClose }: Props) {
         <div className="flex-1 overflow-hidden">
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 text-blue-600 animate-spin mb-3" />
-              <div className="text-sm text-slate-500">Loading details...</div>
+              <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin mb-3" />
+              <div className="text-sm text-neutral-500 dark:text-neutral-400">Loading details...</div>
             </div>
           )}
 
           {error && (
             <div className="p-6">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-800 font-medium mb-1">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="text-sm text-red-800 dark:text-red-300 font-medium mb-1">
                   Error loading deliverable details
                 </p>
-                <p className="text-xs text-red-600">
+                <p className="text-xs text-red-600 dark:text-red-400">
                   {error instanceof Error ? error.message : 'Unknown error occurred'}
                 </p>
               </div>
@@ -86,34 +86,34 @@ export function DeliverableDrawer({ deliverable, onClose }: Props) {
 
           {details && (
             <Tabs.Root defaultValue="overview" className="flex flex-col h-full">
-              <Tabs.List className="flex border-b border-slate-200 px-4 bg-slate-50">
+              <Tabs.List className="flex border-b border-neutral-200 dark:border-neutral-700 px-4 bg-neutral-50 dark:bg-neutral-800/50">
                 <Tabs.Trigger
                   value="overview"
-                  className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition-colors"
+                  className="px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-colors"
                 >
                   Overview
                 </Tabs.Trigger>
                 <Tabs.Trigger
                   value="preview"
-                  className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition-colors"
+                  className="px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-colors"
                 >
                   Preview
                 </Tabs.Trigger>
                 <Tabs.Trigger
                   value="posts"
-                  className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition-colors"
+                  className="px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-colors"
                 >
                   Posts ({details.posts.length})
                 </Tabs.Trigger>
                 <Tabs.Trigger
                   value="qa"
-                  className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition-colors"
+                  className="px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-colors"
                 >
                   Quality
                 </Tabs.Trigger>
                 <Tabs.Trigger
                   value="history"
-                  className="px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 transition-colors"
+                  className="px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-colors"
                 >
                   History
                 </Tabs.Trigger>

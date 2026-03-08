@@ -51,6 +51,8 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
         - Field presence validation
 
         Uses CommonValidationMixin for standard validations (Phase 3 deduplication)
+
+        NOTE: main_topics is now OPTIONAL - will auto-generate from business context if not provided
         """
         # Use mixin methods for standard validations
         inputs["business_description"] = self.validate_business_description(inputs)
@@ -61,22 +63,26 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
         if "competitors" in inputs and inputs["competitors"]:
             inputs["competitors"] = self.validate_competitor_list(inputs)
 
-        # Tool-specific validation: main topics list (1-10 topics)
-        inputs["main_topics"] = self.validator.validate_list(
-            inputs.get("main_topics"),
-            field_name="main_topics",
-            min_items=1,
-            max_items=10,
-            required=True,
-            item_validator=lambda topic: self.validator.validate_text(
-                topic,
-                field_name="main_topic",
-                min_length=2,
-                max_length=200,
-                required=True,
-                sanitize=True,
-            ),
-        )
+        # Tool-specific validation: main topics list (NOW OPTIONAL - auto-generated if missing)
+        if "main_topics" in inputs and inputs["main_topics"]:
+            inputs["main_topics"] = self.validator.validate_list(
+                inputs.get("main_topics"),
+                field_name="main_topics",
+                min_items=1,
+                max_items=10,
+                required=False,  # Changed to optional
+                item_validator=lambda topic: self.validator.validate_text(
+                    topic,
+                    field_name="main_topic",
+                    min_length=2,
+                    max_length=200,
+                    required=True,
+                    sanitize=True,
+                ),
+            )
+        else:
+            # Will auto-generate in run_analysis
+            inputs["main_topics"] = None
 
         return True
 
@@ -84,11 +90,18 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
         """Execute keyword research analysis"""
         business_desc = inputs["business_description"]
         target_audience = inputs["target_audience"]
-        main_topics = inputs["main_topics"]
+        main_topics = inputs.get("main_topics")
         competitors = inputs.get("competitors", [])
         industry = inputs.get("industry") or "Not specified"
 
-        logger.info(f"Researching keywords for {len(main_topics)} topics")
+        # Auto-generate topics if not provided
+        if not main_topics:
+            logger.info("Auto-generating main topics from business context")
+            main_topics = self._auto_generate_topics(
+                business_desc, industry, inputs.get("value_proposition")
+            )
+
+        logger.info(f"Researching keywords for {len(main_topics)} topics: {main_topics}")
 
         # Step 1: Research primary keywords (5-10)
         primary_keywords = self._research_primary_keywords(
@@ -146,6 +159,146 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
         )
 
         return strategy
+
+    def _auto_generate_topics(
+        self,
+        business_description: str,
+        industry: Optional[str] = None,
+        value_proposition: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Auto-generate 3-5 main topics from business description using AI.
+
+        This makes the tool fully automatic - no user input required!
+
+        Args:
+            business_description: The company's business description
+            industry: Optional industry context
+            value_proposition: Optional value prop for additional context
+
+        Returns:
+            List of 3-5 main topic keywords
+        """
+        from ..utils.anthropic_client import get_default_client
+
+        logger.info("Auto-generating topics from business context")
+
+        # Build context for topic extraction
+        context_parts = [f"Business: {business_description}"]
+        if industry:
+            context_parts.append(f"Industry: {industry}")
+        if value_proposition:
+            context_parts.append(f"Value Proposition: {value_proposition}")
+
+        context = "\n".join(context_parts)
+
+        prompt = f"""Based on this business context, extract 3-5 main topic keywords that best represent what this company does and what their target audience would search for.
+
+{context}
+
+IMPORTANT:
+- Return ONLY the topics, one per line
+- Each topic should be 1-4 words
+- Focus on what customers search for, not internal jargon
+- Include industry-specific terms
+- Prioritize topics with search volume potential
+
+Example output format:
+AI automation
+content marketing
+SEO strategy
+
+Your topics:"""
+
+        try:
+            client = get_default_client()
+            response = client.create_message(
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300,
+                temperature=0.3,  # Lower temp for focused extraction
+            )
+
+            # Parse response - create_message returns string directly
+            topics_text = response.strip()
+            topics = [
+                topic.strip()
+                for topic in topics_text.split("\n")
+                if topic.strip() and len(topic.strip()) > 2
+            ]
+
+            # Limit to 5 topics
+            topics = topics[:5]
+
+            # Ensure we have at least 3 topics
+            if len(topics) < 3:
+                # Fallback: extract key terms from business description
+                logger.warning(f"AI generated only {len(topics)} topics, using fallback")
+                topics = self._fallback_topic_extraction(business_description, industry)
+
+            logger.info(f"Auto-generated {len(topics)} topics: {topics}")
+            return topics
+
+        except Exception as e:
+            logger.error(f"Error auto-generating topics: {e}")
+            # Fallback to simple extraction
+            return self._fallback_topic_extraction(business_description, industry)
+
+    def _fallback_topic_extraction(
+        self,
+        business_description: str,
+        industry: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Fallback method to extract topics if AI generation fails.
+
+        Uses simple keyword extraction from business description.
+        """
+        # Simple approach: use industry + key terms from description
+        topics = []
+
+        if industry and industry != "Not specified":
+            topics.append(industry.lower())
+
+        # Extract potential topics from description
+        # Look for common business/tech keywords
+
+        # Common business/tech keywords that make good topics
+        good_keywords = [
+            "marketing",
+            "content",
+            "seo",
+            "automation",
+            "ai",
+            "saas",
+            "analytics",
+            "strategy",
+            "social media",
+            "email",
+            "advertising",
+            "branding",
+            "sales",
+            "crm",
+            "data",
+            "growth",
+            "software",
+            "platform",
+            "tools",
+            "services",
+            "consulting",
+            "agency",
+        ]
+
+        for keyword in good_keywords:
+            if keyword in business_description.lower() and keyword not in topics:
+                topics.append(keyword)
+                if len(topics) >= 5:
+                    break
+
+        # Ensure at least 3 topics
+        if len(topics) < 3:
+            topics.extend(["marketing", "strategy", "growth"][: 3 - len(topics)])
+
+        return topics[:5]
 
     def _research_primary_keywords(
         self,

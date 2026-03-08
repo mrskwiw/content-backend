@@ -142,7 +142,7 @@ function ToolCheckbox({ tool, checked, onChange }: GroupCheckboxProps) {
   return (
     <label
       className={`flex items-center gap-2 cursor-pointer rounded px-2 py-1 transition-colors
-        ${tool.implemented ? 'hover:bg-slate-50' : 'opacity-60 cursor-not-allowed'}`}
+        ${tool.implemented ? 'hover:bg-neutral-50 dark:hover:bg-neutral-800' : 'opacity-60 cursor-not-allowed'}`}
       title={tool.implemented ? undefined : 'Not yet available — coming soon'}
     >
       <input
@@ -150,13 +150,13 @@ function ToolCheckbox({ tool, checked, onChange }: GroupCheckboxProps) {
         checked={checked}
         disabled={!tool.implemented}
         onChange={e => onChange(tool.id, e.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+        className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50"
       />
-      <span className="flex-1 text-sm text-slate-700">{tool.name}</span>
-      <span className="text-xs text-slate-500">${tool.price.toLocaleString()}</span>
+      <span className="flex-1 text-sm text-neutral-700 dark:text-neutral-300">{tool.name}</span>
+      <span className="text-xs text-neutral-500 dark:text-neutral-400">${tool.price.toLocaleString()}</span>
       {!tool.implemented && (
         <span
-          className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+          className="inline-flex items-center gap-1 rounded bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400"
           title="Not yet available — coming soon"
         >
           <Info className="h-3 w-3" />
@@ -288,7 +288,7 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* ---- Project Name ---- */}
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-800">
+            <label className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
               <Building2 className="h-4 w-4" />
               Project Name
             </label>
@@ -297,16 +297,16 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
               placeholder="March 2026 Campaign"
-              className={`w-full rounded-md border px-3 py-2 text-sm ${
-                errors.name ? 'border-rose-500' : 'border-slate-200'
-              }`}
+              className={`w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 ${
+                errors.name ? 'border-rose-500 dark:border-rose-400' : 'border-neutral-200 dark:border-neutral-700'
+              } focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400`}
             />
-            {errors.name && <p className="mt-1 text-xs text-rose-600">{errors.name}</p>}
+            {errors.name && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.name}</p>}
           </div>
 
           {/* ---- Client ID ---- */}
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-800">
+            <label className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
               <User className="h-4 w-4" />
               Client ID
             </label>
@@ -315,17 +315,17 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
               value={formData.clientId}
               onChange={e => setFormData({ ...formData, clientId: e.target.value })}
               placeholder="acme-corp"
-              className={`w-full rounded-md border px-3 py-2 text-sm ${
-                errors.clientId ? 'border-rose-500' : 'border-slate-200'
-              }`}
+              className={`w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 ${
+                errors.clientId ? 'border-rose-500 dark:border-rose-400' : 'border-neutral-200 dark:border-neutral-700'
+              } focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400`}
             />
-            {errors.clientId && <p className="mt-1 text-xs text-rose-600">{errors.clientId}</p>}
-            <p className="mt-1 text-xs text-slate-500">Lowercase, hyphenated identifier</p>
+            {errors.clientId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.clientId}</p>}
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Lowercase, hyphenated identifier</p>
           </div>
 
           {/* ---- Client Name ---- */}
           <div>
-            <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-800">
+            <label className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
               <Target className="h-4 w-4" />
               Client Name
             </label>
@@ -334,19 +334,19 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
               value={formData.clientName}
               onChange={e => setFormData({ ...formData, clientName: e.target.value })}
               placeholder="Acme Corp"
-              className={`w-full rounded-md border px-3 py-2 text-sm ${
-                errors.clientName ? 'border-rose-500' : 'border-slate-200'
-              }`}
+              className={`w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 ${
+                errors.clientName ? 'border-rose-500 dark:border-rose-400' : 'border-neutral-200 dark:border-neutral-700'
+              } focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400`}
             />
-            {errors.clientName && <p className="mt-1 text-xs text-rose-600">{errors.clientName}</p>}
+            {errors.clientName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.clientName}</p>}
           </div>
 
           {/* ---- Section A: Post Generation ---- */}
-          <div className="rounded-lg border border-slate-200 p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-800">Post Generation</h3>
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4 space-y-3 bg-white dark:bg-neutral-900">
+            <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Post Generation</h3>
 
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-700 whitespace-nowrap">Number of posts</label>
+              <label className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-nowrap">Number of posts</label>
               <input
                 type="number"
                 min={1}
@@ -355,40 +355,40 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
                 onChange={e =>
                   setFormData({ ...formData, numPosts: Math.max(1, Math.min(100, parseInt(e.target.value) || 1)) })
                 }
-                className={`w-20 rounded-md border px-3 py-1.5 text-sm text-center ${
-                  errors.numPosts ? 'border-rose-500' : 'border-slate-200'
-                }`}
+                className={`w-20 rounded-md border px-3 py-1.5 text-sm text-center bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 ${
+                  errors.numPosts ? 'border-rose-500 dark:border-rose-400' : 'border-neutral-200 dark:border-neutral-700'
+                } focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400`}
               />
-              <span className="text-xs text-slate-500">× ${PRICE_PER_POST}/post</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">× ${PRICE_PER_POST}/post</span>
             </div>
-            {errors.numPosts && <p className="text-xs text-rose-600">{errors.numPosts}</p>}
+            {errors.numPosts && <p className="text-xs text-rose-600 dark:text-rose-400">{errors.numPosts}</p>}
 
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.researchAddon}
                 onChange={e => setFormData({ ...formData, researchAddon: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">
                 Topic research add-on{' '}
-                <span className="text-slate-500">(+${RESEARCH_PRICE_PER_POST}/post)</span>
+                <span className="text-neutral-500 dark:text-neutral-400">(+${RESEARCH_PRICE_PER_POST}/post)</span>
               </span>
             </label>
           </div>
 
           {/* ---- Section B: Research Tools ---- */}
-          <div className="rounded-lg border border-slate-200 p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-slate-800">Research Tools</h3>
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4 space-y-4 bg-white dark:bg-neutral-900">
+            <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Research Tools</h3>
 
             {/* Foundation group */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                   Foundation
                 </span>
                 {foundationAllChecked && (
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                  <span className="rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">
                     Foundation Pack — saves $300
                   </span>
                 )}
@@ -408,16 +408,16 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
             {/* SEO group */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                   SEO
                 </span>
                 {seoAllChecked && !foundationAllChecked && (
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                  <span className="rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400">
                     SEO Pack — saves $100
                   </span>
                 )}
                 {seoAllChecked && foundationAllChecked && (
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                  <span className="rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:text-blue-400">
                     Complete Strategy — saves $800
                   </span>
                 )}
@@ -437,10 +437,10 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
             {/* Advanced group */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                   Advanced
                 </span>
-                <span className="text-xs text-slate-400 italic">a la carte only</span>
+                <span className="text-xs text-neutral-400 dark:text-neutral-500 italic">a la carte only</span>
               </div>
               <div className="space-y-1">
                 {advancedTools.map(tool => (
@@ -456,27 +456,27 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
           </div>
 
           {/* ---- Section C: Price Breakdown ---- */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm">
-            <h3 className="font-semibold text-slate-800 mb-2">Price Breakdown</h3>
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-4 space-y-2 text-sm">
+            <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-2">Price Breakdown</h3>
 
-            <div className="flex justify-between text-slate-700">
+            <div className="flex justify-between text-neutral-700 dark:text-neutral-300">
               <span>Post Generation ({formData.numPosts} posts)</span>
               <span className="font-medium">${pricing.postsCost.toLocaleString()}</span>
             </div>
 
             {pricing.researchAddonCost > 0 && (
-              <div className="flex justify-between text-slate-700">
+              <div className="flex justify-between text-neutral-700 dark:text-neutral-300">
                 <span>Topic Research Add-on</span>
                 <span className="font-medium">${pricing.researchAddonCost.toLocaleString()}</span>
               </div>
             )}
 
             {formData.selectedTools.size > 0 && (
-              <div className="flex justify-between text-slate-700">
+              <div className="flex justify-between text-neutral-700 dark:text-neutral-300">
                 <span>Research Tools</span>
                 <span className="font-medium">
                   {hasDiscount && (
-                    <span className="mr-2 text-xs text-slate-400 line-through">
+                    <span className="mr-2 text-xs text-neutral-400 dark:text-neutral-500 line-through">
                       ${alaCarteToolsTotal.toLocaleString()}
                     </span>
                   )}
@@ -486,13 +486,13 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
             )}
 
             {hasDiscount && (
-              <div className="flex justify-between text-green-700 font-medium">
+              <div className="flex justify-between text-green-700 dark:text-green-400 font-medium">
                 <span>Bundle Discount</span>
                 <span>−${pricing.discountAmount.toLocaleString()}</span>
               </div>
             )}
 
-            <div className="border-t border-slate-200 pt-2 flex justify-between font-semibold text-slate-900">
+            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-2 flex justify-between font-semibold text-neutral-900 dark:text-neutral-100">
               <span>Total</span>
               <span>${pricing.totalPrice.toLocaleString()}</span>
             </div>
@@ -502,7 +502,7 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
                 {pricing.appliedBundles.map(name => (
                   <span
                     key={name}
-                    className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700"
+                    className="rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400"
                   >
                     {name}
                   </span>
@@ -512,7 +512,7 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
           </div>
 
           {createMutation.isError && (
-            <p className="text-sm text-rose-600">
+            <p className="text-sm text-rose-600 dark:text-rose-400">
               Failed to create project. Please check your inputs and try again.
             </p>
           )}
@@ -521,14 +521,14 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-neutral-200 dark:border-neutral-700 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md bg-blue-600 dark:bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
             >
               {createMutation.isPending ? 'Creating...' : 'Create Project'}
             </button>

@@ -95,27 +95,27 @@ export function OverviewTab({ deliverable }: Props) {
       {/* Format & Size */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs font-medium text-slate-500 uppercase">Format</div>
-          <div className="mt-1 text-sm font-medium">{deliverable.format.toUpperCase()}</div>
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Format</div>
+          <div className="mt-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">{deliverable.format.toUpperCase()}</div>
         </div>
         <div>
-          <div className="text-xs font-medium text-slate-500 uppercase">File Size</div>
-          <div className="mt-1 text-sm">{formatFileSize(deliverable.fileSizeBytes)}</div>
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">File Size</div>
+          <div className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{formatFileSize(deliverable.fileSizeBytes)}</div>
         </div>
       </div>
 
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs font-medium text-slate-500 uppercase">Created</div>
-          <div className="mt-1 text-sm">{format(new Date(deliverable.createdAt), 'PPp')}</div>
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Created</div>
+          <div className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{format(new Date(deliverable.createdAt), 'PPp')}</div>
         </div>
         <div>
-          <div className="text-xs font-medium text-slate-500 uppercase">Delivered</div>
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Delivered</div>
           <div className="mt-1 text-sm">
             {deliverable.deliveredAt
-              ? format(new Date(deliverable.deliveredAt), 'PPp')
-              : <span className="text-slate-400">Not delivered</span>
+              ? <span className="text-neutral-900 dark:text-neutral-100">{format(new Date(deliverable.deliveredAt), 'PPp')}</span>
+              : <span className="text-neutral-400 dark:text-neutral-500">Not delivered</span>
             }
           </div>
         </div>
@@ -124,19 +124,19 @@ export function OverviewTab({ deliverable }: Props) {
       {/* Modified Date */}
       {deliverable.fileModifiedAt && (
         <div>
-          <div className="text-xs font-medium text-slate-500 uppercase">Last Modified</div>
-          <div className="mt-1 text-sm">{format(new Date(deliverable.fileModifiedAt), 'PPp')}</div>
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Last Modified</div>
+          <div className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{format(new Date(deliverable.fileModifiedAt), 'PPp')}</div>
         </div>
       )}
 
       {/* Status */}
       <div>
-        <div className="text-xs font-medium text-slate-500 uppercase">Status</div>
+        <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Status</div>
         <div className="mt-1 flex items-center gap-3">
           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-            deliverable.status === 'delivered' ? 'bg-green-100 text-green-800' :
-            deliverable.status === 'ready' ? 'bg-blue-100 text-blue-800' :
-            'bg-slate-100 text-slate-800'
+            deliverable.status === 'delivered' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300' :
+            deliverable.status === 'ready' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300' :
+            'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
           }`}>
             {deliverable.status}
           </span>
@@ -154,27 +154,27 @@ export function OverviewTab({ deliverable }: Props) {
       </div>
 
       {/* IDs */}
-      <div className="pt-4 border-t border-slate-200">
+      <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
         <div className="space-y-3">
           <div>
-            <div className="text-xs font-medium text-slate-500 uppercase">Deliverable ID</div>
-            <div className="mt-1 font-mono text-xs text-slate-700">{deliverable.id}</div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Deliverable ID</div>
+            <div className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300">{deliverable.id}</div>
           </div>
 
           <div>
-            <div className="text-xs font-medium text-slate-500 uppercase">Project ID</div>
-            <div className="mt-1 font-mono text-xs text-slate-700">{deliverable.projectId}</div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Project ID</div>
+            <div className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300">{deliverable.projectId}</div>
           </div>
 
           <div>
-            <div className="text-xs font-medium text-slate-500 uppercase">Client ID</div>
-            <div className="mt-1 font-mono text-xs text-slate-700">{deliverable.clientId}</div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Client ID</div>
+            <div className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300">{deliverable.clientId}</div>
           </div>
 
           {deliverable.runId && (
             <div>
-              <div className="text-xs font-medium text-slate-500 uppercase">Run ID</div>
-              <div className="mt-1 font-mono text-xs text-slate-700">{deliverable.runId}</div>
+              <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Run ID</div>
+              <div className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300">{deliverable.runId}</div>
             </div>
           )}
         </div>
@@ -182,8 +182,8 @@ export function OverviewTab({ deliverable }: Props) {
 
       {/* Path */}
       <div>
-        <div className="text-xs font-medium text-slate-500 uppercase">File Path</div>
-        <div className="mt-1 font-mono text-xs text-slate-700 break-all bg-slate-50 p-2 rounded">
+        <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">File Path</div>
+        <div className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300 break-all bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded">
           {deliverable.path}
         </div>
       </div>
@@ -191,8 +191,8 @@ export function OverviewTab({ deliverable }: Props) {
       {/* Checksum */}
       {deliverable.checksum && (
         <div>
-          <div className="text-xs font-medium text-slate-500 uppercase">Checksum</div>
-          <div className="mt-1 font-mono text-xs text-slate-700 break-all bg-slate-50 p-2 rounded">
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Checksum</div>
+          <div className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300 break-all bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded">
             {deliverable.checksum}
           </div>
         </div>
@@ -200,22 +200,22 @@ export function OverviewTab({ deliverable }: Props) {
 
       {/* Proof */}
       {(deliverable.proofUrl || deliverable.proofNotes) && (
-        <div className="pt-4 border-t border-slate-200">
-          <div className="text-xs font-medium text-slate-500 uppercase mb-2">Delivery Proof</div>
+        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
+          <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase mb-2">Delivery Proof</div>
           {deliverable.proofUrl && (
             <div className="mb-2">
               <a
                 href={deliverable.proofUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
               >
                 View Proof
               </a>
             </div>
           )}
           {deliverable.proofNotes && (
-            <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded">
+            <div className="text-sm text-neutral-600 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded">
               {deliverable.proofNotes}
             </div>
           )}

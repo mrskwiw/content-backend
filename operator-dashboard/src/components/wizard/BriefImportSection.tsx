@@ -50,23 +50,23 @@ export function BriefImportSection({ onImport }: BriefImportSectionProps) {
   };
 
   return (
-    <div className="mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="mb-6 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 bg-neutral-50 dark:bg-neutral-800">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between w-full text-left"
         type="button"
       >
-        <span className="font-medium text-gray-900 dark:text-gray-100">
+        <span className="font-medium text-neutral-900 dark:text-neutral-100">
           📁 Import Client Brief
         </span>
-        <span className="text-gray-500 dark:text-gray-400 text-xl font-light">
+        <span className="text-neutral-500 dark:text-neutral-400 text-xl font-light">
           {isOpen ? '−' : '+'}
         </span>
       </button>
 
       {isOpen && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
             Upload a client brief file (.txt or .md) to auto-populate form fields.
           </p>
 

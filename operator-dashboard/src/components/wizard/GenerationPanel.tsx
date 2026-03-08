@@ -76,11 +76,11 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
     : null;
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">Generate All</h3>
-          <p className="text-xs text-slate-600">
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Generate All</h3>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">
             {statusMessage || 'Run full batch generation for this project.'}
           </p>
         </div>
@@ -96,7 +96,7 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
               targetPlatform,
             })
           }
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50"
         >
           {isGenerating ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -111,17 +111,17 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
         </button>
       </div>
       {generate.error && (
-        <div className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-3 rounded-md bg-rose-50 dark:bg-rose-900/20 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
           {(generate.error as Error).message || 'Failed to queue generation'}
         </div>
       )}
       {runStatus?.status === 'failed' && runStatus.errorMessage && (
-        <div className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div className="mt-3 rounded-md bg-rose-50 dark:bg-rose-900/20 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
           Generation failed: {runStatus.errorMessage}
         </div>
       )}
       {isSucceeded && (
-        <div className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <div className="mt-3 rounded-md bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
           Generation complete! Loading quality results...
         </div>
       )}

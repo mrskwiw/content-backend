@@ -49,7 +49,7 @@ export function FileUpload({ accept, maxSizeMB, onFileSelect, disabled }: FileUp
         className="cursor-pointer"
       />
       {selectedFile && (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
           Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
         </p>
       )}
