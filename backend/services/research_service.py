@@ -706,14 +706,23 @@ class ResearchService:
         elif tool_name == "seo_keyword_research":  # Fixed: was "seo_keyword"
             # SEO keyword research needs industry/niche
             inputs["industry"] = (
-                params.get("industry") or client.business_description or "General business"
+                params.get("industry")
+                or client.industry
+                or client.business_description
+                or "General business"
             )
             inputs["target_keywords"] = params.get("target_keywords", [])
             inputs["main_topics"] = params.get("main_topics", [])  # Required by tool
 
         elif tool_name == "competitive_analysis":
-            # Competitive analysis needs competitor list
+            # Competitive analysis needs competitor list and industry
             inputs["competitors"] = params.get("competitors", [])
+            inputs["industry"] = (
+                params.get("industry")
+                or client.industry
+                or client.business_description
+                or "Not specified"
+            )
 
         elif tool_name == "content_gap_analysis":
             # Content gap needs current topics
@@ -722,7 +731,10 @@ class ResearchService:
         elif tool_name == "market_trends":
             # Market trends needs industry context
             inputs["industry"] = (
-                params.get("industry") or client.business_description or "General business"
+                params.get("industry")
+                or client.industry
+                or client.business_description
+                or "General business"
             )
 
         return inputs
