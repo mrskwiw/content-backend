@@ -66,6 +66,9 @@ class ClientBrief(BaseModel):
     founder_name: Optional[str] = Field(None, description="Founder or primary voice")
     website: Optional[str] = Field(None, description="Website or LinkedIn URL")
     business_description: str = Field(..., description="One-sentence business description")
+    industry: Optional[str] = Field(
+        None, description="Industry or sector (e.g., SaaS, Healthcare, Finance)"
+    )
 
     # Audience
     ideal_customer: str = Field(..., description="Ideal customer profile")

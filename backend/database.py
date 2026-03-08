@@ -193,6 +193,7 @@ def init_db():
                 ("platforms", "JSON"),
                 ("customer_pain_points", "JSON"),
                 ("customer_questions", "JSON"),
+                ("industry", "VARCHAR"),  # Industry/sector for research tools
             ]
 
             # SECURITY FIX: Whitelist of allowed SQL column types (TR-015)
