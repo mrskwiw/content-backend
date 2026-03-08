@@ -4,6 +4,7 @@ import type { Client, Platform } from '@/types/domain';
 export interface CreateClientInput {
   name: string;
   email?: string;
+  industry?: string;
   businessDescription?: string;
   idealCustomer?: string;
   mainProblemSolved?: string;
@@ -16,6 +17,7 @@ export interface CreateClientInput {
 export interface UpdateClientInput {
   name?: string;
   email?: string;
+  industry?: string;
   businessDescription?: string;
   idealCustomer?: string;
   mainProblemSolved?: string;
@@ -44,6 +46,7 @@ export const clientsApi = {
     };
 
     if (input.email !== undefined) backendInput.email = input.email;
+    if (input.industry !== undefined) backendInput.industry = input.industry;
     if (input.businessDescription !== undefined) backendInput.business_description = input.businessDescription;
     if (input.idealCustomer !== undefined) backendInput.ideal_customer = input.idealCustomer;
     if (input.mainProblemSolved !== undefined) backendInput.main_problem_solved = input.mainProblemSolved;
@@ -61,6 +64,7 @@ export const clientsApi = {
     const backendInput: Record<string, string | number | string[] | Platform[] | undefined> = {};
     if (input.name !== undefined) backendInput.name = input.name;
     if (input.email !== undefined) backendInput.email = input.email;
+    if (input.industry !== undefined) backendInput.industry = input.industry;
     if (input.businessDescription !== undefined) backendInput.business_description = input.businessDescription;
     if (input.idealCustomer !== undefined) backendInput.ideal_customer = input.idealCustomer;
     if (input.mainProblemSolved !== undefined) backendInput.main_problem_solved = input.mainProblemSolved;
