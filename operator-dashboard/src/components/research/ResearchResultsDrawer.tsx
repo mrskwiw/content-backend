@@ -22,6 +22,12 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
   const summary = (result.data && typeof result.data === 'object' && 'summary' in result.data && result.data.summary)
     ? String(result.data.summary)
     : null;
+  const keyFindings = (result.data?.key_findings && Array.isArray(result.data.key_findings))
+    ? (result.data.key_findings as string[])
+    : null;
+  const recommendations = (result.data?.recommendations && Array.isArray(result.data.recommendations))
+    ? (result.data.recommendations as string[])
+    : null;
 
   const formatToolName = (name: string) => {
     return name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -152,14 +158,14 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
           )}
 
           {/* Key Findings (if available in data) */}
-          {result.data?.key_findings && Array.isArray(result.data.key_findings) && (
+          {keyFindings && (
             <section className="mb-6">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Key Findings
               </h3>
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
                 <ul className="space-y-2">
-                  {result.data.key_findings.map((finding: string, idx: number) => (
+                  {keyFindings.map((finding: string, idx: number) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                       <span>{finding}</span>
@@ -171,14 +177,14 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
           )}
 
           {/* Recommendations (if available in data) */}
-          {result.data?.recommendations && Array.isArray(result.data.recommendations) && (
+          {recommendations && (
             <section className="mb-6">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 Recommendations
               </h3>
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
                 <ul className="space-y-2">
-                  {result.data.recommendations.map((rec: string, idx: number) => (
+                  {recommendations.map((rec: string, idx: number) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
                       <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-xs font-medium flex-shrink-0">
                         {idx + 1}
