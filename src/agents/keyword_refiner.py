@@ -5,10 +5,9 @@ Interactive agent for reviewing and refining extracted SEO keywords.
 
 from typing import List
 
-from anthropic import Anthropic
-
 from ..config.settings import settings
 from ..models.seo_keyword import KeywordDifficulty, KeywordIntent, KeywordStrategy, SEOKeyword
+from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import console, logger
 
 
@@ -17,7 +16,7 @@ class KeywordRefinementAgent:
 
     def __init__(self):
         """Initialize keyword refinement agent"""
-        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.client = AnthropicClient()
         self.model = settings.ANTHROPIC_MODEL
 
     def review_keywords_interactive(self, keyword_strategy: KeywordStrategy) -> KeywordStrategy:
@@ -180,19 +179,20 @@ Please refine the keyword strategy and return updated JSON with:
 
 Each keyword should have: keyword, intent, difficulty, priority, related_keywords, notes"""
 
-        response = self.client.messages.create(
-            model=self.model,
+        # Use centralized client for retry logic, caching, and cost tracking
+        response_text = self.client.create_message(
+            messages=[{"role": "user", "content": user_prompt}],
+            system=system_prompt,
             max_tokens=4000,
             temperature=0.3,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
+            operation="keyword_refinement",
         )
 
         # Parse response (reuse existing extraction logic)
         from .keyword_agent import KeywordExtractionAgent
 
         extractor = KeywordExtractionAgent()
-        keywords_data = extractor._extract_json_from_response(response.content[0].text)
+        keywords_data = extractor._extract_json_from_response(response_text)
 
         # Parse into strategy
         refined_strategy = extractor._parse_keyword_strategy(keywords_data)

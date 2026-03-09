@@ -6,11 +6,10 @@ AI-powered agent that extracts and suggests SEO keywords from client briefs.
 import json
 from typing import Any, Dict, List
 
-from anthropic import Anthropic
-
 from ..config.settings import settings
 from ..models.client_brief import ClientBrief
 from ..models.seo_keyword import KeywordDifficulty, KeywordIntent, KeywordStrategy, SEOKeyword
+from ..utils.anthropic_client import AnthropicClient
 from ..utils.logger import logger
 
 
@@ -19,7 +18,7 @@ class KeywordExtractionAgent:
 
     def __init__(self):
         """Initialize keyword extraction agent"""
-        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.client = AnthropicClient()
         self.model = settings.ANTHROPIC_MODEL
 
     def extract_keywords(self, client_brief: ClientBrief) -> KeywordStrategy:
@@ -37,23 +36,22 @@ class KeywordExtractionAgent:
         # Build context for keyword extraction
         context = self._build_extraction_context(client_brief)
 
-        # Generate keyword strategy using Claude
+        # Generate keyword strategy using Claude via centralized client
         # Use smaller max_tokens to avoid JSON truncation issues
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=4000,  # Increased for complete JSON responses
-            temperature=0.3,  # Lower temperature for more consistent extraction
-            system=self._build_system_prompt(),
+        keywords_json = self.client.create_message(
             messages=[
                 {
                     "role": "user",
                     "content": f"Extract SEO keywords for this client:\n\n{context}\n\nReturn valid JSON ONLY.",
                 }
             ],
+            system=self._build_system_prompt(),
+            max_tokens=4000,  # Increased for complete JSON responses
+            temperature=0.3,  # Lower temperature for more consistent extraction
+            operation="keyword_extraction",
         )
 
         # Parse response with robust JSON extraction
-        keywords_json = response.content[0].text
         keywords_data = self._extract_json_from_response(keywords_json)
 
         # Convert to KeywordStrategy
