@@ -230,14 +230,14 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
             type="text"
             value={formData.industry}
             onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-            placeholder="e.g., SaaS, Healthcare, Finance, E-commerce"
+            placeholder="e.g., dental practice, medical equipment manufacturer, project management software"
             className={`w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 ${
               errors.industry ? 'border-rose-500 dark:border-rose-400' : 'border-slate-200 dark:border-slate-700'
             }`}
           />
           {errors.industry && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.industry}</p>}
           <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
-            Optional. Helps research tools provide more relevant insights. Will be auto-inferred from business description if not provided.
+            Be specific (defines direct competitors). Use "dental practice" not "healthcare", "accounting firm" not "finance". Auto-inferred if not provided.
           </p>
         </div>
 

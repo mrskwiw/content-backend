@@ -47,7 +47,7 @@ Extract the following information and format it as JSON:
 {
   "company_name": "Company name",
   "business_description": "Brief description of what they do",
-  "industry": "Industry or sector (e.g., SaaS, Healthcare, Finance, E-commerce)",
+  "industry": "Specific industry/niche (e.g., dental practice, medical equipment manufacturer, project management software, accounting firm)",
   "ideal_customer": "Description of ideal customer",
   "main_problem_solved": "Main problem the business solves",
   "customer_pain_points": ["pain point 1", "pain point 2", ...],
@@ -67,7 +67,14 @@ Guidelines:
 - Capture specific phrases and language patterns they use
 - Note any personal stories or examples mentioned
 - For data_usage, choose: "minimal", "moderate", or "heavy"
-- For industry, infer from business_description if not explicitly stated (e.g., "AI platform" → "SaaS", "medical device company" → "Healthcare")
+- For industry, be SPECIFIC and competition-focused (defines who their competitors are):
+  • "dental practice" NOT "healthcare" or "medical"
+  • "medical equipment manufacturer" NOT "manufacturing" or "healthcare"
+  • "project management software" NOT "SaaS" or "software"
+  • "accounting firm" NOT "professional services" or "finance"
+  • "restaurant" NOT "food & beverage" or "hospitality"
+  • "real estate agency" NOT "real estate" or "services"
+  The industry label should help identify direct competitors, not broad categories
 - Be thorough but concise
 
 Return ONLY the JSON, no additional commentary."""

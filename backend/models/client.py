@@ -31,7 +31,9 @@ class Client(Base):
     platforms = Column(JSON, nullable=True)
     customer_pain_points = Column(JSON, nullable=True)
     customer_questions = Column(JSON, nullable=True)
-    industry = Column(String, nullable=True)  # Industry/sector for research tools
+    industry = Column(
+        String, nullable=True
+    )  # Specific industry/niche (e.g., "dental practice", "project management software") for competitive analysis
 
     # Relationships (using fully qualified paths to avoid conflicts with Pydantic models in src.models)
     user = relationship("backend.models.user.User", foreign_keys=[user_id])  # TR-021: Client owner

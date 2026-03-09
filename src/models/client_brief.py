@@ -67,7 +67,8 @@ class ClientBrief(BaseModel):
     website: Optional[str] = Field(None, description="Website or LinkedIn URL")
     business_description: str = Field(..., description="One-sentence business description")
     industry: Optional[str] = Field(
-        None, description="Industry or sector (e.g., SaaS, Healthcare, Finance)"
+        None,
+        description="Specific industry/niche that defines direct competitors (e.g., dental practice, medical equipment manufacturer, project management software)",
     )
 
     # Audience
