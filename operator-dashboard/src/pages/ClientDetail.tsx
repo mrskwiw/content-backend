@@ -36,6 +36,8 @@ import { researchApi } from '@/api/research';
 import { storiesApi, type Story } from '@/api/stories';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ResearchResultsDrawer } from '@/components/research/ResearchResultsDrawer';
+import { StoryDetailsDrawer } from '@/components/stories/StoryDetailsDrawer';
+import { AddStoryDialog } from '@/components/stories/AddStoryDialog';
 import type { Project, PostDraft, Deliverable, ResearchResult } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -58,6 +60,13 @@ export default function ClientDetail() {
   // Research results drawer state
   const [selectedResult, setSelectedResult] = useState<ResearchResult | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Story drawer state
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [storyDrawerOpen, setStoryDrawerOpen] = useState(false);
+
+  // Add story dialog state
+  const [addStoryDialogOpen, setAddStoryDialogOpen] = useState(false);
 
   // Data collection dialog state
   const [dialogInputValue, setDialogInputValue] = useState('');
@@ -133,6 +142,18 @@ export default function ClientDetail() {
     },
     onError: (error) => {
       alert(`Failed to delete story: ${getApiErrorMessage(error)}`);
+    },
+  });
+
+  // Story creation mutation
+  const createStoryMutation = useMutation({
+    mutationFn: storiesApi.create,
+    onSuccess: () => {
+      refetchStories();
+      setAddStoryDialogOpen(false);
+    },
+    onError: (error) => {
+      alert(`Failed to create story: ${getApiErrorMessage(error)}`);
     },
   });
 
@@ -923,7 +944,10 @@ export default function ClientDetail() {
                     Mined customer stories for content generation. Stories are automatically saved from Story Mining research.
                   </p>
                 </div>
-                <button className="inline-flex items-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600">
+                <button
+                  onClick={() => setAddStoryDialogOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600"
+                >
                   <Plus className="h-4 w-4" />
                   Add Story Manually
                 </button>
@@ -1032,6 +1056,10 @@ export default function ClientDetail() {
                         {/* Actions */}
                         <div className="flex items-center gap-2 ml-4">
                           <button
+                            onClick={() => {
+                              setSelectedStory(story);
+                              setStoryDrawerOpen(true);
+                            }}
                             className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
                             title="View full story details"
                           >
@@ -1446,6 +1474,26 @@ export default function ClientDetail() {
           setDrawerOpen(false);
           setSelectedResult(null);
         }}
+      />
+
+      {/* Story Details Drawer */}
+      <StoryDetailsDrawer
+        story={selectedStory}
+        open={storyDrawerOpen}
+        onClose={() => {
+          setStoryDrawerOpen(false);
+          setSelectedStory(null);
+        }}
+      />
+
+      {/* Add Story Dialog */}
+      <AddStoryDialog
+        clientId={clientId!}
+        projectId={projects.length > 0 ? projects[0].id : undefined}
+        open={addStoryDialogOpen}
+        onClose={() => setAddStoryDialogOpen(false)}
+        onSubmit={(story) => createStoryMutation.mutate(story)}
+        isSubmitting={createStoryMutation.isPending}
       />
     </div>
   );
