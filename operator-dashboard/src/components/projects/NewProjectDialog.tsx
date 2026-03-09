@@ -422,6 +422,9 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
                   </span>
                 )}
               </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 italic">
+                Tip: Clients with 5+ keywords can skip SEO Keyword Research
+              </p>
               <div className="space-y-1">
                 {seoTools.map(tool => (
                   <ToolCheckbox

@@ -593,9 +593,16 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
           return (
             <div key={category.name} className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
               <div className="mb-3 flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <h4 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">{category.label}</h4>
                   <p className="text-xs text-slate-600 dark:text-neutral-400">{category.description}</p>
+                  {category.name === 'seo' && clientData && clientData.keywords && clientData.keywords.length >= 5 && (
+                    <div className="mt-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 border border-emerald-200 dark:border-emerald-800">
+                      <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium">
+                        ✓ Client has {clientData.keywords.length} keywords — SEO Keyword Research is optional
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => selectByCategory(category.name)}
