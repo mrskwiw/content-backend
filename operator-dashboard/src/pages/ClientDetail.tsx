@@ -23,6 +23,9 @@ import {
   FlaskConical,
   Loader2,
   X,
+  BookOpen,
+  Trash2,
+  TrendingUp,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { clientsApi } from '@/api/clients';
@@ -30,6 +33,7 @@ import { projectsApi } from '@/api/projects';
 import { postsApi } from '@/api/posts';
 import { deliverablesApi } from '@/api/deliverables';
 import { researchApi } from '@/api/research';
+import { storiesApi, type Story } from '@/api/stories';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ResearchResultsDrawer } from '@/components/research/ResearchResultsDrawer';
 import type { Project, PostDraft, Deliverable, ResearchResult } from '@/types/domain';
@@ -37,7 +41,7 @@ import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { getApiErrorMessage } from '@/utils/apiError';
 
-type TabType = 'overview' | 'projects' | 'research' | 'content' | 'deliverables' | 'billing' | 'communication';
+type TabType = 'overview' | 'projects' | 'research' | 'stories' | 'content' | 'deliverables' | 'billing' | 'communication';
 
 export default function ClientDetail() {
   const { clientId } = useParams<{ clientId: string }>();
@@ -108,6 +112,28 @@ export default function ClientDetail() {
     queryKey: ['research-results', clientId],
     queryFn: () => researchApi.getClientResearchResults(clientId!),
     enabled: !!clientId,
+  });
+
+  // Fetch client stories
+  const {
+    data: storiesData,
+    isLoading: isLoadingStories,
+    refetch: refetchStories
+  } = useQuery({
+    queryKey: ['client-stories', clientId],
+    queryFn: () => storiesApi.listClientStories(clientId!),
+    enabled: !!clientId,
+  });
+
+  // Story deletion mutation
+  const deleteStoryMutation = useMutation({
+    mutationFn: (storyId: string) => storiesApi.delete(storyId),
+    onSuccess: () => {
+      refetchStories();
+    },
+    onError: (error) => {
+      alert(`Failed to delete story: ${getApiErrorMessage(error)}`);
+    },
   });
 
   const projects: Project[] = projectsResponse?.items ?? [];
@@ -268,6 +294,7 @@ export default function ClientDetail() {
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'projects', label: 'Projects', icon: FileText, count: totalProjects },
     { id: 'research', label: 'Research', icon: FlaskConical },
+    { id: 'stories', label: 'Stories', icon: BookOpen, count: storiesData?.total ?? 0 },
     { id: 'content', label: 'Content', icon: MessageSquare, count: clientPosts.length },
     { id: 'deliverables', label: 'Deliverables', icon: Download, count: clientDeliverables.length },
     { id: 'billing', label: 'Billing', icon: DollarSign },
@@ -885,7 +912,155 @@ export default function ClientDetail() {
           </div>
         )}
 
-        {/* Tab 4: Content */}
+        {/* Tab 4: Stories */}
+        {activeTab === 'stories' && (
+          <div className="space-y-6">
+            <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Client Success Stories</h3>
+                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                    Mined customer stories for content generation. Stories are automatically saved from Story Mining research.
+                  </p>
+                </div>
+                <button className="inline-flex items-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600">
+                  <Plus className="h-4 w-4" />
+                  Add Story Manually
+                </button>
+              </div>
+
+              {/* Stories List */}
+              {isLoadingStories ? (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-600 dark:text-primary-400" />
+                </div>
+              ) : !storiesData || storiesData.stories.length === 0 ? (
+                <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-12 text-center">
+                  <BookOpen className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+                  <p className="mt-4 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    No stories yet
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                    Run the Story Mining research tool to automatically extract customer success stories.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('research')}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600"
+                  >
+                    <FlaskConical className="h-4 w-4" />
+                    Go to Research Tools
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {storiesData.stories.map((story) => (
+                    <div
+                      key={story.id}
+                      className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <h4 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                              {story.title || 'Untitled Story'}
+                            </h4>
+                            {story.storyType && (
+                              <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-300">
+                                {story.storyType.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </div>
+
+                          {story.summary && (
+                            <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
+                              {story.summary}
+                            </p>
+                          )}
+
+                          {story.emotionalHook && (
+                            <div className="mt-3 rounded-md bg-neutral-50 dark:bg-neutral-800 p-3 border-l-2 border-primary-500">
+                              <p className="text-sm italic text-neutral-700 dark:text-neutral-300">
+                                "{story.emotionalHook}"
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Metrics */}
+                          {story.keyMetrics && Object.keys(story.keyMetrics).length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {Object.entries(story.keyMetrics).slice(0, 3).map(([key, value]) => (
+                                <div
+                                  key={key}
+                                  className="inline-flex items-center gap-1 rounded-md bg-emerald-100 dark:bg-emerald-900/20 px-2 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-300"
+                                >
+                                  <TrendingUp className="h-3 w-3" />
+                                  {String(value)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Usage Stats */}
+                          <div className="mt-4 flex items-center gap-4 text-xs text-neutral-600 dark:text-neutral-400">
+                            <div className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              Used {story.usageCount} {story.usageCount === 1 ? 'time' : 'times'}
+                            </div>
+                            {story.platformsUsed.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span>Platforms:</span>
+                                <div className="flex gap-1">
+                                  {story.platformsUsed.map((platform) => (
+                                    <span
+                                      key={platform}
+                                      className="inline-flex items-center rounded bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 text-xs font-medium text-neutral-700 dark:text-neutral-300"
+                                    >
+                                      {platform}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {story.source && (
+                              <div className="flex items-center gap-1">
+                                <span>Source: {story.source.replace(/_/g, ' ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+                            title="View full story details"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete "${story.title || 'this story'}"?`)) {
+                                deleteStoryMutation.mutate(story.id);
+                              }
+                            }}
+                            disabled={deleteStoryMutation.isPending}
+                            className="inline-flex items-center gap-1 rounded-lg border border-red-300 dark:border-red-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete story"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: Content */}
         {activeTab === 'content' && (
           <div className="space-y-4">
             {/* Filters */}
@@ -949,7 +1124,7 @@ export default function ClientDetail() {
           </div>
         )}
 
-        {/* Tab 4: Deliverables */}
+        {/* Tab 6: Deliverables */}
         {activeTab === 'deliverables' && (
           <div className="space-y-4">
             <div className="flex justify-end">
@@ -1048,7 +1223,7 @@ export default function ClientDetail() {
         </div>
         )}
 
-        {/* Tab 5: Billing & Payments */}
+        {/* Tab 7: Billing & Payments */}
         {activeTab === 'billing' && (
           <div className="space-y-6">
             {/* Summary Cards */}
@@ -1145,7 +1320,7 @@ export default function ClientDetail() {
           </div>
         )}
 
-        {/* Tab 6: Communication History */}
+        {/* Tab 8: Communication History */}
         {activeTab === 'communication' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
