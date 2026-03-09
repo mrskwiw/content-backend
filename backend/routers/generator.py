@@ -21,6 +21,7 @@ from backend.services.generator_service import generator_service
 from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import strict_limiter, standard_limiter
 from src.validators.prompt_injection_defense import sanitize_prompt_input
+from src.utils.template_parser import template_parser
 
 router = APIRouter()
 
@@ -138,6 +139,72 @@ async def run_generation_background(
 
     finally:
         db.close()
+
+
+@router.get("/template-dependencies/{template_number}")
+@standard_limiter.limit("100/minute")
+async def get_template_dependencies(
+    request: Request,
+    template_number: int,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get research dependencies for a specific template.
+
+    Returns the required and recommended research tools for a given template,
+    helping users understand what research to run before generating content.
+
+    Args:
+        template_number: Template number (1-15)
+
+    Returns:
+        Dict with template info and research dependencies:
+        {
+            "template_number": 1,
+            "template_title": "The Problem-Recognition Post",
+            "research_dependencies": {
+                "required": ["audience_research"],
+                "recommended": ["icp_workshop", "seo_keyword_research"]
+            }
+        }
+
+    Raises:
+        HTTPException 404: Template not found
+    """
+    if not 1 <= template_number <= 15:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Template {template_number} not found. Valid range: 1-15",
+        )
+
+    try:
+        templates = template_parser.parse_all_templates()
+        template = templates.get(template_number)
+
+        if not template:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Template {template_number} not found",
+            )
+
+        return {
+            "template_number": template["number"],
+            "template_title": template["title"],
+            "research_dependencies": template["research_dependencies"],
+        }
+
+    except FileNotFoundError as e:
+        logger.error(f"Template library file not found: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Template library file not found",
+        )
+    except Exception as e:
+        logger.error(f"Failed to parse template dependencies: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to parse template dependencies: {str(e)}",
+        )
 
 
 @router.post("/generate-all", response_model=RunResponse)
