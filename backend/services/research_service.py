@@ -231,7 +231,10 @@ class ResearchService:
 
         completed = (
             db.query(ResearchResult.tool_name)
-            .filter(ResearchResult.project_id == project_id, ResearchResult.status == "completed")
+            .filter(
+                ResearchResult.project_id == project_id,
+                ResearchResult.status == "completed",
+            )
             .distinct()
             .all()
         )
@@ -239,7 +242,11 @@ class ResearchService:
         return {tool[0] for tool in completed}
 
     def check_prerequisites(
-        self, db: Session, project_id: str, tool_id: str, planned_tools: Optional[list[str]] = None
+        self,
+        db: Session,
+        project_id: str,
+        tool_id: str,
+        planned_tools: Optional[list[str]] = None,
     ) -> tuple[bool, list[str], list[str]]:
         """
         Check if prerequisites are met for a tool.
@@ -406,6 +413,66 @@ class ResearchService:
             db.add(research_result)
             db.commit()
             db.refresh(research_result)
+
+            # Story Mining Integration: Save mined stories to database
+            if tool_name == "story_mining" and result.success:
+                try:
+                    from backend.services.story_service import story_service
+                    from backend.schemas import StoryCreate
+
+                    # Extract story data from research result
+                    story_data = result.metadata.get("data", {}).get("story")
+
+                    if story_data:
+                        # Build structured full_story JSON
+                        full_story = {
+                            "customer_background": story_data.get("customer_background"),
+                            "challenge": story_data.get("challenge"),
+                            "decision_process": story_data.get("decision_process"),
+                            "implementation": story_data.get("implementation"),
+                            "results": story_data.get("results"),
+                            "testimonials": story_data.get("testimonials"),
+                            "future_plans": story_data.get("future_plans"),
+                        }
+
+                        # Extract key metrics from quantitative results
+                        results = story_data.get("results", {})
+                        quantitative_results = results.get("quantitative_results", [])
+                        key_metrics = {}
+                        for i, metric in enumerate(quantitative_results[:5], 1):
+                            key_metrics[f"metric_{i}"] = metric
+
+                        # Extract emotional hook from testimonials
+                        testimonials = story_data.get("testimonials", {})
+                        emotional_hook = testimonials.get("headline_quote")
+
+                        # Create story record
+                        story_create = StoryCreate(
+                            client_id=client_id,
+                            project_id=project_id,
+                            story_type="customer_win",  # Default type for mined stories
+                            title=story_data.get("story_title"),
+                            summary=story_data.get("one_sentence_summary"),
+                            full_story=full_story,
+                            key_metrics=key_metrics,
+                            emotional_hook=emotional_hook,
+                            source="story_mining_tool",
+                        )
+
+                        # Save to database
+                        db_story = story_service.create_story(db, story_create, project.user_id)
+
+                        logger.info(
+                            f"Saved mined story to database: {db_story.id} "
+                            f"(title: {db_story.title})"
+                        )
+
+                except Exception as e:
+                    # Don't fail the entire research execution if story saving fails
+                    logger.error(
+                        f"Failed to save story mining result to database: {str(e)}",
+                        exc_info=True,
+                    )
 
             # Invalidate research context cache (Phase 4: Cache invalidation)
             try:
@@ -635,8 +702,16 @@ class ResearchService:
             "seo_keyword_research": {
                 "summary": f"SEO keyword analysis for {client_name}",
                 "primary_keywords": [
-                    {"keyword": "business solutions", "volume": 12000, "difficulty": 65},
-                    {"keyword": "workflow automation", "volume": 8500, "difficulty": 55},
+                    {
+                        "keyword": "business solutions",
+                        "volume": 12000,
+                        "difficulty": 65,
+                    },
+                    {
+                        "keyword": "workflow automation",
+                        "volume": 8500,
+                        "difficulty": 55,
+                    },
                 ],
                 "long_tail_opportunities": [
                     "how to improve team productivity",
