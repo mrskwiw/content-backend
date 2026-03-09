@@ -1,5 +1,5 @@
 {
-  "current_version": 4,
+  "current_version": 5,
   "version_migrations": {
     "1": {
       "description": "Add file_size_bytes to deliverables table",
@@ -118,6 +118,10 @@
           }
         ]
       }
+    },
+    "5": {
+      "description": "Add mined_stories and story_usage tables for Story Mining feature",
+      "note": "New tables created automatically by SQLAlchemy - no column additions needed for existing tables"
     }
   }
 }

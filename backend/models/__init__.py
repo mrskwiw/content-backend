@@ -9,6 +9,7 @@ from .post import Post
 from .project import Project
 from .research_result import ResearchResult
 from .run import Run
+from .story import MinedStory, StoryUsage
 from .user import User
 from .trends import (
     TrendsSearch,
@@ -26,6 +27,8 @@ __all__ = [
     "Post",
     "Deliverable",
     "ResearchResult",
+    "MinedStory",
+    "StoryUsage",
     "TrendsSearch",
     "TrendsInterestData",
     "TrendsRelatedQuery",
