@@ -121,6 +121,7 @@ class BriefParserAgent:
                 data_usage=data_usage,
                 stories=data.get("stories", data.get("personal_stories", [])),
                 misconceptions=data.get("misconceptions", data.get("avoid_topics", [])),
+                industry=data.get("industry"),  # Extract industry for research tools
             )
 
             return client_brief
