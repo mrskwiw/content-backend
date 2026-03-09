@@ -517,10 +517,58 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
         </div>
       </div>
 
-      <p className="mb-6 text-sm text-slate-600 dark:text-neutral-400">
+      <p className="mb-4 text-sm text-slate-600 dark:text-neutral-400">
         Select research tools to run for this project. Research adds depth to content generation and helps identify
         opportunities.
       </p>
+
+      {/* Dependency Legend */}
+      <div className="mb-6 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-blue-100 dark:bg-blue-900/40 p-1.5">
+            <Link2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200">Tool Dependencies</h4>
+            <p className="text-xs text-blue-800 dark:text-blue-300">
+              Some tools require data from other tools to function. Dependency badges show which prerequisites are needed:
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                  <Link2 className="h-2.5 w-2.5" />
+                  Tool Name
+                </span>
+                <span className="text-xs text-blue-700 dark:text-blue-300">= Required & Completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                  <Link2 className="h-2.5 w-2.5" />
+                  Tool Name
+                </span>
+                <span className="text-xs text-blue-700 dark:text-blue-300">= Required & Not Completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-normal bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
+                  <Link2 className="h-2.5 w-2.5" />
+                  Tool Name
+                </span>
+                <span className="text-xs text-blue-700 dark:text-blue-300">= Recommended & Completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-normal bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
+                  <Link2 className="h-2.5 w-2.5" />
+                  Tool Name
+                </span>
+                <span className="text-xs text-blue-700 dark:text-blue-300">= Recommended & Not Completed</span>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
+              <strong>Tip:</strong> Tools with unfulfilled required dependencies may not produce optimal results.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {totalPrice > 0 && (
         <div className="mb-4 rounded-md bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-sm text-blue-800 dark:text-blue-200">
