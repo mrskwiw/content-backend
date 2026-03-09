@@ -10,8 +10,11 @@
 ---
 
 ## TEMPLATE 1: The Problem-Recognition Post
-**Best for:** Building awareness, getting engagement  
+**Best for:** Building awareness, getting engagement
 **Format:** Hook problem → Validate feeling → Hint at solution
+**Research Tools:**
+- **Required:** Audience Research (identifies customer pain points and frustrations)
+- **Recommended:** ICP Workshop (ideal customer profile), SEO Keywords (problem-related search terms)
 
 ```
 [HOOK - Label the problem in a way they haven't heard it]:
@@ -26,7 +29,7 @@ Here's what changes when you shift that mindset...
 [SPECIFIC EXAMPLE or small insight]
 
 [CTA - Ask for engagement]:
-Does this ring true for you? 
+Does this ring true for you?
 Reply with [SPECIFIC QUESTION] — I'm reading every comment.
 ```
 
@@ -44,8 +47,11 @@ Does this ring true? Reply with: "How do you vet right now?" — I'm reading eve
 ---
 
 ## TEMPLATE 2: The Statistic + Insight Post
-**Best for:** Credibility, thought leadership  
+**Best for:** Credibility, thought leadership
 **Format:** Stat → What it means → Unexpected angle
+**Research Tools:**
+- **Required:** Market Trends (industry statistics and data points)
+- **Recommended:** Story Mining (case examples to illustrate), SEO Keywords (trending topics)
 
 ```
 [STAT - Start with a surprising number]:
@@ -86,8 +92,11 @@ Have you noticed this pattern?
 ---
 
 ## TEMPLATE 3: The "Against the Grain" Contrarian Take
-**Best for:** Differentiation, starting conversations  
+**Best for:** Differentiation, starting conversations
 **Format:** Challenge conventional wisdom → Show why → Give nuance
+**Research Tools:**
+- **Required:** SEO Keywords (common advice/beliefs to challenge)
+- **Recommended:** Competitive Analysis (conventional wisdom), Market Trends (industry norms)
 
 ```
 [CONTRARIAN HEADLINE]:
@@ -130,8 +139,11 @@ The key is recognizing that consistency in process beats consistency in people.
 ---
 
 ## TEMPLATE 4: The "Here's What Changed" Post
-**Best for:** Authority, sharing lessons  
+**Best for:** Authority, sharing lessons
 **Format:** Old way → What changed → New results
+**Research Tools:**
+- **Required:** Story Mining (transformation stories, before/after experiences)
+- **Recommended:** Brand Archetype (authentic storytelling tone)
 
 ```
 [CONTEXT - What we used to do]:
@@ -175,8 +187,11 @@ Are you still sending PDFs and hoping? Reply with "intake form" if you want to s
 ---
 
 ## TEMPLATE 5: The Question Post (Engagement Magnet)
-**Best for:** Driving comments, visibility  
+**Best for:** Driving comments, visibility
 **Format:** Open-ended question → Why it matters → Bonus insight
+**Research Tools:**
+- **Required:** Audience Research (what questions/debates resonate with target audience)
+- **Recommended:** SEO Keywords (trending questions), Brand Archetype (conversational tone)
 
 ```
 [QUESTION]:
@@ -215,8 +230,11 @@ The most thoughtful response gets a personalized hiring template from us.
 ---
 
 ## TEMPLATE 6: The Personal Story Post
-**Best for:** Connection, vulnerability, being human  
+**Best for:** Connection, vulnerability, being human
 **Format:** Setup → Crisis/realization → Lesson → Application
+**Research Tools:**
+- **Required:** Story Mining (personal/client experiences and lessons learned)
+- **Recommended:** Brand Archetype (authentic, vulnerable storytelling voice)
 
 ```
 [SETUP - Relatable scenario]:
@@ -259,8 +277,11 @@ The fix is: Replace "credential checking" with a 15-min conversation about their
 ---
 
 ## TEMPLATE 7: The Myth-Busting Post
-**Best for:** Authority, correctness, education  
+**Best for:** Authority, correctness, education
 **Format:** Common belief → Why it's wrong → Truth → Evidence
+**Research Tools:**
+- **Required:** Market Trends (common industry misconceptions)
+- **Recommended:** Competitive Analysis (what others are saying), SEO Keywords (common beliefs)
 
 ```
 [MYTH]:
@@ -300,8 +321,10 @@ Instead of filtering by years alone, try using a skill-specific project to evalu
 ---
 
 ## TEMPLATE 8: The "Things I Got Wrong" Post
-**Best for:** Credibility, anti-hype, vulnerability  
+**Best for:** Credibility, anti-hype, vulnerability
 **Format:** Belief → Why I was wrong → What I learned
+**Research Tools:**
+- **Recommended:** Story Mining (learning experiences), Brand Archetype (vulnerable, honest tone)
 
 ```
 [BELIEF I HELD]:
@@ -341,8 +364,11 @@ If you believe longer relationships = better work, the shift is: Evaluate each p
 ---
 
 ## TEMPLATE 9: The Actionable How-To Post (Short Version)
-**Best for:** Value, shareability, bookmarking  
+**Best for:** Value, shareability, bookmarking
 **Format:** Problem → 3-4 quick steps → Result
+**Research Tools:**
+- **Required:** SEO Keywords (what people search for/want to learn)
+- **Recommended:** Content Gap Analysis (what's missing in existing content), Audience Research (pain points)
 
 ```
 [PROBLEM]:
@@ -352,7 +378,7 @@ Most [AUDIENCE] struggle with [SPECIFIC PROBLEM]
 Here's a 3-step process that takes 15 minutes:
 
 1. [STEP]: [Explanation in 1-2 sentences]
-   
+
 2. [STEP]: [Explanation in 1-2 sentences]
 
 3. [STEP]: [Explanation in 1-2 sentences]
@@ -391,8 +417,11 @@ Which step are you going to try first?
 ---
 
 ## TEMPLATE 10: The Comparison Post
-**Best for:** Differentiation, decision-making  
+**Best for:** Differentiation, decision-making
 **Format:** Two options → Trade-offs → Guidance
+**Research Tools:**
+- **Required:** Competitive Analysis (understand alternatives and competitors)
+- **Recommended:** Market Trends (industry preferences), SEO Keywords (comparison searches)
 
 ```
 [SETUP]:
@@ -446,8 +475,11 @@ Which camp are you in?
 ---
 
 ## TEMPLATE 11: The "What I Learned From..." Post
-**Best for:** Connecting to culture/events, showing learning  
+**Best for:** Connecting to culture/events, showing learning
 **Format:** Trigger → Key insight → Application
+**Research Tools:**
+- **Required:** Story Mining (learning experiences, client lessons)
+- **Recommended:** Brand Archetype (reflective, insightful tone)
 
 ```
 [TRIGGER]:
@@ -486,8 +518,11 @@ What's a belief you used to hold that you've completely flipped on?
 ---
 
 ## TEMPLATE 12: The "Inside Look" Post
-**Best for:** Transparency, behind-the-scenes, trust  
+**Best for:** Transparency, behind-the-scenes, trust
 **Format:** Peek behind the curtain → Why we do it → Result
+**Research Tools:**
+- **Required:** Story Mining (behind-the-scenes processes and stories)
+- **Recommended:** Brand Archetype (authentic, transparent tone), Audience Research (what they want to see)
 
 ```
 [TEASER]:
@@ -530,8 +565,11 @@ If you're scaling hiring, the thing to test is: Filter before meeting.
 ---
 
 ## TEMPLATE 13: The Future-Thinking Post
-**Best for:** Thought leadership, trend-setting  
+**Best for:** Thought leadership, trend-setting
 **Format:** Observation → Extrapolation → Implication → Action
+**Research Tools:**
+- **Required:** Market Trends (industry direction, emerging patterns)
+- **Recommended:** Competitive Analysis (what others are predicting), SEO Keywords (trending topics)
 
 ```
 [OBSERVATION]:
@@ -573,8 +611,11 @@ I'd expect this to become standard within 18 months.
 ---
 
 ## TEMPLATE 14: The Reader Question Response Post
-**Best for:** Community engagement, social proof, value  
+**Best for:** Community engagement, social proof, value
 **Format:** Question → Direct answer → Broader insight
+**Research Tools:**
+- **Required:** Audience Research (common questions, pain points from target audience)
+- **Recommended:** SEO Keywords (frequently searched questions)
 
 ```
 [QUESTION]:
@@ -613,8 +654,10 @@ If you're wrestling with contractor evaluation, hit reply — I'll share a frame
 ---
 
 ## TEMPLATE 15: The Milestone/Celebration Post
-**Best for:** Community building, relatability, milestone sharing  
+**Best for:** Community building, relatability, milestone sharing
 **Format:** Milestone → What it took → Lesson → Gratitude
+**Research Tools:**
+- **Recommended:** Story Mining (company milestones, achievements), Brand Archetype (celebratory, grateful tone)
 
 ```
 [MILESTONE]:
