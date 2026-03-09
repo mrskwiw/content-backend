@@ -21,7 +21,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
-from backend.utils.http_rate_limiter import strict_limiter, standard_limiter, lenient_limiter
+from backend.utils.http_rate_limiter import (
+    strict_limiter,
+    standard_limiter,
+    lenient_limiter,
+)
 from backend.routers import (
     admin_users,
     assistant,
@@ -37,6 +41,7 @@ from backend.routers import (
     projects,
     research,
     runs,
+    stories,
     trends,
 )
 from slowapi import _rate_limit_exceeded_handler
@@ -273,7 +278,14 @@ else:
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,  # Only whitelisted origins
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Explicit methods only
+        allow_methods=[
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS",
+        ],  # Explicit methods only
         allow_headers=[
             "Authorization",
             "Content-Type",
@@ -431,7 +443,18 @@ async def spa_routing_middleware(request: Request, call_next):
     is_frontend_route = not any(
         path.startswith(prefix) for prefix in excluded_prefixes
     ) and not path.endswith(
-        (".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".json", ".map")
+        (
+            ".js",
+            ".css",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".svg",
+            ".ico",
+            ".json",
+            ".map",
+        )
     )
 
     response = await call_next(request)
@@ -576,6 +599,7 @@ app.include_router(briefs.router, prefix="/api/briefs", tags=["Briefs"])
 app.include_router(runs.router, prefix="/api/runs", tags=["Runs"])
 app.include_router(deliverables.router, prefix="/api/deliverables", tags=["Deliverables"])
 app.include_router(posts.router, prefix="/api/posts", tags=["Posts"])
+app.include_router(stories.router, prefix="/api/stories", tags=["Stories"])
 app.include_router(generator.router, prefix="/api/generator", tags=["Generator"])
 app.include_router(research.router, prefix="/api/research", tags=["Research"])
 app.include_router(trends.router, prefix="/api/trends", tags=["Google Trends"])
