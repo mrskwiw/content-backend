@@ -34,6 +34,9 @@ class Client(Base):
     industry = Column(
         String, nullable=True
     )  # Specific industry/niche (e.g., "dental practice", "project management software") for competitive analysis
+    keywords = Column(
+        JSON, nullable=True
+    )  # SEO keywords for content optimization (array of strings). If 5+ keywords provided, can skip SEO research tool.
 
     # Relationships (using fully qualified paths to avoid conflicts with Pydantic models in src.models)
     user = relationship("backend.models.user.User", foreign_keys=[user_id])  # TR-021: Client owner

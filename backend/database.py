@@ -200,6 +200,10 @@ def init_db():
                 ("customer_pain_points", "JSON"),
                 ("customer_questions", "JSON"),
                 ("industry", "VARCHAR"),  # Industry/sector for research tools
+                (
+                    "keywords",
+                    "JSON",
+                ),  # SEO keywords (array of strings). 5+ keywords can skip SEO tool.
             ]
 
             # SECURITY FIX: Whitelist of allowed SQL column types (TR-015)

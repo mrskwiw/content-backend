@@ -22,6 +22,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     platforms: initialData?.platforms || [],
     customerPainPoints: initialData?.customerPainPoints || [],
     customerQuestions: initialData?.customerQuestions || [],
+    keywords: initialData?.keywords || [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -29,6 +30,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
   const [painPoint, setPainPoint] = useState('');
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
+  const [keyword, setKeyword] = useState('');
 
   // Brief import state
   const [showPreview, setShowPreview] = useState(false);
@@ -47,6 +49,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
         platforms: initialData.platforms || [],
         customerPainPoints: initialData.customerPainPoints || [],
         customerQuestions: initialData.customerQuestions || [],
+        keywords: initialData.keywords || [],
       });
     }
   }, [initialData]);
@@ -97,6 +100,23 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     setFormData({
       ...formData,
       customerQuestions: (formData.customerQuestions || []).filter((_, i) => i !== index),
+    });
+  };
+
+  const addKeyword = () => {
+    if (keyword.trim()) {
+      setFormData({
+        ...formData,
+        keywords: [...(formData.keywords || []), keyword.trim()],
+      });
+      setKeyword('');
+    }
+  };
+
+  const removeKeyword = (index: number) => {
+    setFormData({
+      ...formData,
+      keywords: (formData.keywords || []).filter((_, i) => i !== index),
     });
   };
 
@@ -389,6 +409,50 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
               ))}
             </ul>
           )}
+        </div>
+
+        {/* SEO Keywords */}
+        <div>
+          <label className="mb-2 flex items-center justify-between text-sm font-medium text-slate-800 dark:text-neutral-200">
+            <span>SEO Keywords</span>
+            <span className={`text-xs ${(formData.keywords || []).length >= 5 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-neutral-400'}`}>
+              {(formData.keywords || []).length}/5 keywords {(formData.keywords || []).length >= 5 && '✓'}
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+              placeholder="Add a keyword (e.g., project management)"
+              className="flex-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={addKeyword}
+              className="rounded-md bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-neutral-200 hover:bg-slate-200 dark:hover:bg-slate-600"
+            >
+              Add
+            </button>
+          </div>
+          {(formData.keywords || []).length > 0 && (
+            <ul className="mt-2 flex flex-wrap gap-1">
+              {formData.keywords?.map((kw, i) => (
+                <li key={i} className="inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-900/20 px-3 py-1 text-sm text-blue-800 dark:text-blue-300">
+                  <span>{kw}</span>
+                  <button onClick={() => removeKeyword(i)} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-bold">
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-neutral-400">
+            {(formData.keywords || []).length >= 5
+              ? '✓ You have 5+ keywords. SEO research tool is optional for this client.'
+              : 'Add 5+ keywords to skip the SEO research tool, or use the SEO research tool to generate keywords automatically.'}
+          </p>
         </div>
 
         {/* Customer Questions */}

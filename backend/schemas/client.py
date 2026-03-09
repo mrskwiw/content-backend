@@ -21,6 +21,7 @@ class ClientBase(BaseModel):
     customer_pain_points: Optional[List[str]] = None
     customer_questions: Optional[List[str]] = None
     industry: Optional[str] = None
+    keywords: Optional[List[str]] = None
 
 
 class ClientCreate(ClientBase):
@@ -56,6 +57,7 @@ class ClientUpdate(BaseModel):
     customer_pain_points: Optional[List[str]] = None
     customer_questions: Optional[List[str]] = None
     industry: Optional[str] = None
+    keywords: Optional[List[str]] = None
 
     model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields like user_id
 
