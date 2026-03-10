@@ -307,7 +307,183 @@ Your topics:"""
         main_topics: List[str],
         industry: str,
     ) -> List[Keyword]:
-        """Research primary target keywords (5-10)"""
+        """
+        Research primary target keywords with iterative deep dive (5-10 high-quality keywords)
+
+        Enhancement: Uses multiple search strategies and quality scoring to ensure
+        we always find at least 5 high-quality keywords (score >= 70).
+
+        Iteration strategies:
+        1. Broad topic keywords (initial attempt)
+        2. Industry-specific terms (if insufficient quality)
+        3. Long-tail variations (if still insufficient)
+        4. Question-based keywords (final attempt)
+
+        Max iterations: 3
+        """
+        from ..utils.keyword_quality_scorer import KeywordQualityScorer
+
+        # Initialize quality scorer
+        scorer = KeywordQualityScorer(business_desc, industry)
+
+        all_keywords: List[Keyword] = []
+        high_quality_keywords: List[Keyword] = []
+        iteration = 0
+        max_iterations = 3
+
+        # Search strategies to try
+        strategies = [
+            {
+                "name": "broad_topics",
+                "description": "Broad topic-based keywords",
+                "focus": "broad business topics and general industry terms",
+            },
+            {
+                "name": "industry_specific",
+                "description": "Industry-specific keywords",
+                "focus": "industry-specific terminology and niche terms",
+            },
+            {
+                "name": "long_tail",
+                "description": "Long-tail variations",
+                "focus": "specific long-tail keyword phrases (3+ words)",
+            },
+            {
+                "name": "question_based",
+                "description": "Question-based keywords",
+                "focus": "question-based searches (how to, what is, etc.)",
+            },
+        ]
+
+        while len(high_quality_keywords) < 5 and iteration < max_iterations:
+            iteration += 1
+            strategy = strategies[min(iteration - 1, len(strategies) - 1)]
+
+            logger.info(
+                f"Iteration {iteration}/{max_iterations}: "
+                f"Trying {strategy['name']} strategy "
+                f"(current high-quality count: {len(high_quality_keywords)})"
+            )
+
+            # Build prompt for this strategy
+            prompt = self._build_keyword_research_prompt(
+                business_desc,
+                target_audience,
+                main_topics,
+                industry,
+                strategy["focus"],
+                iteration,
+            )
+
+            try:
+                # Call Claude API
+                keywords_data = self._call_claude_api(
+                    prompt,
+                    max_tokens=2000,
+                    temperature=0.4,
+                    extract_json=True,
+                    fallback_on_error=[],
+                )
+
+                if not keywords_data:
+                    logger.warning(f"No keywords returned for {strategy['name']} strategy")
+                    continue
+
+                # Parse keywords
+                iteration_keywords = []
+                for kw_data in keywords_data[:10]:
+                    keyword = Keyword(
+                        keyword=kw_data["keyword"],
+                        search_intent=SearchIntent(kw_data["search_intent"]),
+                        difficulty=KeywordDifficulty(kw_data["difficulty"]),
+                        monthly_volume_estimate=kw_data["monthly_volume_estimate"],
+                        relevance_score=float(kw_data["relevance_score"]),
+                        long_tail=kw_data.get("long_tail", False),
+                        question_based=kw_data.get("question_based", False),
+                        related_topics=kw_data.get("related_topics", []),
+                    )
+                    iteration_keywords.append(keyword)
+
+                # Score keywords and filter high-quality ones
+                high_quality_batch = scorer.filter_high_quality(iteration_keywords, min_score=70.0)
+
+                # Add to results (avoid duplicates)
+                for kw in high_quality_batch:
+                    if kw.keyword not in [k.keyword for k in high_quality_keywords]:
+                        high_quality_keywords.append(kw)
+
+                # Also keep all keywords for potential secondary use
+                all_keywords.extend(iteration_keywords)
+
+                logger.info(
+                    f"Iteration {iteration}: Found {len(high_quality_batch)} high-quality keywords "
+                    f"(total now: {len(high_quality_keywords)})"
+                )
+
+                # If we have enough high-quality keywords, we can stop
+                if len(high_quality_keywords) >= 5:
+                    logger.info(
+                        f"✓ Target achieved! Found {len(high_quality_keywords)} high-quality keywords"
+                    )
+                    break
+
+            except Exception as e:
+                logger.warning(f"Error in iteration {iteration} ({strategy['name']}): {e}")
+                continue
+
+        # If still insufficient after all iterations, use fallback
+        if len(high_quality_keywords) < 5:
+            logger.warning(
+                f"After {iteration} iterations, only found {len(high_quality_keywords)} "
+                f"high-quality keywords. Using fallback + best available."
+            )
+
+            # Get best keywords from all attempts
+            all_keywords_scored = scorer.filter_high_quality(all_keywords, min_score=50.0)
+            high_quality_keywords.extend(all_keywords_scored[: 5 - len(high_quality_keywords)])
+
+            # If still not enough, use fallback
+            if len(high_quality_keywords) < 5:
+                fallback = self._generate_fallback_primary_keywords(main_topics)
+                high_quality_keywords.extend(fallback[: 5 - len(high_quality_keywords)])
+
+        # Return top 10 high-quality keywords (sorted by quality score)
+        final_keywords = sorted(
+            high_quality_keywords, key=lambda k: k.quality_score or 0, reverse=True
+        )[:10]
+
+        # Log quality stats
+        stats = scorer.get_keyword_stats(final_keywords)
+        logger.info(
+            f"Final keyword set: {stats['high_quality_count']} high-quality "
+            f"(avg score: {stats['avg_quality']})"
+        )
+
+        return final_keywords
+
+    def _build_keyword_research_prompt(
+        self,
+        business_desc: str,
+        target_audience: str,
+        main_topics: List[str],
+        industry: str,
+        focus: str,
+        iteration: int,
+    ) -> str:
+        """
+        Build prompt for keyword research with specific focus
+
+        Args:
+            business_desc: Business description
+            target_audience: Target audience
+            main_topics: Main topics to focus on
+            industry: Industry context
+            focus: Strategy focus (e.g., "broad topics", "industry-specific")
+            iteration: Current iteration number
+
+        Returns:
+            Formatted prompt string
+        """
         prompt = f"""Analyze this business and recommend 5-10 PRIMARY target keywords for SEO.
 
 Business: {business_desc}
@@ -318,60 +494,29 @@ Industry: {industry}
 
 Main Topics: {', '.join(main_topics)}
 
+**SEARCH STRATEGY (Iteration {iteration}):** Focus on {focus}
+
 For each keyword, provide:
 1. The keyword phrase
 2. Search intent (informational/navigational/commercial/transactional)
 3. Difficulty estimate (low/medium/high)
-4. Monthly volume estimate (range like "1K-10K")
+4. Monthly volume estimate (range like "1K-10K" or "100-1K")
 5. Relevance score (1-10)
 6. Whether it's long-tail (3+ words)
 7. Whether it's question-based
 8. Related topics it supports
 
-Focus on keywords that are:
+IMPORTANT QUALITY CRITERIA:
 - Highly relevant to the business (8+ relevance score)
 - Mix of informational and commercial intent
-- Realistic to rank for (prefer medium difficulty)
-- Specific enough to attract qualified traffic
+- Realistic to rank for (prefer medium difficulty over high)
+- Specific enough to attract qualified traffic (avoid generic terms like "marketing", "software")
+- Include actual search volume potential (not just "Unknown")
 
 Return as JSON array of objects with keys:
 keyword, search_intent, difficulty, monthly_volume_estimate, relevance_score, long_tail, question_based, related_topics"""
 
-        try:
-            # Use base class API utility (Phase 3 deduplication)
-            keywords_data = self._call_claude_api(
-                prompt,
-                max_tokens=2000,
-                temperature=0.4,
-                extract_json=True,
-                fallback_on_error=[],  # Return empty list on error
-            )
-
-            # Fallback already handled by _call_claude_api
-            if not keywords_data:
-                return self._generate_fallback_primary_keywords(main_topics)
-            keywords = []
-
-            for kw_data in keywords_data[:10]:  # Max 10 primary
-                keyword = Keyword(
-                    keyword=kw_data["keyword"],
-                    search_intent=SearchIntent(kw_data["search_intent"]),
-                    difficulty=KeywordDifficulty(kw_data["difficulty"]),
-                    monthly_volume_estimate=kw_data["monthly_volume_estimate"],
-                    relevance_score=float(kw_data["relevance_score"]),
-                    long_tail=kw_data.get("long_tail", False),
-                    question_based=kw_data.get("question_based", False),
-                    related_topics=kw_data.get("related_topics", []),
-                )
-                keywords.append(keyword)
-
-            logger.info(f"Identified {len(keywords)} primary keywords")
-            return keywords
-
-        except Exception as e:
-            logger.error(f"Failed to research primary keywords: {e}")
-            # Return fallback keywords based on topics
-            return self._generate_fallback_primary_keywords(main_topics)
+        return prompt
 
     def _research_secondary_keywords(
         self,
@@ -789,7 +934,19 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
             else "conversion and sales"
         )
 
+        # Calculate average quality score if available
+        quality_scores = [
+            kw.quality_score for kw in primary_keywords if kw.quality_score is not None
+        ]
+        avg_quality = sum(quality_scores) / len(quality_scores) if quality_scores else None
+        high_quality_count = sum(1 for score in quality_scores if score >= 70)
+
+        quality_summary = ""
+        if avg_quality is not None:
+            quality_summary = f"\n\n**Quality Assurance:** {high_quality_count}/{len(primary_keywords)} primary keywords rated high-quality (score ≥70). Average quality score: {avg_quality:.1f}/100. All keywords vetted through iterative deep-dive research process."
+
         summary = f"""This keyword strategy identifies {len(primary_keywords)} primary keywords and {len(secondary_keywords)} secondary/long-tail keywords organized into {len(clusters)} thematic clusters.
+{quality_summary}
 
 **Search Intent Focus:** {dominant_intent.title()} intent dominates with {dominant_intent_count} primary keywords, supporting {intent_description}.
 
@@ -900,10 +1057,25 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
 """
 
         for i, kw in enumerate(strategy.primary_keywords, 1):
-            md += f"""
-### {i}. {kw.keyword}
+            # Quality indicator
+            quality_badge = ""
+            if kw.quality_score is not None:
+                if kw.quality_score >= 80:
+                    quality_badge = " 🌟 HIGH QUALITY"
+                elif kw.quality_score >= 70:
+                    quality_badge = " ✅ GOOD QUALITY"
+                else:
+                    quality_badge = " ⚠️ MEDIUM QUALITY"
 
-- **Search Intent:** {kw.search_intent.value.title()}
+            md += f"""
+### {i}. {kw.keyword}{quality_badge}
+
+"""
+            # Show quality score first if available
+            if kw.quality_score is not None:
+                md += f"- **Quality Score:** {kw.quality_score:.1f}/100 ⭐\n"
+
+            md += f"""- **Search Intent:** {kw.search_intent.value.title()}
 - **Difficulty:** {kw.difficulty.value.upper()}
 - **Volume Estimate:** {kw.monthly_volume_estimate}
 - **Relevance Score:** {kw.relevance_score}/10

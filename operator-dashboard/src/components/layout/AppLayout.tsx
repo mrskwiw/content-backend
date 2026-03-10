@@ -1,4 +1,4 @@
-import { LogOut, PanelsTopLeft, FileStack, ClipboardList, Settings, Rocket, Users } from 'lucide-react';
+import { LogOut, PanelsTopLeft, FileStack, ClipboardList, Settings, Rocket, Users, Library, FileSearch, BarChart3 } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ui/ThemeToggle';
@@ -11,6 +11,12 @@ const navItems = [
   { to: '/dashboard/deliverables', label: 'Deliverables', icon: FileStack },
   { to: '/dashboard/wizard', label: 'Wizard / QA', icon: Rocket },
   { to: '/dashboard/settings', label: 'Settings', icon: Settings },
+];
+
+const researchToolsItems = [
+  { to: '/dashboard/research-tools/library', label: 'Tool Library', icon: Library },
+  { to: '/dashboard/research-tools/results', label: 'Results', icon: FileSearch },
+  { to: '/dashboard/research-tools/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 export default function AppLayout() {
@@ -75,6 +81,33 @@ export default function AppLayout() {
                 </NavLink>
               );
             })}
+
+            {/* Research Tools Section */}
+            <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-700">
+              <div className="px-3 py-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                Research Tools
+              </div>
+              {researchToolsItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border-l-2 border-primary-500'
+                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                      ].join(' ')
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
           </nav>
         </aside>
         <main className="flex-1">

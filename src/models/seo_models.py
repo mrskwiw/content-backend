@@ -37,6 +37,14 @@ class Keyword(BaseModel):
         default_factory=list, description="Content topics this supports"
     )
 
+    # Quality score (optional - calculated by KeywordQualityScorer)
+    quality_score: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=100.0,
+        description="Overall quality score (0-100, higher is better)",
+    )
+
     # Google Trends data (optional - may not be available for all keywords)
     trend_score: Optional[float] = Field(
         default=None,

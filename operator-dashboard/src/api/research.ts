@@ -45,6 +45,45 @@ export interface ResearchResultListResponse {
   projectId?: string;
 }
 
+export interface NextBundleSuggestion {
+  bundle: string;
+  bundleName: string;
+  missingTools: string[];
+  missingToolNames: string[];
+  additionalCost: number;
+  potentialSavings: number;
+}
+
+export interface PricingPreview {
+  baseCost: number;
+  discount: number;
+  finalCost: number;
+  bundleApplied: string | null;
+  bundleName: string | null;
+  savingsPercent: number;
+  nextBundleSuggestion?: NextBundleSuggestion;
+}
+
+export interface ToolStats {
+  toolName: string;
+  toolLabel: string;
+  executionCount: number;
+  totalRevenue: number;
+  totalApiCost: number;
+}
+
+export interface ResearchAnalytics {
+  totalRevenue: number;
+  totalApiCost: number;
+  profitMargin: number;
+  totalExecutions: number;
+  cacheHitRate: number;
+  cacheSavings: number;
+  avgCostPerTool: number;
+  topTools: ToolStats[];
+  dateRange: number;
+}
+
 export const researchApi = {
   async listTools() {
     const { data } = await apiClient.get<ResearchTool[]>('/api/research/tools');
@@ -116,5 +155,25 @@ export const researchApi = {
    */
   async deleteResult(resultId: string): Promise<void> {
     await apiClient.delete(`/api/research/results/${resultId}`);
+  },
+
+  /**
+   * Get pricing preview with bundle detection
+   */
+  async getPricingPreview(toolIds: string[]): Promise<PricingPreview> {
+    const { data } = await apiClient.get<PricingPreview>('/api/research/pricing-preview', {
+      params: { tool_ids: toolIds.join(',') }
+    });
+    return data;
+  },
+
+  /**
+   * Get research analytics
+   */
+  async getAnalytics(days: number = 90): Promise<ResearchAnalytics> {
+    const { data } = await apiClient.get<ResearchAnalytics>('/api/research/analytics', {
+      params: { days }
+    });
+    return data;
   },
 };

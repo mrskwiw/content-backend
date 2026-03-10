@@ -30,6 +30,11 @@ const Team = lazyWithRetry(() => import('@/pages/Team'));
 const Notifications = lazyWithRetry(() => import('@/pages/Notifications'));
 const AuditTrail = lazyWithRetry(() => import('@/pages/AuditTrail'));
 
+// Research Tools pages
+const ResearchToolsLibrary = lazyWithRetry(() => import('@/pages/ResearchTools/Library'));
+const ResearchToolsResults = lazyWithRetry(() => import('@/pages/ResearchTools/Results'));
+const ResearchToolsAnalytics = lazyWithRetry(() => import('@/pages/ResearchTools/Analytics'));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex h-screen items-center justify-center">
@@ -85,6 +90,10 @@ export const router = createBrowserRouter([
       { path: 'audit', element: withSuspense(AuditTrail) },
       { path: 'wizard', element: withSuspense(Wizard) },
       { path: 'settings', element: withSuspense(Settings) },
+      // Research Tools section
+      { path: 'research-tools/library', element: withSuspense(ResearchToolsLibrary) },
+      { path: 'research-tools/results', element: withSuspense(ResearchToolsResults) },
+      { path: 'research-tools/analytics', element: withSuspense(ResearchToolsAnalytics) },
     ],
   },
   {

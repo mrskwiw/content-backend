@@ -6,8 +6,9 @@ Handles research tool listing and execution with comprehensive input validation.
 
 from typing import List, Dict, Any, Optional
 from pathlib import Path
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
@@ -951,4 +952,259 @@ async def execute_research_batch(
         execution_order=result["execution_order"],
         results=result["results"],
         summary=result["summary"],
+    )
+
+
+# ============================================================================
+# PRICING & BUNDLE DETECTION ENDPOINTS
+# ============================================================================
+
+
+class PricingPreviewResponse(BaseModel):
+    """Response from pricing preview endpoint"""
+
+    base_cost: float
+    discount: float
+    final_cost: float
+    bundle_applied: Optional[str] = None
+    bundle_name: Optional[str] = None
+    savings_percent: float = 0.0
+    next_bundle_suggestion: Optional[Dict[str, Any]] = None
+
+
+@router.get("/pricing-preview", response_model=PricingPreviewResponse)
+@lenient_limiter.limit("1000/hour")  # Cheap calculation endpoint
+async def get_pricing_preview(
+    request: Request,
+    tool_ids: str = Query(..., description="Comma-separated tool IDs"),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Calculate pricing with bundle detection for selected tools.
+
+    Query params:
+    - tool_ids: Comma-separated tool IDs (e.g. "voice_analysis,brand_archetype")
+
+    Returns:
+    {
+      "base_cost": 1800,
+      "discount": 300,
+      "final_cost": 1500,
+      "bundle_applied": "foundation_pack",
+      "bundle_name": "Foundation Pack",
+      "savings_percent": 16.7,
+      "next_bundle_suggestion": {
+        "bundle": "complete_strategy",
+        "missing_tools": ["seo_keyword_research", "competitive_analysis", "content_gap_analysis"],
+        "additional_cost": 700,
+        "potential_savings": 500
+      }
+    }
+    """
+    from src.config.pricing import calculate_tools_cost, TOOLS
+
+    # Parse tool IDs
+    tool_list = [tid.strip() for tid in tool_ids.split(",") if tid.strip()]
+
+    # Calculate pricing with bundle detection
+    pricing = calculate_tools_cost(tool_list)
+
+    # Calculate base cost (a la carte)
+    base_cost = sum(TOOLS.get(tid, {}).get("price", 0.0) for tid in tool_list)
+
+    # Determine which bundle was applied
+    bundle_applied = None
+    bundle_name = None
+    if pricing["applied_bundles"]:
+        # Get first bundle (highest priority)
+        bundle_name = pricing["applied_bundles"][0]
+        # Convert name to snake_case ID
+        bundle_applied = bundle_name.lower().replace(" ", "_")
+
+    # Calculate savings percentage
+    savings_percent = (
+        round((pricing["discount_amount"] / base_cost) * 100, 1) if base_cost > 0 else 0.0
+    )
+
+    # Add "next bundle" suggestion logic
+    next_bundle_suggestion = _suggest_next_bundle(tool_list, pricing["applied_bundles"])
+
+    return PricingPreviewResponse(
+        base_cost=base_cost,
+        discount=pricing["discount_amount"],
+        final_cost=pricing["tools_cost"],
+        bundle_applied=bundle_applied,
+        bundle_name=bundle_name,
+        savings_percent=savings_percent,
+        next_bundle_suggestion=next_bundle_suggestion,
+    )
+
+
+def _suggest_next_bundle(
+    current_tools: List[str], applied_bundles: List[str]
+) -> Optional[Dict[str, Any]]:
+    """
+    Analyze current tool selection and suggest bundle upgrade.
+    Returns bundle that requires fewest additional tools.
+    """
+    from src.config.pricing import BUNDLES, TOOLS
+
+    current_set = set(current_tools)
+
+    # If already in Ultimate Pack, no upgrade possible
+    if "Ultimate Pack" in applied_bundles:
+        return None
+
+    # Find the next best bundle to complete
+    best_suggestion = None
+    min_additional_tools = float("inf")
+
+    for bundle in BUNDLES:
+        bundle_name = bundle["name"]
+
+        # Skip if already applied
+        if bundle_name in applied_bundles:
+            continue
+
+        # Find missing tools for this bundle
+        required_tools = bundle["required_tools"]
+        missing_tools = required_tools - current_set
+
+        if not missing_tools:
+            # Already have all tools for this bundle (shouldn't happen if logic is correct)
+            continue
+
+        # Calculate cost to complete this bundle
+        missing_cost = sum(TOOLS.get(tid, {}).get("price", 0.0) for tid in missing_tools)
+
+        # Calculate potential savings if we complete this bundle
+        # Current a la carte cost for ALL bundle tools
+        current_bundle_tools_in_selection = required_tools & current_set
+        current_cost_for_bundle_tools = sum(
+            TOOLS.get(tid, {}).get("price", 0.0) for tid in current_bundle_tools_in_selection
+        )
+
+        # After adding missing tools, bundle price replaces a la carte
+        potential_savings = (current_cost_for_bundle_tools + missing_cost) - bundle["price"]
+
+        # Only suggest if there's actual savings
+        if potential_savings > 0 and len(missing_tools) < min_additional_tools:
+            min_additional_tools = len(missing_tools)
+            best_suggestion = {
+                "bundle": bundle_name.lower().replace(" ", "_"),
+                "bundle_name": bundle_name,
+                "missing_tools": sorted(list(missing_tools)),
+                "missing_tool_names": [
+                    TOOLS.get(tid, {}).get("name", tid) for tid in sorted(missing_tools)
+                ],
+                "additional_cost": missing_cost,
+                "potential_savings": round(potential_savings, 2),
+            }
+
+    return best_suggestion
+
+
+class ResearchAnalyticsResponse(BaseModel):
+    """Response from analytics endpoint"""
+
+    total_revenue: float
+    total_api_cost: float
+    profit_margin: float
+    total_executions: int
+    cache_hit_rate: float
+    cache_savings: float
+    avg_cost_per_tool: float
+    top_tools: List[Dict[str, Any]]
+    date_range: int
+
+
+@router.get("/analytics", response_model=ResearchAnalyticsResponse)
+@lenient_limiter.limit("100/hour")  # Analytics query
+async def get_research_analytics(
+    request: Request,
+    days: int = Query(90, ge=1, le=365, description="Date range in days"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Aggregate analytics across all research tools.
+
+    Returns:
+    - Total revenue (sum of tool_price)
+    - Total API costs (sum of actual_cost_usd)
+    - Profit margin percentage
+    - Total executions
+    - Cache hit rate
+    - Top tools by execution count
+    - Cost efficiency metrics
+
+    TR-021: Only returns data for current user's research results
+    """
+    from backend.models import ResearchResult
+
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+
+    # TR-021: Filter to user's research results only
+    results = (
+        db.query(ResearchResult)
+        .filter(ResearchResult.user_id == current_user.id, ResearchResult.created_at >= cutoff_date)
+        .all()
+    )
+
+    if not results:
+        # Return empty analytics if no results
+        return ResearchAnalyticsResponse(
+            total_revenue=0.0,
+            total_api_cost=0.0,
+            profit_margin=0.0,
+            total_executions=0,
+            cache_hit_rate=0.0,
+            cache_savings=0.0,
+            avg_cost_per_tool=0.0,
+            top_tools=[],
+            date_range=days,
+        )
+
+    # Calculate aggregates
+    total_revenue = sum(r.tool_price or 0.0 for r in results)
+    total_api_cost = sum(r.actual_cost_usd or 0.0 for r in results)
+    profit_margin = (
+        round(((total_revenue - total_api_cost) / total_revenue * 100), 2)
+        if total_revenue > 0
+        else 0.0
+    )
+
+    # Cache statistics
+    cached_count = sum(1 for r in results if r.is_cached_result)
+    cache_hit_rate = round((cached_count / len(results) * 100), 1) if results else 0.0
+    cache_savings = total_revenue * (cache_hit_rate / 100)
+
+    # Group by tool_name for top tools
+    tool_stats = {}
+    for r in results:
+        if r.tool_name not in tool_stats:
+            tool_stats[r.tool_name] = {
+                "tool_name": r.tool_name,
+                "tool_label": r.tool_label,
+                "execution_count": 0,
+                "total_revenue": 0.0,
+                "total_api_cost": 0.0,
+            }
+        tool_stats[r.tool_name]["execution_count"] += 1
+        tool_stats[r.tool_name]["total_revenue"] += r.tool_price or 0.0
+        tool_stats[r.tool_name]["total_api_cost"] += r.actual_cost_usd or 0.0
+
+    # Sort by execution count
+    top_tools = sorted(tool_stats.values(), key=lambda x: x["execution_count"], reverse=True)[:10]
+
+    return ResearchAnalyticsResponse(
+        total_revenue=round(total_revenue, 2),
+        total_api_cost=round(total_api_cost, 2),
+        profit_margin=profit_margin,
+        total_executions=len(results),
+        cache_hit_rate=cache_hit_rate,
+        cache_savings=round(cache_savings, 2),
+        avg_cost_per_tool=round(total_api_cost / len(results), 4) if results else 0.0,
+        top_tools=top_tools,
+        date_range=days,
     )
