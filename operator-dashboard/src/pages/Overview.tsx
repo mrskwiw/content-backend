@@ -100,7 +100,18 @@ export default function Overview() {
   });
 
   // Fetch user cost summary
-  const { data: costSummary } = useQuery({
+  const { data: costSummary = {
+    totalCostUsd: 0,
+    totalProjects: 0,
+    totalRuns: 0,
+    totalPosts: 0,
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
+    totalCacheCreationTokens: 0,
+    totalCacheReadTokens: 0,
+    avgCostPerPost: 0,
+    avgCostPerRun: 0,
+  } } = useQuery({
     queryKey: ['user-cost-summary', 30],
     queryFn: () => costsApi.getUserCostSummary(30),
     retry: 1,
