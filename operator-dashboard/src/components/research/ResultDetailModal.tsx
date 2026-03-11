@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { researchApi } from '../../api';
+import { researchApi } from '@/api';
+import { ResearchResult } from '@/types/domain';
 import { X, Download, FileText, Code2, Info } from 'lucide-react';
 
 interface ResultDetailModalProps {
@@ -13,7 +14,7 @@ export function ResultDetailModal({ resultId, onClose }: ResultDetailModalProps)
 
   // Fetch result details
   // Note: We need to add a getResult endpoint to the API
-  const { data: result, isLoading } = useQuery({
+  const { data: result, isLoading } = useQuery<ResearchResult | null>({
     queryKey: ['research-result', resultId],
     queryFn: async () => {
       // TODO: Implement getResult endpoint

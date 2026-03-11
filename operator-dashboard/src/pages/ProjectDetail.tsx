@@ -29,8 +29,10 @@ import { projectsApi } from '@/api/projects';
 import { clientsApi } from '@/api/clients';
 import { postsApi } from '@/api/posts';
 import { deliverablesApi } from '@/api/deliverables';
+import { runsApi } from '@/api/runs';
 import { StatusProgressBar } from '@/components/ui/StatusProgressBar';
-import type { PostDraft, Project } from '@/types/domain';
+import { ProjectCostSummary, RunCostBreakdown } from '@/components/costs';
+import type { PostDraft, Project, Run } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
@@ -72,6 +74,13 @@ export default function ProjectDetail() {
   const { data: allDeliverables = [] } = useQuery({
     queryKey: ['deliverables'],
     queryFn: () => deliverablesApi.list(),
+  });
+
+  // Fetch runs for this project
+  const { data: projectRuns = [] } = useQuery({
+    queryKey: ['runs', projectId],
+    queryFn: () => runsApi.listByProject(projectId!),
+    enabled: !!projectId,
   });
 
   if (projectLoading || !project) {
@@ -480,6 +489,9 @@ export default function ProjectDetail() {
                 </div>
               </div>
             </div>
+
+            {/* API Cost Summary */}
+            <ProjectCostSummary projectId={project.id} />
           </div>
         )}
 
@@ -977,9 +989,36 @@ export default function ProjectDetail() {
 
         {/* Tab 6: Activity Log */}
         {activeTab === 'activity' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Project Activity</h3>
+          <div className="space-y-6">
+            {/* Generation Runs */}
+            {projectRuns.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Generation Runs</h3>
+                {projectRuns.map((run: Run) => (
+                  <div key={run.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Run {run.id.slice(0, 8)} • {safeFormatDate(run.startedAt)}
+                      </h4>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        run.status === 'succeeded' ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300' :
+                        run.status === 'failed' ? 'bg-rose-100 dark:bg-rose-900/20 text-rose-800 dark:text-rose-300' :
+                        run.status === 'running' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300' :
+                        'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
+                      }`}>
+                        {run.status}
+                      </span>
+                    </div>
+                    <RunCostBreakdown runId={run.id} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Activity Log */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Project Activity</h3>
               <button className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800">
                 <Download className="h-4 w-4" />
                 Export Log
@@ -1014,6 +1053,7 @@ export default function ProjectDetail() {
                 );
               })}
             </div>
+          </div>
           </div>
         )}
       </div>

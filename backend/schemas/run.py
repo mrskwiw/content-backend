@@ -66,6 +66,14 @@ class RunResponse(BaseModel):
     logs: Optional[List[LogEntry]] = None
     error_message: Optional[str] = None
 
+    # Token usage tracking (cumulative for all posts in this run)
+    total_input_tokens: Optional[int] = None
+    total_output_tokens: Optional[int] = None
+    total_cache_creation_tokens: Optional[int] = None
+    total_cache_read_tokens: Optional[int] = None
+    total_cost_usd: Optional[float] = None
+    estimated_cost_usd: Optional[float] = None
+
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase

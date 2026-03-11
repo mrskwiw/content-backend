@@ -1,7 +1,19 @@
 """
 Post model for generated content.
 """
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -28,6 +40,12 @@ class Post(Base):
     target_platform = Column(String)  # linkedin, twitter, facebook, blog
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Token usage tracking (for individual post generation)
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    cache_read_tokens = Column(Integer, nullable=True)
+    cost_usd = Column(Float, nullable=True)  # Cost for this specific post
+
     # Relationships (using fully qualified paths to avoid conflicts with Pydantic models in src.models)
     project = relationship("backend.models.project.Project", back_populates="posts")
     run = relationship("backend.models.run.Run", back_populates="posts")
@@ -35,19 +53,19 @@ class Post(Base):
     # Composite indexes for common query patterns
     __table_args__ = (
         # Most common filter combinations
-        Index('ix_posts_project_status', 'project_id', 'status'),
-        Index('ix_posts_status_created', 'status', 'created_at'),
-        Index('ix_posts_platform_status', 'target_platform', 'status'),
+        Index("ix_posts_project_status", "project_id", "status"),
+        Index("ix_posts_status_created", "status", "created_at"),
+        Index("ix_posts_platform_status", "target_platform", "status"),
         # Template name for ILIKE searches
-        Index('ix_posts_template_name', 'template_name'),
+        Index("ix_posts_template_name", "template_name"),
         # Word count for range queries
-        Index('ix_posts_word_count', 'word_count'),
+        Index("ix_posts_word_count", "word_count"),
         # Readability score for range queries
-        Index('ix_posts_readability', 'readability_score'),
+        Index("ix_posts_readability", "readability_score"),
         # Cursor pagination index (Week 3 optimization)
         # Enables O(1) performance for deep pagination
-        Index('ix_posts_created_at_id', 'created_at', 'id', postgresql_using='btree'),
-        {'extend_existing': True},
+        Index("ix_posts_created_at_id", "created_at", "id", postgresql_using="btree"),
+        {"extend_existing": True},
     )
 
     def __repr__(self):

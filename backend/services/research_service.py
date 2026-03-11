@@ -414,6 +414,22 @@ class ResearchService:
             db.commit()
             db.refresh(research_result)
 
+            # Sync token usage from cost_tracker.db to database
+            try:
+                from backend.services.token_sync_service import token_sync_service
+
+                usage_data = token_sync_service.sync_research_token_usage(
+                    db=db, research_result_id=research_result.id, client_id=client_id
+                )
+                if usage_data:
+                    logger.info(
+                        f"Token tracking for research {research_result.id}: "
+                        f"{usage_data.get('total_input_tokens', 0)} input tokens, "
+                        f"${usage_data.get('total_cost', 0):.4f} cost"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to sync research token usage (non-critical): {e}")
+
             # Story Mining Integration: Save mined stories to database
             if tool_name == "story_mining" and result.success:
                 try:

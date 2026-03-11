@@ -5,6 +5,7 @@ import { runsApi } from '@/api/runs';
 import type { GenerateAllInput, Run } from '@/types/domain';
 import { Play, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { TokenUsageDisplay } from '@/components/costs';
 
 interface Props {
   projectId: string;
@@ -121,8 +122,21 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
         </div>
       )}
       {isSucceeded && (
-        <div className="mt-3 rounded-md bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
-          Generation complete! Loading quality results...
+        <div className="mt-3 space-y-3">
+          <div className="rounded-md bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+            Generation complete! Loading quality results...
+          </div>
+          {runStatus && (runStatus.totalInputTokens || runStatus.totalOutputTokens) && (
+            <TokenUsageDisplay
+              inputTokens={runStatus.totalInputTokens}
+              outputTokens={runStatus.totalOutputTokens}
+              cacheCreationTokens={runStatus.totalCacheCreationTokens}
+              cacheReadTokens={runStatus.totalCacheReadTokens}
+              costUsd={runStatus.totalCostUsd}
+              estimatedCostUsd={runStatus.estimatedCostUsd}
+              variant="compact"
+            />
+          )}
         </div>
       )}
     </div>

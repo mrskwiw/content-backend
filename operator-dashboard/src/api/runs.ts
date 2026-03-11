@@ -11,6 +11,13 @@ export const runsApi = {
     return data;
   },
 
+  async listByProject(projectId: string) {
+    const { data } = await apiClient.get<Run[]>('/api/runs/', {
+      params: { project_id: projectId }
+    });
+    return data;
+  },
+
   async get(runId: string) {
     const { data } = await apiClient.get<Run>(`/api/runs/${runId}`);
     return data;

@@ -398,7 +398,7 @@ class ResearchResultResponse(BaseModel):
     project_id: Optional[str]
     tool_name: str
     tool_label: Optional[str]
-    tool_price: Optional[float]
+    tool_price: Optional[float]  # Business model price (fixed per tool)
     params: Optional[Dict[str, Any]]
     outputs: Dict[str, str]
     data: Optional[Dict[str, Any]]
@@ -406,6 +406,13 @@ class ResearchResultResponse(BaseModel):
     error_message: Optional[str]
     duration_seconds: Optional[float]
     created_at: datetime
+
+    # Token usage tracking (actual API consumption)
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cache_creation_tokens: Optional[int] = None
+    cache_read_tokens: Optional[int] = None
+    actual_cost_usd: Optional[float] = None  # Actual API cost (may differ from tool_price)
 
     model_config = ConfigDict(from_attributes=True)
 

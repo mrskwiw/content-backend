@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { researchApi, costsApi } from '../../api';
+import { researchApi, costsApi, ResearchTool } from '@/api';
 import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
 import { Search, Filter } from 'lucide-react';
@@ -24,7 +24,7 @@ export default function ResearchToolsLibrary() {
   });
 
   // Filter tools by category and search
-  const filteredTools = tools.filter(tool => {
+  const filteredTools = tools.filter((tool: ResearchTool) => {
     const matchesCategory = categoryFilter === 'all' || tool.category === categoryFilter;
     const matchesSearch = !searchQuery ||
       tool.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -33,7 +33,7 @@ export default function ResearchToolsLibrary() {
   });
 
   // Get unique categories
-  const categories = ['all', ...new Set(tools.map(t => t.category).filter(Boolean))];
+  const categories: string[] = ['all', ...new Set(tools.map((t: ResearchTool) => t.category).filter((c): c is string => Boolean(c)))];
 
   const handleToggleTool = (toolId: string) => {
     setSelectedTools(prev =>
@@ -88,7 +88,7 @@ export default function ResearchToolsLibrary() {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-gray-400" />
             <div className="flex gap-2">
-              {categories.map(category => (
+              {categories.map((category: string) => (
                 <button
                   key={category}
                   onClick={() => setCategoryFilter(category)}
@@ -116,7 +116,7 @@ export default function ResearchToolsLibrary() {
 
       {/* Tool Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTools.map(tool => (
+        {filteredTools.map((tool: ResearchTool) => (
           <ToolCard
             key={tool.name}
             tool={tool}

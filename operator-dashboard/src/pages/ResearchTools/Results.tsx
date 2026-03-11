@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { researchApi } from '../../api';
+import { researchApi } from '@/api';
 import { ResultCard } from '../../components/research/ResultCard';
 import { ResultDetailModal } from '../../components/research/ResultDetailModal';
 import { Filter, FileSearch } from 'lucide-react';
+import { ResearchResult } from '../../types/domain';
 
 export default function ResearchResults() {
   const [filters, setFilters] = useState({
@@ -86,7 +87,7 @@ export default function ResearchResults() {
       {/* Results List */}
       <div className="space-y-3">
         {results && results.results.length > 0 ? (
-          results.results.map(result => (
+          results.results.map((result: ResearchResult) => (
             <ResultCard
               key={result.id}
               result={result}

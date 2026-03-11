@@ -46,12 +46,12 @@ export function ResultCard({ result, onView, onDownload }: ResultCardProps) {
           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>{new Date(result.createdAt).toLocaleDateString()} • {formatDuration(result.durationSeconds)}</span>
+              <span>{new Date(result.createdAt).toLocaleDateString()} • {formatDuration(result.durationSeconds ?? undefined)}</span>
             </div>
-            {result.toolPrice !== undefined && (
+            {result.toolPrice !== undefined && result.toolPrice !== null && (
               <div className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />
-                <span>{formatCost(result.toolPrice)} → {formatCost(result.actualCostUsd)} actual</span>
+                <span>{formatCost(result.toolPrice ?? undefined)} → {formatCost(result.actualCostUsd ?? undefined)} actual</span>
               </div>
             )}
           </div>

@@ -74,6 +74,12 @@ class PostResponse(PostBase):
     flags: Optional[List[str]] = []
     created_at: datetime
 
+    # Token usage tracking (for individual post generation)
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cache_read_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase

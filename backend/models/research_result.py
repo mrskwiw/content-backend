@@ -11,6 +11,7 @@ from sqlalchemy import (
     Column,
     String,
     Float,
+    Integer,
     Boolean,
     DateTime,
     Text,
@@ -46,7 +47,7 @@ class ResearchResult(Base):
     # Tool information
     tool_name = Column(String, nullable=False, index=True)
     tool_label = Column(String)
-    tool_price = Column(Float)
+    tool_price = Column(Float)  # Business model price (fixed per tool)
 
     # Data (JSON for flexibility across different tools)
     params = Column(JSON)  # Input parameters
@@ -57,6 +58,13 @@ class ResearchResult(Base):
     status = Column(String, default="completed", index=True)
     error_message = Column(Text)
     duration_seconds = Column(Float)
+
+    # Token usage tracking (actual API consumption)
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    cache_creation_tokens = Column(Integer, nullable=True)
+    cache_read_tokens = Column(Integer, nullable=True)
+    actual_cost_usd = Column(Float, nullable=True)  # Actual API cost (may differ from tool_price)
 
     # Caching
     cache_key = Column(String, index=True)

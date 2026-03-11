@@ -363,6 +363,121 @@ def init_db():
                     print(f">> Data migration failed: {e}")
                     # Non-critical - continue startup
 
+        # Token usage tracking migration (runs, posts, research_results)
+        # Add token and cost columns for API usage transparency
+        if "runs" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("runs")]
+            new_run_columns = [
+                ("total_input_tokens", "INTEGER"),
+                ("total_output_tokens", "INTEGER"),
+                ("total_cache_creation_tokens", "INTEGER"),
+                ("total_cache_read_tokens", "INTEGER"),
+                ("total_cost_usd", "REAL"),
+                ("estimated_cost_usd", "REAL"),
+            ]
+
+            for col_name, col_type in new_run_columns:
+                if col_name not in columns:
+                    import re
+
+                    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", col_name):
+                        print(f">> ERROR: Invalid column name '{col_name}' (security check failed)")
+                        continue
+                    base_type = col_type.split()[0] if " " in col_type else col_type
+                    if base_type not in ALLOWED_TYPES:
+                        print(f">> ERROR: Invalid column type '{col_type}' (security check failed)")
+                        continue
+
+                    print(f">> Running migration: Adding {col_name} column to runs table")
+                    try:
+                        from sqlalchemy.sql import quoted_name
+
+                        safe_col_name = quoted_name(col_name, quote=True)
+                        safe_col_type = col_type
+                        ddl_stmt = text(
+                            f"ALTER TABLE runs ADD COLUMN {safe_col_name} {safe_col_type}"
+                        )
+                        conn.execute(ddl_stmt)
+                        conn.commit()
+                        print(f">> Migration for {col_name} completed successfully")
+                    except Exception as e:
+                        print(f">> Migration for {col_name} failed: {e}")
+
+        if "posts" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("posts")]
+            new_post_columns = [
+                ("input_tokens", "INTEGER"),
+                ("output_tokens", "INTEGER"),
+                ("cache_read_tokens", "INTEGER"),
+                ("cost_usd", "REAL"),
+            ]
+
+            for col_name, col_type in new_post_columns:
+                if col_name not in columns:
+                    import re
+
+                    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", col_name):
+                        print(f">> ERROR: Invalid column name '{col_name}' (security check failed)")
+                        continue
+                    base_type = col_type.split()[0] if " " in col_type else col_type
+                    if base_type not in ALLOWED_TYPES:
+                        print(f">> ERROR: Invalid column type '{col_type}' (security check failed)")
+                        continue
+
+                    print(f">> Running migration: Adding {col_name} column to posts table")
+                    try:
+                        from sqlalchemy.sql import quoted_name
+
+                        safe_col_name = quoted_name(col_name, quote=True)
+                        safe_col_type = col_type
+                        ddl_stmt = text(
+                            f"ALTER TABLE posts ADD COLUMN {safe_col_name} {safe_col_type}"
+                        )
+                        conn.execute(ddl_stmt)
+                        conn.commit()
+                        print(f">> Migration for {col_name} completed successfully")
+                    except Exception as e:
+                        print(f">> Migration for {col_name} failed: {e}")
+
+        if "research_results" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("research_results")]
+            new_research_columns = [
+                ("input_tokens", "INTEGER"),
+                ("output_tokens", "INTEGER"),
+                ("cache_creation_tokens", "INTEGER"),
+                ("cache_read_tokens", "INTEGER"),
+                ("actual_cost_usd", "REAL"),
+            ]
+
+            for col_name, col_type in new_research_columns:
+                if col_name not in columns:
+                    import re
+
+                    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", col_name):
+                        print(f">> ERROR: Invalid column name '{col_name}' (security check failed)")
+                        continue
+                    base_type = col_type.split()[0] if " " in col_type else col_type
+                    if base_type not in ALLOWED_TYPES:
+                        print(f">> ERROR: Invalid column type '{col_type}' (security check failed)")
+                        continue
+
+                    print(
+                        f">> Running migration: Adding {col_name} column to research_results table"
+                    )
+                    try:
+                        from sqlalchemy.sql import quoted_name
+
+                        safe_col_name = quoted_name(col_name, quote=True)
+                        safe_col_type = col_type
+                        ddl_stmt = text(
+                            f"ALTER TABLE research_results ADD COLUMN {safe_col_name} {safe_col_type}"
+                        )
+                        conn.execute(ddl_stmt)
+                        conn.commit()
+                        print(f">> Migration for {col_name} completed successfully")
+                    except Exception as e:
+                        print(f">> Migration for {col_name} failed: {e}")
+
         # NOTE: ResearchResult table is auto-created by Base.metadata.create_all()
         # No manual migration needed - table will be created on first startup
 

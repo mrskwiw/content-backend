@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { researchApi } from '../../api';
+import { researchApi, ToolStats } from '@/api';
 import { DollarSign, TrendingDown, Zap, Target, Percent, Database } from 'lucide-react';
 
 export default function ResearchAnalytics() {
@@ -124,7 +124,7 @@ export default function ResearchAnalytics() {
         </h2>
         {analytics.topTools.length > 0 ? (
           <div className="space-y-3">
-            {analytics.topTools.map((tool, index) => (
+            {analytics.topTools.map((tool: ToolStats, index: number) => (
               <div
                 key={tool.toolName}
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-800 rounded-lg"

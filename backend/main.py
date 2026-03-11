@@ -32,6 +32,7 @@ from backend.routers import (
     auth,
     briefs,
     clients,
+    costs,
     database,
     deliverables,
     generator,
@@ -604,6 +605,7 @@ app.include_router(generator.router, prefix="/api/generator", tags=["Generator"]
 app.include_router(research.router, prefix="/api/research", tags=["Research"])
 app.include_router(trends.router, prefix="/api/trends", tags=["Google Trends"])
 app.include_router(pricing.router, prefix="/api/pricing", tags=["Pricing"])
+app.include_router(costs.router, tags=["Costs"])  # Prefix included in router
 app.include_router(assistant.router, prefix="/api/assistant", tags=["AI Assistant"])
 app.include_router(database.router, prefix="/api", tags=["Database"])
 

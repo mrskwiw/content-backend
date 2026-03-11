@@ -72,6 +72,12 @@ export const RunSchema = z.object({
   logs: z.array(z.string()).optional(),
   status: RunStatusSchema.optional(),
   errorMessage: z.string().optional(),
+  totalInputTokens: z.number().int().optional(),
+  totalOutputTokens: z.number().int().optional(),
+  totalCacheCreationTokens: z.number().int().optional(),
+  totalCacheReadTokens: z.number().int().optional(),
+  totalCostUsd: z.number().optional(),
+  estimatedCostUsd: z.number().optional(),
 });
 export type Run = z.infer<typeof RunSchema>;
 
@@ -242,6 +248,8 @@ export const ResearchResultSchema = z.object({
   toolName: z.string(),
   toolLabel: z.string().optional().nullable(),
   toolPrice: z.number().optional().nullable(),
+  actualCostUsd: z.number().optional().nullable(),
+  isCachedResult: z.boolean().optional().nullable(),
   params: z.record(z.string(), z.any()).optional().nullable(),
   outputs: z.record(z.string(), z.string()),
   data: z.record(z.string(), z.unknown()).optional().nullable(),

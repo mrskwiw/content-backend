@@ -7,6 +7,7 @@ Handles:
 - Post creation in database
 - Run status tracking
 """
+
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +36,7 @@ class GeneratorService:
         except PermissionError:
             # Fallback to temp directory if permissions issue
             import tempfile
+
             self.data_dir = Path(tempfile.gettempdir()) / "content_jumpstart"
             self.briefs_dir = self.data_dir / "briefs"
             self.briefs_dir.mkdir(parents=True, exist_ok=True)
@@ -90,9 +92,7 @@ class GeneratorService:
         quantities_to_use = template_quantities or project.template_quantities
         if quantities_to_use:
             # Convert string keys to integers (JSON stores keys as strings)
-            template_quantities_int = {
-                int(k): v for k, v in quantities_to_use.items()
-            }
+            template_quantities_int = {int(k): v for k, v in quantities_to_use.items()}
             total_posts = sum(template_quantities_int.values())
             source = "parameter (frontend)" if template_quantities else "project model (database)"
             logger.info(
@@ -187,7 +187,9 @@ class GeneratorService:
             if post and post.project_id == project_id:
                 original_posts.append(post)
             else:
-                logger.warning(f"Post {post_id} not found or doesn't belong to project {project_id}")
+                logger.warning(
+                    f"Post {post_id} not found or doesn't belong to project {project_id}"
+                )
 
         if not original_posts:
             return {
@@ -344,6 +346,7 @@ class GeneratorService:
             try:
                 from src.agents.content_generator import ContentGeneratorAgent
                 from src.models.client_brief import ClientBrief, Platform
+
                 logger.info("Successfully imported required modules")
             except ImportError as e:
                 logger.error(f"Failed to import required modules: {str(e)}", exc_info=True)
@@ -351,7 +354,9 @@ class GeneratorService:
 
             # Build client brief from project/client data
             logger.info("Building client brief from project data")
-            logger.info(f"Client data - name: {client.name}, business_description: {client.business_description[:100] if client.business_description else 'None'}...")
+            logger.info(
+                f"Client data - name: {client.name}, business_description: {client.business_description[:100] if client.business_description else 'None'}..."
+            )
 
             # Map platform string to Platform enum
             platform_enum = Platform.LINKEDIN  # Default
@@ -390,11 +395,19 @@ class GeneratorService:
                 raise
 
             # Generate posts using template quantities
-            logger.info(f"Calling generate_posts_async with template quantities: {template_quantities}")
+            logger.info(
+                f"Calling generate_posts_async with template quantities: {template_quantities}"
+            )
             logger.info(f"Template quantities type: {type(template_quantities)}")
-            logger.info(f"Template quantities keys: {list(template_quantities.keys()) if template_quantities else 'None'}")
-            logger.info(f"Template quantities values: {list(template_quantities.values()) if template_quantities else 'None'}")
-            logger.info(f"Expected total posts: {sum(template_quantities.values()) if template_quantities else 0}")
+            logger.info(
+                f"Template quantities keys: {list(template_quantities.keys()) if template_quantities else 'None'}"
+            )
+            logger.info(
+                f"Template quantities values: {list(template_quantities.values()) if template_quantities else 'None'}"
+            )
+            logger.info(
+                f"Expected total posts: {sum(template_quantities.values()) if template_quantities else 0}"
+            )
 
             try:
                 posts = await generator.generate_posts_async(
@@ -405,11 +418,15 @@ class GeneratorService:
                     max_concurrent=5,
                     use_client_memory=False,  # Not using client memory for now
                 )
-                logger.info(f"Successfully generated {len(posts)} posts (expected: {sum(template_quantities.values()) if template_quantities else 'unknown'})")
+                logger.info(
+                    f"Successfully generated {len(posts)} posts (expected: {sum(template_quantities.values()) if template_quantities else 'unknown'})"
+                )
 
                 if len(posts) == 0:
                     logger.warning("⚠️ CRITICAL: generate_posts_async returned 0 posts!")
-                    logger.warning(f"Expected posts based on template_quantities: {sum(template_quantities.values())}")
+                    logger.warning(
+                        f"Expected posts based on template_quantities: {sum(template_quantities.values())}"
+                    )
 
             except Exception as e:
                 logger.error(f"Failed to generate posts: {str(e)}", exc_info=True)
@@ -422,12 +439,15 @@ class GeneratorService:
             for idx, post in enumerate(posts):
                 try:
                     post_id = f"post-{uuid.uuid4().hex[:12]}"
-                    logger.info(f"Creating post {idx+1}/{len(posts)}: {post_id} (template: {post.template_name})")
+                    logger.info(
+                        f"Creating post {idx+1}/{len(posts)}: {post_id} (template: {post.template_name})"
+                    )
 
                     db_post = Post(
                         id=post_id,
                         project_id=project.id,
-                        run_id=run_id or f"run-{uuid.uuid4().hex[:12]}",  # Use provided run_id or generate new one
+                        run_id=run_id
+                        or f"run-{uuid.uuid4().hex[:12]}",  # Use provided run_id or generate new one
                         content=post.content,
                         target_platform=post.target_platform.value.lower(),  # Fixed: was 'platform', should be 'target_platform'
                         template_id=str(post.template_id),
@@ -458,11 +478,38 @@ class GeneratorService:
 
             # Verify posts were saved
             from services import crud
+
             saved_posts = crud.get_posts(db, project_id=project.id, limit=100)
-            logger.info(f"Verification: Found {len(saved_posts)} posts in database for project {project.id}")
+            logger.info(
+                f"Verification: Found {len(saved_posts)} posts in database for project {project.id}"
+            )
 
             if len(saved_posts) != posts_created:
-                logger.warning(f"⚠️ Mismatch: Created {posts_created} posts but found {len(saved_posts)} in database")
+                logger.warning(
+                    f"⚠️ Mismatch: Created {posts_created} posts but found {len(saved_posts)} in database"
+                )
+
+            # Sync token usage from cost_tracker.db to database
+            try:
+                from backend.services.token_sync_service import token_sync_service
+
+                logger.info(f"Syncing token usage for run {run_id}...")
+                usage_data = token_sync_service.sync_run_token_usage(
+                    db=db, run_id=run_id, project_id=project.id
+                )
+
+                if usage_data:
+                    # Estimate token usage for individual posts
+                    posts_updated = token_sync_service.estimate_post_token_usage(
+                        db=db, run_id=run_id
+                    )
+                    logger.info(
+                        f"Token tracking complete: {usage_data.get('total_input_tokens', 0)} input tokens, "
+                        f"{usage_data.get('total_output_tokens', 0)} output tokens, "
+                        f"${usage_data.get('total_cost', 0):.4f} cost ({posts_updated} posts)"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to sync token usage (non-critical): {e}")
 
             return {
                 "posts_created": posts_created,
@@ -472,7 +519,10 @@ class GeneratorService:
 
         except Exception as e:
             error_type = type(e).__name__
-            logger.error(f"❌ CRITICAL ERROR in _generate_with_template_quantities: {error_type}: {str(e)}", exc_info=True)
+            logger.error(
+                f"❌ CRITICAL ERROR in _generate_with_template_quantities: {error_type}: {str(e)}",
+                exc_info=True,
+            )
             # Re-raise with more context
             raise Exception(f"Template-based generation failed ({error_type}): {str(e)}") from e
 
@@ -511,7 +561,7 @@ Client ID: {client.id}
 """
 
         # Write brief file
-        brief_path.write_text(brief_content, encoding='utf-8')
+        brief_path.write_text(brief_content, encoding="utf-8")
         logger.info(f"Created brief file: {brief_path}")
 
         return brief_path
