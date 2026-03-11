@@ -101,16 +101,18 @@ export default function Overview() {
 
   // Fetch user cost summary
   const { data: costSummary = {
+    userId: '',
+    periodDays: 30,
     totalCostUsd: 0,
     totalProjects: 0,
     totalRuns: 0,
-    totalPosts: 0,
     totalInputTokens: 0,
     totalOutputTokens: 0,
-    totalCacheCreationTokens: 0,
-    totalCacheReadTokens: 0,
-    avgCostPerPost: 0,
-    avgCostPerRun: 0,
+    totalGenerationCostUsd: 0,
+    totalResearchTools: 0,
+    totalResearchCostUsd: 0,
+    topProjects: [],
+    costTrend: [],
   } } = useQuery({
     queryKey: ['user-cost-summary', 30],
     queryFn: () => costsApi.getUserCostSummary(30),
@@ -402,7 +404,7 @@ export default function Overview() {
             <div>
               <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Top Projects by Cost</h3>
               <div className="space-y-2">
-                {costSummary.topProjects.slice(0, 5).map((project) => (
+                {costSummary.topProjects.slice(0, 5).map((project: { projectId: string; projectName: string; costUsd: number }) => (
                   <div
                     key={project.projectId}
                     className="flex items-center justify-between rounded-lg bg-neutral-50 dark:bg-neutral-800/50 px-3 py-2"
