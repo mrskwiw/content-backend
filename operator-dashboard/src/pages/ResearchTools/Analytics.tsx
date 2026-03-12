@@ -56,28 +56,28 @@ export default function ResearchAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Revenue"
-          value={`$${analytics.totalRevenue.toFixed(2)}`}
-          trend={`${analytics.totalExecutions} executions`}
+          value={`$${(analytics?.totalRevenue ?? 0).toFixed(2)}`}
+          trend={`${analytics?.totalExecutions ?? 0} executions`}
           icon={<DollarSign className="h-5 w-5" />}
           color="blue"
         />
         <KPICard
           title="API Costs"
-          value={`$${analytics.totalApiCost.toFixed(2)}`}
-          trend={`${analytics.profitMargin.toFixed(1)}% margin`}
+          value={`$${(analytics?.totalApiCost ?? 0).toFixed(2)}`}
+          trend={`${(analytics?.profitMargin ?? 0).toFixed(1)}% margin`}
           icon={<TrendingDown className="h-5 w-5" />}
           color="emerald"
         />
         <KPICard
           title="Cache Hit Rate"
-          value={`${analytics.cacheHitRate.toFixed(1)}%`}
-          trend={`Saved $${analytics.cacheSavings.toFixed(2)}`}
+          value={`${(analytics?.cacheHitRate ?? 0).toFixed(1)}%`}
+          trend={`Saved $${(analytics?.cacheSavings ?? 0).toFixed(2)}`}
           icon={<Database className="h-5 w-5" />}
           color="purple"
         />
         <KPICard
           title="Avg Cost/Tool"
-          value={`$${analytics.avgCostPerTool.toFixed(4)}`}
+          value={`$${(analytics?.avgCostPerTool ?? 0).toFixed(4)}`}
           trend="Actual API cost"
           icon={<Target className="h-5 w-5" />}
           color="orange"
@@ -100,7 +100,7 @@ export default function ResearchAnalytics() {
             <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
               <span>0%</span>
               <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                {analytics.profitMargin.toFixed(2)}%
+                {(analytics?.profitMargin ?? 0).toFixed(2)}%
               </span>
               <span>100%</span>
             </div>
@@ -110,7 +110,7 @@ export default function ResearchAnalytics() {
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Profit</div>
               <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                ${(analytics.totalRevenue - analytics.totalApiCost).toFixed(2)}
+                ${((analytics?.totalRevenue ?? 0) - (analytics?.totalApiCost ?? 0)).toFixed(2)}
               </div>
             </div>
           </div>
@@ -144,10 +144,10 @@ export default function ResearchAnalytics() {
                 </div>
                 <div className="text-right">
                   <div className="font-semibold text-gray-900 dark:text-gray-100">
-                    ${tool.totalRevenue.toFixed(2)}
+                    ${(tool?.totalRevenue ?? 0).toFixed(2)}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    ${tool.totalApiCost.toFixed(4)} cost
+                    ${(tool?.totalApiCost ?? 0).toFixed(4)} cost
                   </div>
                 </div>
               </div>
@@ -168,19 +168,19 @@ export default function ResearchAnalytics() {
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-              {analytics.cacheHitRate.toFixed(1)}%
+              {(analytics?.cacheHitRate ?? 0).toFixed(1)}%
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Hit Rate</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-              ${analytics.cacheSavings.toFixed(2)}
+              ${(analytics?.cacheSavings ?? 0).toFixed(2)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Saved</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-              {Math.round((analytics.cacheHitRate / 100) * analytics.totalExecutions)}
+              {Math.round(((analytics?.cacheHitRate ?? 0) / 100) * (analytics?.totalExecutions ?? 0))}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Cached Hits</div>
           </div>

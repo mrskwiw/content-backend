@@ -411,7 +411,7 @@ export default function Overview() {
                   >
                     <span className="text-sm text-neutral-900 dark:text-neutral-100">{project.projectName}</span>
                     <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                      ${project.costUsd.toFixed(2)}
+                      ${(project?.costUsd ?? 0).toFixed(2)}
                     </span>
                   </div>
                 ))}

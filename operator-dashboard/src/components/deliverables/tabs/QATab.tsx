@@ -21,8 +21,8 @@ export function QATab({ deliverable }: Props) {
   }
 
   const qa = deliverable.qaSummary;
-  const approvalRate = qa.totalPosts > 0
-    ? (qa.approvedCount / qa.totalPosts * 100).toFixed(1)
+  const approvalRate = (qa?.totalPosts ?? 0) > 0
+    ? ((qa?.approvedCount ?? 0) / (qa?.totalPosts ?? 0) * 100).toFixed(1)
     : '0';
 
   return (
@@ -66,7 +66,7 @@ export function QATab({ deliverable }: Props) {
             <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
               <span className="text-sm text-neutral-600 dark:text-neutral-400">Average Readability</span>
               <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                {qa.avgReadability.toFixed(1)}
+                {(qa?.avgReadability ?? 0).toFixed(1)}
               </span>
             </div>
           )}
@@ -82,7 +82,7 @@ export function QATab({ deliverable }: Props) {
             <div className="flex items-center justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
               <span className="text-sm text-neutral-600 dark:text-neutral-400">Posts with CTA</span>
               <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                {qa.ctaPercentage.toFixed(1)}%
+                {(qa?.ctaPercentage ?? 0).toFixed(1)}%
               </span>
             </div>
           )}

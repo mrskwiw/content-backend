@@ -296,7 +296,7 @@ export default function Analytics() {
               }`}>
                 {metric.trend === 'up' && <TrendingUp className="h-4 w-4" />}
                 {metric.trend === 'down' && <TrendingUp className="h-4 w-4 rotate-180" />}
-                <span>{metric.change > 0 ? '+' : ''}{metric.change.toFixed(1)}%</span>
+                <span>{(metric?.change ?? 0) > 0 ? '+' : ''}{(metric?.change ?? 0).toFixed(1)}%</span>
               </div>
             </div>
             <div className="mt-4">

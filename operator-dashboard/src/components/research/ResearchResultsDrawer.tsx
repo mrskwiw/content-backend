@@ -93,7 +93,7 @@ export function ResearchResultsDrawer({ result, open, onClose }: ResearchResults
                 {result.durationSeconds && (
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {result.durationSeconds.toFixed(1)}s
+                    {(result?.durationSeconds ?? 0).toFixed(1)}s
                   </div>
                 )}
               </div>

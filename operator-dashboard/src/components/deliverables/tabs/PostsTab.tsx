@@ -117,7 +117,7 @@ export function PostsTab({ deliverable }: Props) {
                     <span>{post.wordCount} words</span>
                   )}
                   {post.readabilityScore !== undefined && post.readabilityScore !== null && (
-                    <span>Readability: {post.readabilityScore.toFixed(1)}</span>
+                    <span>Readability: {(post?.readabilityScore ?? 0).toFixed(1)}</span>
                   )}
                 </div>
               </div>

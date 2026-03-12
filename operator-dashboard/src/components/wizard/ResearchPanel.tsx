@@ -586,7 +586,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
             </div>
             <div className="flex items-center gap-1 font-semibold">
               <DollarSign className="h-4 w-4" />
-              {totalPrice.toFixed(2)}
+              {(totalPrice ?? 0).toFixed(2)}
             </div>
           </div>
         </div>
@@ -650,7 +650,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                           <div className="mt-2 flex items-center justify-between gap-2">
                             {getStatusBadge(tool.status)}
                             {tool.price && (
-                              <span className="text-xs font-medium text-slate-700 dark:text-neutral-300">${tool.price.toFixed(2)}</span>
+                              <span className="text-xs font-medium text-slate-700 dark:text-neutral-300">${(tool?.price ?? 0).toFixed(2)}</span>
                             )}
                           </div>
                           {(() => {

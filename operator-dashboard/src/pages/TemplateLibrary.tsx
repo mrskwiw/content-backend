@@ -492,7 +492,7 @@ export default function TemplateLibrary() {
                 <p className="text-xs text-neutral-600 dark:text-neutral-400">Engagement</p>
                 <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5 flex items-center gap-0.5">
                   <Star className="h-3 w-3 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />
-                  {template.avgEngagement.toFixed(1)}
+                  {(template?.avgEngagement ?? 0).toFixed(1)}
                 </p>
               </div>
             </div>
@@ -584,7 +584,7 @@ export default function TemplateLibrary() {
                   <p className="text-sm text-neutral-600 dark:text-neutral-400">Engagement</p>
                   <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1 flex items-center gap-1">
                     <Star className="h-5 w-5 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />
-                    {selectedTemplate.avgEngagement.toFixed(1)}
+                    {(selectedTemplate?.avgEngagement ?? 0).toFixed(1)}
                   </p>
                 </div>
               </div>

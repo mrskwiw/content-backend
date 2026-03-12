@@ -19,20 +19,20 @@ export function PricingSummaryCard({ pricing, selectedCount }: PricingSummaryCar
         />
         <PriceMetric
           label="Base Price"
-          value={`$${pricing.baseCost.toFixed(2)}`}
+          value={`$${(pricing?.baseCost ?? 0).toFixed(2)}`}
           icon={null}
         />
-        {pricing.discount > 0 && (
+        {(pricing?.discount ?? 0) > 0 && (
           <PriceMetric
             label="Discount"
-            value={`-$${pricing.discount.toFixed(2)}`}
+            value={`-$${(pricing?.discount ?? 0).toFixed(2)}`}
             color="emerald"
             icon={<TrendingDown className="h-4 w-4" />}
           />
         )}
         <PriceMetric
           label="Total"
-          value={`$${pricing.finalCost.toFixed(2)}`}
+          value={`$${(pricing?.finalCost ?? 0).toFixed(2)}`}
           emphasized
           icon={null}
         />
@@ -57,11 +57,11 @@ export function PricingSummaryCard({ pricing, selectedCount }: PricingSummaryCar
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
                 Add {pricing.nextBundleSuggestion.missingTools.length} more tool
                 {pricing.nextBundleSuggestion.missingTools.length !== 1 ? 's' : ''} → Save $
-                {pricing.nextBundleSuggestion.potentialSavings.toFixed(2)}
+                {(pricing.nextBundleSuggestion?.potentialSavings ?? 0).toFixed(2)}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
                 Complete {pricing.nextBundleSuggestion.bundleName} for $
-                {pricing.nextBundleSuggestion.additionalCost.toFixed(2)} more
+                {(pricing.nextBundleSuggestion?.additionalCost ?? 0).toFixed(2)} more
               </p>
               <div className="flex flex-wrap gap-1">
                 {pricing.nextBundleSuggestion.missingToolNames.map((toolName, idx) => (

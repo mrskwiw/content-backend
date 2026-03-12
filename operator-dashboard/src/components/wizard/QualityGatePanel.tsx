@@ -120,7 +120,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
                       <div className="mt-1 flex gap-3 text-xs text-amber-700 dark:text-amber-300">
                         {post.length && <span>{post.length} words</span>}
                         {post.readabilityScore !== undefined && (
-                          <span>Readability: {post.readabilityScore.toFixed(1)}</span>
+                          <span>Readability: {(post?.readabilityScore ?? 0).toFixed(1)}</span>
                         )}
                       </div>
                     </div>
@@ -169,7 +169,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
                       <div className="mt-1 flex gap-3 text-xs text-neutral-500 dark:text-neutral-400">
                         {post.length && <span>{post.length} words</span>}
                         {post.readabilityScore !== undefined && (
-                          <span>Readability: {post.readabilityScore.toFixed(1)}</span>
+                          <span>Readability: {(post?.readabilityScore ?? 0).toFixed(1)}</span>
                         )}
                       </div>
                     </div>
@@ -220,7 +220,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
                 <div className="flex gap-4">
                   {editingPost.length && <span>Original: {editingPost.length} words</span>}
                   {editingPost.readabilityScore !== undefined && (
-                    <span>Readability: {editingPost.readabilityScore.toFixed(1)}</span>
+                    <span>Readability: {(editingPost?.readabilityScore ?? 0).toFixed(1)}</span>
                   )}
                 </div>
                 {editingPost.flags && editingPost.flags.length > 0 && (
