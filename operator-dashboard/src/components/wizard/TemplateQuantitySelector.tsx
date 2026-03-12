@@ -1,6 +1,8 @@
-import { useState, useMemo, memo } from 'react';
-import { Plus, Minus, DollarSign, FileText, Calculator, TrendingUp, HelpCircle, AlertCircle, X } from 'lucide-react';
+import { useState, useMemo, memo, useEffect } from 'react';
+import { Plus, Minus, DollarSign, FileText, Calculator, TrendingUp, HelpCircle, AlertCircle, X, CheckCircle2, Sparkles, Link2 } from 'lucide-react';
 import { PlatformSelector } from './PlatformSelector';
+import { generatorApi, type TemplateDependencies } from '@/api/generator';
+import { researchApi } from '@/api/research';
 
 interface Template {
   id: number;
@@ -9,6 +11,22 @@ interface Template {
   bestFor: string;
   difficulty: 'fast' | 'medium' | 'slow';
 }
+
+// Tool name to display label mapping
+const TOOL_LABELS: Record<string, string> = {
+  audience_research: 'Audience Research',
+  seo_keyword_research: 'SEO Keywords',
+  competitive_analysis: 'Competitive Analysis',
+  market_trends: 'Market Trends',
+  story_mining: 'Story Mining',
+  brand_archetype: 'Brand Archetype',
+  icp_workshop: 'ICP Workshop',
+  content_gap_analysis: 'Content Gap',
+  voice_analysis: 'Voice Analysis',
+  platform_strategy: 'Platform Strategy',
+  content_calendar: 'Content Calendar',
+  content_audit: 'Content Audit',
+};
 
 const TEMPLATES: Template[] = [
   {
@@ -123,6 +141,9 @@ interface Props {
   initialIncludeResearch?: boolean;
   initialTopics?: string[];  // NEW: custom topics for generation
   initialTargetPlatform?: string;  // NEW: target platform
+  projectId?: string;  // NEW: for fetching research results
+  clientId?: string;  // NEW: for fetching research results
+  onNavigateToResearch?: () => void;  // NEW: navigate to research step
   onContinue?: (
     quantities: Record<number, number>,
     includeResearch: boolean,
@@ -140,12 +161,71 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   initialIncludeResearch = false,
   initialTopics = [],  // NEW
   initialTargetPlatform = 'generic',  // NEW
+  projectId,  // NEW
+  clientId,  // NEW
+  onNavigateToResearch,  // NEW
   onContinue,
 }: Props) {
   const [quantities, setQuantities] = useState<Record<number, number>>(initialQuantities);
   const [includeResearch, setIncludeResearch] = useState(initialIncludeResearch);
   const [customTopics, setCustomTopics] = useState<string[]>(initialTopics);  // NEW: topic override state
   const [targetPlatform, setTargetPlatform] = useState<string>(initialTargetPlatform);  // NEW: target platform state
+  const [dependencies, setDependencies] = useState<Map<number, TemplateDependencies>>(new Map());
+  const [completedTools, setCompletedTools] = useState<Set<string>>(new Set());
+  const [loadingDeps, setLoadingDeps] = useState(false);
+
+  // Fetch completed research tools
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchCompletedResearch = async () => {
+      try {
+        const response = await researchApi.getProjectResearchResults(projectId);
+        const toolNames = new Set(response.results.map((r) => r.toolName));
+        setCompletedTools(toolNames);
+      } catch (error) {
+        console.error('Failed to fetch research results:', error);
+      }
+    };
+
+    fetchCompletedResearch();
+  }, [projectId]);
+
+  // Fetch dependencies for templates with quantity > 0
+  useEffect(() => {
+    const templatesWithQuantity = Object.keys(quantities)
+      .map(Number)
+      .filter((id) => quantities[id] > 0);
+
+    if (templatesWithQuantity.length === 0) {
+      setDependencies(new Map());
+      return;
+    }
+
+    const fetchDependencies = async () => {
+      setLoadingDeps(true);
+      const newDeps = new Map<number, TemplateDependencies>();
+
+      try {
+        await Promise.all(
+          templatesWithQuantity.map(async (templateId) => {
+            try {
+              const response = await generatorApi.getTemplateDependencies(templateId);
+              newDeps.set(templateId, response.research_dependencies);
+            } catch (error) {
+              console.error(`Failed to fetch dependencies for template ${templateId}:`, error);
+            }
+          })
+        );
+
+        setDependencies(newDeps);
+      } finally {
+        setLoadingDeps(false);
+      }
+    };
+
+    fetchDependencies();
+  }, [quantities]);
 
   // Calculate totals
   const { totalPosts, totalPrice, pricePerPost } = useMemo(() => {
@@ -210,6 +290,25 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
         return '🕐 Slow (10 min)';
     }
   };
+
+  // Calculate aggregate research requirements for selected templates
+  const aggregateDependencies = () => {
+    const allRequired = new Set<string>();
+    const allRecommended = new Set<string>();
+
+    dependencies.forEach((deps) => {
+      deps.required.forEach((tool) => allRequired.add(tool));
+      deps.recommended.forEach((tool) => allRecommended.add(tool));
+    });
+
+    return { allRequired, allRecommended };
+  };
+
+  const { allRequired, allRecommended } = aggregateDependencies();
+  const missingRequired = Array.from(allRequired).filter((tool) => !completedTools.has(tool));
+  const missingRecommended = Array.from(allRecommended).filter(
+    (tool) => !completedTools.has(tool) && !allRequired.has(tool)
+  );
 
   return (
     <div className="space-y-8">
@@ -330,11 +429,101 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
         </div>
       </div>
 
+      {/* Research Dependencies Warning */}
+      {totalPosts > 0 && !loadingDeps && missingRequired.length > 0 && (
+        <div className="mb-4 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                Missing Required Research
+              </h4>
+              <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
+                Selected templates require {missingRequired.length} research{' '}
+                {missingRequired.length === 1 ? 'tool' : 'tools'} that have not been run yet. Running these tools will
+                improve content quality.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {missingRequired.map((tool) => (
+                  <span
+                    key={tool}
+                    className="inline-flex items-center gap-1 rounded-md bg-amber-100 dark:bg-amber-900/40 px-2 py-1 text-xs font-medium text-amber-800 dark:text-amber-200"
+                  >
+                    <Link2 className="h-3 w-3" />
+                    {TOOL_LABELS[tool] || tool}
+                  </span>
+                ))}
+              </div>
+              {onNavigateToResearch && (
+                <button
+                  onClick={onNavigateToResearch}
+                  className="inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Run Required Research
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recommended Research Info */}
+      {totalPosts > 0 && !loadingDeps && missingRecommended.length > 0 && missingRequired.length === 0 && (
+        <div className="mb-4 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                Recommended Research Available
+              </h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                Consider running these optional research tools for enhanced content:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {missingRecommended.map((tool) => (
+                  <span
+                    key={tool}
+                    className="inline-flex items-center gap-1 rounded-md bg-blue-100 dark:bg-blue-900/40 px-2 py-1 text-xs font-medium text-blue-800 dark:text-blue-200"
+                  >
+                    <Link2 className="h-3 w-3" />
+                    {TOOL_LABELS[tool] || tool}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All Research Complete */}
+      {totalPosts > 0 &&
+        !loadingDeps &&
+        missingRequired.length === 0 &&
+        (allRequired.size > 0 || allRecommended.size > 0) && (
+          <div className="mb-4 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
+                  All Required Research Complete
+                </h4>
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                  You have all the research needed for optimal content generation with selected templates.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* Template Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {TEMPLATES.map((template) => {
           const quantity = quantities[template.id] || 0;
           const hasQuantity = quantity > 0;
+          const templateDeps = dependencies.get(template.id);
+          const hasRequiredDeps = templateDeps?.required && templateDeps.required.length > 0;
+          const hasRecommendedDeps = templateDeps?.recommended && templateDeps.recommended.length > 0;
 
           return (
             <div
@@ -371,6 +560,50 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                   </span>
                 </div>
               </div>
+
+              {/* Research Dependencies for this template */}
+              {hasQuantity && templateDeps && (hasRequiredDeps || hasRecommendedDeps) && (
+                <div className="mb-3 pt-2 border-t border-neutral-200 dark:border-neutral-700 space-y-1">
+                  {hasRequiredDeps && (
+                    <div className="text-xs">
+                      <span className="font-semibold text-neutral-700 dark:text-neutral-300">Required:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {templateDeps.required.map((tool) => (
+                          <span
+                            key={tool}
+                            className={`inline-block rounded px-1.5 py-0.5 text-xs ${
+                              completedTools.has(tool)
+                                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                            }`}
+                          >
+                            {completedTools.has(tool) ? '✓' : '⚠'} {TOOL_LABELS[tool] || tool}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {hasRecommendedDeps && (
+                    <div className="text-xs">
+                      <span className="font-semibold text-neutral-700 dark:text-neutral-300">Recommended:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {templateDeps.recommended.map((tool) => (
+                          <span
+                            key={tool}
+                            className={`inline-block rounded px-1.5 py-0.5 text-xs ${
+                              completedTools.has(tool)
+                                ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                            }`}
+                          >
+                            {completedTools.has(tool) ? '✓' : '○'} {TOOL_LABELS[tool] || tool}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Quantity Controls */}
               <div className="flex items-center gap-2">

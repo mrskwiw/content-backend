@@ -449,6 +449,9 @@ export default function Wizard() {
                 initialIncludeResearch={includeResearch}
                 initialTopics={customTopics}
                 initialTargetPlatform={targetPlatform}
+                projectId={projectId || undefined}
+                clientId={clientId || undefined}
+                onNavigateToResearch={() => setActiveStep('research')}
                 onContinue={(quantities, research, price, topics, platform) => {
                   setTemplateQuantities(quantities);
                   setIncludeResearch(research);
