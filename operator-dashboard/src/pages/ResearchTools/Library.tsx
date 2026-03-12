@@ -143,7 +143,7 @@ export default function ResearchToolsLibrary() {
               {selectedTools.length} tool{selectedTools.length !== 1 ? 's' : ''} selected
               {pricing && (
                 <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">
-                  • ${pricing.finalCost.toFixed(2)}
+                  • ${(pricing?.finalCost ?? 0).toFixed(2)}
                 </span>
               )}
             </div>
