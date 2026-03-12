@@ -47,6 +47,23 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
       helperText: '✨ Auto-generates topics from your business profile if left empty. Or manually add 1-10 custom topics to focus on.'
     }]
   },
+  determine_competitors: {
+    fields: [{
+      key: 'industry',
+      label: 'Industry (Optional - Auto-Populated)',
+      type: 'text',
+      required: false,
+      placeholder: 'Leave empty to use client profile industry',
+      helperText: '✨ Auto-populates from your client profile. Override if needed (e.g., "B2B SaaS", "Healthcare").'
+    }, {
+      key: 'location',
+      label: 'Geographic Market (Optional)',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., United States, Global, EMEA',
+      helperText: 'Optional. Specify if you want to focus on a specific geographic market.'
+    }]
+  },
   competitive_analysis: {
     fields: [{
       key: 'competitors',

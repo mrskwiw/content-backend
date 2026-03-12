@@ -13,7 +13,8 @@ const TOOL_PREREQUISITES: Record<string, { required: string[]; recommended: stri
   brand_archetype: { required: [], recommended: [] },
   seo_keyword_research: { required: [], recommended: [] },
   audience_research: { required: [], recommended: [] },
-  competitive_analysis: { required: [], recommended: [] },
+  determine_competitors: { required: [], recommended: [] },
+  competitive_analysis: { required: [], recommended: ['determine_competitors'] },
 
   // Tier 2 - Analysis
   content_gap_analysis: { required: [], recommended: ['competitive_analysis', 'seo_keyword_research'] },
@@ -35,6 +36,7 @@ const TOOL_LABELS: Record<string, string> = {
   brand_archetype: 'Brand Archetype',
   seo_keyword_research: 'SEO Keywords',
   audience_research: 'Audience Research',
+  determine_competitors: 'Determine Competitors',
   competitive_analysis: 'Competitive Analysis',
   content_gap_analysis: 'Content Gap',
   market_trends_research: 'Market Trends',

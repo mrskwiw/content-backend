@@ -593,6 +593,32 @@ async def run_research(
                 detail=f"Research tool execution failed: {result.get('error', 'Unknown error')}",
             )
 
+        # Auto-save competitors to client profile if determine_competitors tool was run
+        if input.tool == "determine_competitors" and input.client_id:
+            try:
+                data = result.get("metadata", {}).get("data", {})
+                primary_competitors = data.get("primary_competitors", [])
+
+                if primary_competitors:
+                    # Extract just the competitor names
+                    competitor_names = [
+                        comp.get("name") if isinstance(comp, dict) else comp
+                        for comp in primary_competitors[:5]  # Max 5
+                    ]
+
+                    if competitor_names:
+                        client = crud.get_client(db, input.client_id)
+                        if client:
+                            client.competitors = competitor_names
+                            db.commit()
+                            logger.info(
+                                f"Auto-updated client.competitors with {len(competitor_names)} "
+                                f"competitors for client {input.client_id}"
+                            )
+            except Exception as e:
+                # Don't fail the request if auto-save fails
+                logger.error(f"Failed to auto-save competitors to client profile: {e}")
+
         # Return result in expected format
         return ResearchRunResult(
             tool=input.tool,
