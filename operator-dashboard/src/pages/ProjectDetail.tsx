@@ -90,8 +90,16 @@ export default function ProjectDetail() {
   }
 
   const client = clients.find(c => c.id === project.clientId);
-  const projectPosts = allPosts.filter((p) => p.projectId === project.id);
-  const projectDeliverables = allDeliverables.filter(d => d.projectId === project.id);
+
+  const projectPosts = useMemo(
+    () => allPosts.filter((p) => p.projectId === project.id),
+    [allPosts, project.id]
+  );
+
+  const projectDeliverables = useMemo(
+    () => allDeliverables.filter(d => d.projectId === project.id),
+    [allDeliverables, project.id]
+  );
 
   const safeFormatDate = (value?: string | null, fallback = 'Not available') =>
     value ? format(new Date(value), 'MMM d, yyyy') : fallback;
