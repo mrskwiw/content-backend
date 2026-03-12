@@ -321,6 +321,7 @@ def _add_confidence_scores(parsed_brief, original_text: str) -> dict:
     field_mapping = {
         "companyName": parsed_brief.company_name,
         "businessDescription": parsed_brief.business_description,
+        "industry": parsed_brief.industry,
         "idealCustomer": parsed_brief.ideal_customer,
         "mainProblemSolved": parsed_brief.main_problem_solved,
         "tonePreference": (
