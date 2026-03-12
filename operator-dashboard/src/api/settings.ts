@@ -2,7 +2,7 @@
  * Settings API - User preferences and integrations
  */
 
-import { apiClient } from './client';
+import apiClient from './client';
 
 export interface WebSearchConfig {
   provider: 'brave' | 'tavily' | 'stub';
