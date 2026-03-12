@@ -372,35 +372,35 @@ export default function Overview() {
             <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">Total API Spending</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                ${costSummary.totalCostUsd.toFixed(2)}
+                ${(costSummary?.totalCostUsd ?? 0).toFixed(2)}
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {costSummary.totalProjects} projects • {costSummary.totalRuns} runs
+                {costSummary?.totalProjects ?? 0} projects • {costSummary?.totalRuns ?? 0} runs
               </p>
             </div>
 
             <div className="rounded-lg bg-purple-50 dark:bg-purple-900/20 p-4 border border-purple-200 dark:border-purple-800">
               <p className="text-sm text-purple-600 dark:text-purple-400 mb-1">Generation Cost</p>
               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                ${costSummary.totalGenerationCostUsd.toFixed(2)}
+                ${(costSummary?.totalGenerationCostUsd ?? 0).toFixed(2)}
               </p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                {((costSummary.totalInputTokens + costSummary.totalOutputTokens) / 1_000_000).toFixed(2)}M tokens
+                {(((costSummary?.totalInputTokens ?? 0) + (costSummary?.totalOutputTokens ?? 0)) / 1_000_000).toFixed(2)}M tokens
               </p>
             </div>
 
             <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-4 border border-emerald-200 dark:border-emerald-800">
               <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-1">Research Cost</p>
               <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
-                ${costSummary.totalResearchCostUsd.toFixed(2)}
+                ${(costSummary?.totalResearchCostUsd ?? 0).toFixed(2)}
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
-                {costSummary.totalResearchTools} tools executed
+                {costSummary?.totalResearchTools ?? 0} tools executed
               </p>
             </div>
           </div>
 
-          {costSummary.topProjects.length > 0 && (
+          {(costSummary?.topProjects?.length ?? 0) > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">Top Projects by Cost</h3>
               <div className="space-y-2">
