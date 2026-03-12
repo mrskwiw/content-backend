@@ -4,6 +4,7 @@ Deliverable service for extended operations.
 Provides functions for fetching deliverable details including
 file previews, related posts, and QA summaries.
 """
+
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,7 +13,13 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from backend.models.post import Post
-from backend.schemas.deliverable import DeliverableDetailResponse, PostSummary, QASummary
+from backend.models.research_result import ResearchResult
+from backend.schemas.deliverable import (
+    DeliverableDetailResponse,
+    PostSummary,
+    QASummary,
+    ResearchResultSummary,
+)
 from backend.services import crud
 from backend.utils.logger import logger
 
@@ -35,7 +42,7 @@ def get_file_preview(file_path: Path, max_chars: int = 5000) -> Tuple[Optional[s
         return None, False
 
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             content = f.read(max_chars + 1)
             truncated = len(content) > max_chars
             if truncated:
@@ -64,12 +71,14 @@ def calculate_qa_summary(posts: List[Post]) -> Optional[QASummary]:
         return None
 
     total = len(posts)
-    flagged = sum(1 for p in posts if p.status == 'flagged')
-    approved = sum(1 for p in posts if p.status == 'approved')
+    flagged = sum(1 for p in posts if p.status == "flagged")
+    approved = sum(1 for p in posts if p.status == "approved")
 
     # Calculate averages for readability
     readability_scores = [p.readability_score for p in posts if p.readability_score is not None]
-    avg_readability = sum(readability_scores) / len(readability_scores) if readability_scores else None
+    avg_readability = (
+        sum(readability_scores) / len(readability_scores) if readability_scores else None
+    )
 
     # Calculate averages for word count
     word_counts = [p.word_count for p in posts if p.word_count is not None]
@@ -99,7 +108,9 @@ def calculate_qa_summary(posts: List[Post]) -> Optional[QASummary]:
     )
 
 
-def get_deliverable_details(db: Session, deliverable_id: str) -> Optional[DeliverableDetailResponse]:
+def get_deliverable_details(
+    db: Session, deliverable_id: str
+) -> Optional[DeliverableDetailResponse]:
     """
     Get deliverable with extended details including:
     - File preview (first 5000 characters)
@@ -147,7 +158,7 @@ def get_deliverable_details(db: Session, deliverable_id: str) -> Optional[Delive
                 readability_score=p.readability_score,
                 status=p.status,
                 flags=p.flags,
-                content_preview=p.content[:150] + "..." if len(p.content) > 150 else p.content
+                content_preview=p.content[:150] + "..." if len(p.content) > 150 else p.content,
             )
             for p in run_posts
         ]
@@ -156,6 +167,40 @@ def get_deliverable_details(db: Session, deliverable_id: str) -> Optional[Delive
         qa_summary = calculate_qa_summary(run_posts)
 
         logger.info(f"Found {len(run_posts)} posts for deliverable {deliverable_id}")
+
+    # Get research results for this project
+    research_results_summaries = []
+    if deliverable.project_id:
+        research_results = (
+            db.query(ResearchResult)
+            .filter(ResearchResult.project_id == deliverable.project_id)
+            .order_by(ResearchResult.created_at.desc())
+            .all()
+        )
+
+        # Create research result summaries
+        research_results_summaries = [
+            ResearchResultSummary(
+                id=r.id,
+                user_id=r.user_id,
+                client_id=r.client_id,
+                project_id=r.project_id,
+                tool_name=r.tool_name,
+                tool_label=r.tool_label,
+                tool_price=r.tool_price,
+                actual_cost_usd=r.actual_cost_usd,
+                summary=r.data.get("summary") if r.data else None,
+                status=r.status,
+                error_message=r.error_message,
+                duration_seconds=r.duration_seconds,
+                created_at=r.created_at,
+            )
+            for r in research_results
+        ]
+
+        logger.info(
+            f"Found {len(research_results)} research results for deliverable {deliverable_id}"
+        )
 
     # Build response
     return DeliverableDetailResponse(
@@ -177,4 +222,5 @@ def get_deliverable_details(db: Session, deliverable_id: str) -> Optional[Delive
         posts=posts_summaries,
         qa_summary=qa_summary,
         file_modified_at=file_modified_at,
+        research_results=research_results_summaries,
     )

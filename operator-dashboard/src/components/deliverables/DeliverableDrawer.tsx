@@ -8,6 +8,7 @@ import { PreviewTab } from './tabs/PreviewTab';
 import { PostsTab } from './tabs/PostsTab';
 import { QATab } from './tabs/QATab';
 import { HistoryTab } from './tabs/HistoryTab';
+import { ResearchTab } from './tabs/ResearchTab';
 
 interface Props {
   deliverable: Deliverable | null;
@@ -117,6 +118,12 @@ export function DeliverableDrawer({ deliverable, onClose }: Props) {
                 >
                   History
                 </Tabs.Trigger>
+                <Tabs.Trigger
+                  value="research"
+                  className="px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-colors"
+                >
+                  Research {details.researchResults && details.researchResults.length > 0 && `(${details.researchResults.length})`}
+                </Tabs.Trigger>
               </Tabs.List>
 
               <div className="flex-1 overflow-hidden">
@@ -138,6 +145,10 @@ export function DeliverableDrawer({ deliverable, onClose }: Props) {
 
                 <Tabs.Content value="history" className="h-full overflow-y-auto">
                   <HistoryTab deliverable={details} />
+                </Tabs.Content>
+
+                <Tabs.Content value="research" className="h-full overflow-y-auto">
+                  <ResearchTab deliverable={details} />
                 </Tabs.Content>
               </div>
             </Tabs.Root>

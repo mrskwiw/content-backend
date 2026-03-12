@@ -143,12 +143,30 @@ export const QASummarySchema = z.object({
 });
 export type QASummary = z.infer<typeof QASummarySchema>;
 
+export const ResearchResultSummarySchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  clientId: z.string(),
+  projectId: z.string().optional().nullable(),
+  toolName: z.string(),
+  toolLabel: z.string().optional().nullable(),
+  toolPrice: z.number().optional().nullable(),
+  actualCostUsd: z.number().optional().nullable(),
+  summary: z.string().optional().nullable(),
+  status: z.string(),
+  errorMessage: z.string().optional().nullable(),
+  durationSeconds: z.number().optional().nullable(),
+  createdAt: z.string().datetime(),
+});
+export type ResearchResultSummary = z.infer<typeof ResearchResultSummarySchema>;
+
 export const DeliverableDetailsSchema = DeliverableSchema.extend({
   filePreview: z.string().nullish(),
   filePreviewTruncated: z.boolean(),
   posts: z.array(PostSummarySchema),
   qaSummary: QASummarySchema.nullish(),
   fileModifiedAt: z.string().datetime().nullish(),
+  researchResults: z.array(ResearchResultSummarySchema).optional().default([]),
 });
 export type DeliverableDetails = z.infer<typeof DeliverableDetailsSchema>;
 

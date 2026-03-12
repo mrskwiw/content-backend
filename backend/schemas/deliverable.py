@@ -136,6 +136,42 @@ class QASummary(BaseModel):
     )
 
 
+class ResearchResultSummary(BaseModel):
+    """Research result summary for deliverable details"""
+
+    id: str
+    user_id: str
+    client_id: str
+    project_id: Optional[str] = None
+    tool_name: str
+    tool_label: Optional[str] = None
+    tool_price: Optional[float] = None
+    actual_cost_usd: Optional[float] = None
+    summary: Optional[str] = None
+    status: str
+    error_message: Optional[str] = None
+    duration_seconds: Optional[float] = None
+    created_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        alias_generator=lambda field_name: "".join(
+            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
+        ),
+    )
+
+    @field_serializer("created_at", when_used="always")
+    def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
+        """Serialize datetime to ISO 8601 with timezone (Z suffix for UTC)"""
+        if dt is None:
+            return None
+        # Ensure timezone-aware
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat().replace("+00:00", "Z")
+
+
 class DeliverableDetailResponse(DeliverableResponse):
     """Extended deliverable response with all details for drawer"""
 
@@ -144,6 +180,7 @@ class DeliverableDetailResponse(DeliverableResponse):
     posts: List[PostSummary] = []
     qa_summary: Optional[QASummary] = None
     file_modified_at: Optional[datetime] = None
+    research_results: List[ResearchResultSummary] = []
 
     model_config = ConfigDict(
         from_attributes=True,
