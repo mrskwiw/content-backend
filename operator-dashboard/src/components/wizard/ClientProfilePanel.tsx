@@ -23,6 +23,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
     customerPainPoints: initialData?.customerPainPoints || [],
     customerQuestions: initialData?.customerQuestions || [],
     keywords: initialData?.keywords || [],
+    competitors: initialData?.competitors || [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -31,6 +32,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [competitor, setCompetitor] = useState('');
 
   // Brief import state
   const [showPreview, setShowPreview] = useState(false);
@@ -50,6 +52,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
         customerPainPoints: initialData.customerPainPoints || [],
         customerQuestions: initialData.customerQuestions || [],
         keywords: initialData.keywords || [],
+        competitors: initialData.competitors || [],
       });
     }
   }, [initialData]);
@@ -119,6 +122,24 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
       keywords: (formData.keywords || []).filter((_, i) => i !== index),
     });
   };
+
+  const addCompetitor = () => {
+    if (competitor.trim() && (formData.competitors || []).length < 5) {
+      setFormData({
+        ...formData,
+        competitors: [...(formData.competitors || []), competitor.trim()],
+      });
+      setCompetitor('');
+    }
+  };
+
+  const removeCompetitor = (index: number) => {
+    setFormData({
+      ...formData,
+      competitors: (formData.competitors || []).filter((_, i) => i !== index),
+    });
+  };
+
 
   // Brief import handlers
   const handleBriefImport = (parsed: ParsedBriefResponse) => {
@@ -452,6 +473,52 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
             {(formData.keywords || []).length >= 5
               ? '✓ You have 5+ keywords. SEO research tool is optional for this client.'
               : 'Add 5+ keywords to skip the SEO research tool, or use the SEO research tool to generate keywords automatically.'}
+          </p>
+        </div>
+
+        {/* Competitors */}
+        <div>
+          <label className="mb-2 flex items-center justify-between text-sm font-medium text-slate-800 dark:text-neutral-200">
+            <span>Competitors</span>
+            <span className={`text-xs ${(formData.competitors || []).length >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-neutral-400'}`}>
+              {(formData.competitors || []).length}/5 competitors {(formData.competitors || []).length >= 1 && '✓'}
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={competitor}
+              onChange={(e) => setCompetitor(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCompetitor())}
+              placeholder="Add a competitor (e.g., HubSpot)"
+              className="flex-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 px-3 py-2 text-sm"
+              disabled={(formData.competitors || []).length >= 5}
+            />
+            <button
+              type="button"
+              onClick={addCompetitor}
+              disabled={(formData.competitors || []).length >= 5}
+              className="rounded-md bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-neutral-200 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+          </div>
+          {(formData.competitors || []).length > 0 && (
+            <ul className="mt-2 flex flex-wrap gap-1">
+              {formData.competitors?.map((comp, i) => (
+                <li key={i} className="inline-flex items-center gap-1 rounded-full bg-purple-50 dark:bg-purple-900/20 px-3 py-1 text-sm text-purple-800 dark:text-purple-300">
+                  <span>{comp}</span>
+                  <button onClick={() => removeCompetitor(i)} className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-bold">
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-neutral-400">
+            {(formData.competitors || []).length >= 1
+              ? '✓ Competitive Analysis tool will auto-populate with these competitors.'
+              : 'Add 1-5 competitors to auto-populate the Competitive Analysis research tool.'}
           </p>
         </div>
 

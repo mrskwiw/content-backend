@@ -37,6 +37,8 @@ export const ClientSchema = z.object({
   customerQuestions: z.array(z.string()).optional(),
   industry: z.string().optional(),
   keywords: z.array(z.string()).optional(),
+  competitors: z.array(z.string()).optional(),
+  location: z.string().optional(),
 });
 export type Client = z.infer<typeof ClientSchema>;
 
@@ -237,6 +239,8 @@ export const ClientBriefSchema = z.object({
   customerQuestions: z.array(z.string()).optional(),
   industry: z.string().optional(),
   keywords: z.array(z.string()).optional(),
+  competitors: z.array(z.string()).optional(),
+  location: z.string().optional(),
 });
 export type ClientBrief = z.infer<typeof ClientBriefSchema>;
 

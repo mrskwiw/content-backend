@@ -22,6 +22,8 @@ class ClientBase(BaseModel):
     customer_questions: Optional[List[str]] = None
     industry: Optional[str] = None
     keywords: Optional[List[str]] = None
+    competitors: Optional[List[str]] = None
+    location: Optional[str] = None
 
 
 class ClientCreate(ClientBase):

@@ -326,6 +326,13 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
         </span>
       );
     }
+    if (status === 'experimental') {
+      return (
+        <span className="inline-block rounded-md bg-amber-100 dark:bg-amber-900/30 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+          Experimental
+        </span>
+      );
+    }
     return (
       <span className="inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
         Available

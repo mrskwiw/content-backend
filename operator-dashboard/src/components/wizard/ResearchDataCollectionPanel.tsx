@@ -50,13 +50,13 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
   competitive_analysis: {
     fields: [{
       key: 'competitors',
-      label: 'Competitors',
+      label: 'Competitor Names (Optional - Auto-Populated)',
       type: 'text-list',
-      required: true,
+      required: false,
       min: 1,
       max: 5,
-      placeholder: 'e.g., HubSpot, Mailchimp, ConvertKit',
-      helperText: 'List 1-5 competitor names to analyze (only first 5 will be analyzed).'
+      placeholder: 'Leave empty to use competitors from client profile',
+      helperText: '✨ Auto-populates from your client profile if left empty. Or manually add 1-5 competitor names to analyze their positioning, content strategy, strengths, and weaknesses.'
     }]
   },
   content_gap_analysis: {

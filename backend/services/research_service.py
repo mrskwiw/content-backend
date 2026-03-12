@@ -35,6 +35,7 @@ try:
     from src.research.voice_analysis import VoiceAnalyzer
     from src.research.brand_archetype import BrandArchetypeAnalyzer
     from src.research.seo_keyword_research import SEOKeywordResearcher
+    from src.research.determine_competitors import CompetitorDeterminer
     from src.research.competitive_analysis import CompetitiveAnalyzer
     from src.research.content_gap_analysis import ContentGapAnalyzer
     from src.research.market_trends_research import MarketTrendsResearcher
@@ -50,6 +51,7 @@ try:
         "voice_analysis": VoiceAnalyzer,
         "brand_archetype": BrandArchetypeAnalyzer,
         "seo_keyword_research": SEOKeywordResearcher,
+        "determine_competitors": CompetitorDeterminer,
         "competitive_analysis": CompetitiveAnalyzer,
         "content_gap_analysis": ContentGapAnalyzer,
         "market_trends_research": MarketTrendsResearcher,

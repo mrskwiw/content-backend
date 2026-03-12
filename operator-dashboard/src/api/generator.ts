@@ -2,6 +2,17 @@ import apiClient from './client';
 import type { ExportInput, GenerateAllInput, RegenerateInput, Run } from '@/types/domain';
 import type { Deliverable } from '@/types/domain';
 
+export interface TemplateDependencies {
+  required: string[];
+  recommended: string[];
+}
+
+export interface TemplateDependenciesResponse {
+  template_number: number;
+  template_title: string;
+  research_dependencies: TemplateDependencies;
+}
+
 export const generatorApi = {
   async generateAll(input: GenerateAllInput) {
     // Convert camelCase to snake_case for backend compatibility
@@ -38,6 +49,13 @@ export const generatorApi = {
       include_research: input.includeResearch,
     };
     const { data } = await apiClient.post<Deliverable>('/api/generator/export', backendInput);
+    return data;
+  },
+
+  async getTemplateDependencies(templateNumber: number) {
+    const { data } = await apiClient.get<TemplateDependenciesResponse>(
+      `/api/generator/template-dependencies/${templateNumber}`
+    );
     return data;
   },
 };

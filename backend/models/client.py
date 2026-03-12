@@ -37,6 +37,12 @@ class Client(Base):
     keywords = Column(
         JSON, nullable=True
     )  # SEO keywords for content optimization (array of strings). If 5+ keywords provided, can skip SEO research tool.
+    competitors = Column(
+        JSON, nullable=True
+    )  # List of competitor names (1-5) for competitive analysis. Auto-populates competitive analysis tool.
+    location = Column(
+        String, nullable=True
+    )  # Geographic location/region (e.g., "San Francisco", "USA", "Global") for market context
 
     # Relationships (using fully qualified paths to avoid conflicts with Pydantic models in src.models)
     user = relationship("backend.models.user.User", foreign_keys=[user_id])  # TR-021: Client owner

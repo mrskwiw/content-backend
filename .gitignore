@@ -48,6 +48,8 @@ operator-dashboard/tests/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage/
+operator-dashboard/coverage/
 .tox/
 coverage*.json
 test_*.txt

@@ -1,7 +1,9 @@
 """
 User model for authentication.
 """
+
 from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from backend.database import Base
@@ -11,7 +13,7 @@ class User(Base):
     """User account for operator authentication"""
 
     __tablename__ = "users"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {"extend_existing": True}
 
     id = Column(String, primary_key=True)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -21,6 +23,9 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    settings = relationship("Setting", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"

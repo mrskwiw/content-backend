@@ -204,6 +204,14 @@ def init_db():
                     "keywords",
                     "JSON",
                 ),  # SEO keywords (array of strings). 5+ keywords can skip SEO tool.
+                (
+                    "competitors",
+                    "JSON",
+                ),  # List of competitor names (1-5) for competitive analysis
+                (
+                    "location",
+                    "VARCHAR",
+                ),  # Geographic location/region for market context
             ]
 
             # SECURITY FIX: Whitelist of allowed SQL column types (TR-015)

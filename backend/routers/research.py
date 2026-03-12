@@ -29,6 +29,7 @@ from backend.schemas import (
     ICPWorkshopParams,
     StoryMiningParams,
     BrandArchetypeParams,
+    DetermineCompetitorsParams,
     ResearchResultResponse,
     ResearchResultListResponse,
 )
@@ -87,7 +88,7 @@ RESEARCH_TOOLS = [
         name="voice_analysis",
         label="Voice Analysis",
         price=400.0,
-        status="available",
+        status="experimental",
         description="Extract writing patterns from client's existing content",
         category="foundation",
     ),
@@ -95,7 +96,7 @@ RESEARCH_TOOLS = [
         name="brand_archetype",
         label="Brand Archetype Assessment",
         price=300.0,
-        status="available",
+        status="experimental",
         description="Identify brand personality and messaging framework",
         category="foundation",
     ),
@@ -106,6 +107,14 @@ RESEARCH_TOOLS = [
         price=400.0,
         status="available",
         description="Discover target keywords and search opportunities",
+        category="seo",
+    ),
+    ResearchTool(
+        name="determine_competitors",
+        label="Determine Competitors",
+        price=400.0,
+        status="available",
+        description="AI-powered competitor discovery and market positioning analysis",
         category="seo",
     ),
     ResearchTool(
@@ -120,7 +129,7 @@ RESEARCH_TOOLS = [
         name="content_gap_analysis",
         label="Content Gap Analysis",
         price=500.0,
-        status="available",
+        status="experimental",
         description="Identify content opportunities competitors are missing",
         category="seo",
     ),
@@ -138,7 +147,7 @@ RESEARCH_TOOLS = [
         name="content_audit",
         label="Content Audit",
         price=400.0,
-        status="available",
+        status="experimental",
         description="Analyze existing content performance and opportunities",
         category="strategy",
     ),
@@ -146,7 +155,7 @@ RESEARCH_TOOLS = [
         name="platform_strategy",
         label="Platform Strategy",
         price=300.0,
-        status="available",
+        status="experimental",
         description="Recommend optimal platform mix for distribution",
         category="strategy",
     ),
@@ -154,7 +163,7 @@ RESEARCH_TOOLS = [
         name="content_calendar",
         label="Content Calendar Strategy",
         price=300.0,
-        status="available",
+        status="experimental",
         description="Create strategic 90-day content calendar",
         category="strategy",
     ),
@@ -162,7 +171,7 @@ RESEARCH_TOOLS = [
         name="audience_research",
         label="Audience Research",
         price=500.0,
-        status="available",
+        status="experimental",
         description="Deep-dive into target audience demographics and psychographics",
         category="strategy",
     ),
@@ -171,7 +180,7 @@ RESEARCH_TOOLS = [
         name="icp_workshop",
         label="ICP Development Workshop",
         price=600.0,
-        status="available",
+        status="experimental",
         description="Facilitate ideal customer profile definition through guided conversation",
         category="workshop",
     ),
@@ -179,7 +188,7 @@ RESEARCH_TOOLS = [
         name="story_mining",
         label="Story Mining Interview",
         price=500.0,
-        status="available",
+        status="experimental",
         description="Extract customer success stories and case study material",
         category="workshop",
     ),
@@ -190,6 +199,7 @@ RESEARCH_TOOLS = [
 VALIDATION_SCHEMAS = {
     "voice_analysis": VoiceAnalysisParams,
     "seo_keyword_research": SEOKeywordParams,
+    "determine_competitors": DetermineCompetitorsParams,
     "competitive_analysis": CompetitiveAnalysisParams,
     "content_gap_analysis": ContentGapParams,
     "content_audit": ContentAuditParams,
@@ -510,6 +520,22 @@ async def run_research(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Security validation failed: {str(e)}",
         )
+
+    # AUTO-POPULATION: Competitive Analysis competitors from client profile
+    if input.tool == "competitive_analysis":
+        # If competitors not provided or empty, auto-populate from client.competitors
+        if not sanitized_params.get("competitors"):
+            if client.competitors and isinstance(client.competitors, list):
+                sanitized_params["competitors"] = client.competitors[:5]  # Max 5
+                logger.info(
+                    f"Auto-populated {len(sanitized_params['competitors'])} competitors from client profile"
+                )
+            else:
+                # No competitors in database - require manual input
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Client profile incomplete: Competitive Analysis requires 1-5 competitor names. Please add competitors to the client profile or provide them manually.",
+                )
 
     try:
         # PERFORMANCE: Check cache before executing expensive research ($300-600 per call)

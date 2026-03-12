@@ -42,6 +42,7 @@ from backend.routers import (
     projects,
     research,
     runs,
+    settings,
     stories,
     trends,
 )
@@ -50,7 +51,7 @@ from slowapi.errors import RateLimitExceeded
 
 # Import models so SQLAlchemy can create tables
 import backend.models  # noqa: F401
-from backend.config import settings
+from backend.config import settings as app_settings
 from backend.database import init_db
 from backend.middleware.csrf_protection import CSRFProtectionMiddleware
 from backend.utils.rate_limiter import rate_limiter
@@ -75,10 +76,10 @@ async def lifespan(app: FastAPI):
     # Startup
     print(">> Starting Content Jumpstart API...")
     print(
-        f">> Rate Limits: {settings.RATE_LIMIT_REQUESTS_PER_MINUTE} req/min, {settings.RATE_LIMIT_TOKENS_PER_MINUTE} tokens/min"
+        f">> Rate Limits: {app_settings.RATE_LIMIT_REQUESTS_PER_MINUTE} req/min, {app_settings.RATE_LIMIT_TOKENS_PER_MINUTE} tokens/min"
     )
-    print(f">> CORS Origins: {settings.cors_origins_list}")
-    print(f">> DEBUG: CORS_ORIGINS env var = '{settings.CORS_ORIGINS}'")
+    print(f">> CORS Origins: {app_settings.cors_origins_list}")
+    print(f">> DEBUG: CORS_ORIGINS env var = '{app_settings.CORS_ORIGINS}'")
 
     # Log database connection info
     from backend.database import engine
@@ -94,7 +95,7 @@ async def lifespan(app: FastAPI):
     else:
         raw_db_display = raw_db_url[:50] if raw_db_url != "NOT_SET" else "NOT_SET"
     print(f">> DEBUG: DATABASE_URL env var = '{raw_db_display}'")
-    print(f">> DEBUG: settings.DATABASE_URL = '{settings.DATABASE_URL[:80]}...'")
+    print(f">> DEBUG: app_settings.DATABASE_URL = '{app_settings.DATABASE_URL[:80]}...'")
 
     # Mask password in URL for security
     if "@" in db_url:
@@ -241,8 +242,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title=settings.API_TITLE,
-    version=settings.API_VERSION,
+    title=app_settings.API_TITLE,
+    version=app_settings.API_VERSION,
     description="Backend API for 30-Day Content Jumpstart Operator Dashboard",
     lifespan=lifespan,
 )
@@ -262,11 +263,11 @@ app.add_middleware(CSRFProtectionMiddleware)
 # CORS middleware
 # Production: Restrict to specific origins, methods, and headers
 # Development: More permissive for ease of development
-if settings.DEBUG_MODE:
+if app_settings.DEBUG_MODE:
     # Development mode - permissive CORS for easier testing
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins_list,
+        allow_origins=app_settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -277,7 +278,7 @@ else:
     # Production mode - restrictive CORS for security
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins_list,  # Only whitelisted origins
+        allow_origins=app_settings.cors_origins_list,  # Only whitelisted origins
         allow_credentials=True,
         allow_methods=[
             "GET",
@@ -326,7 +327,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
 
     # Enforce HTTPS in production
-    if not settings.DEBUG_MODE:
+    if not app_settings.DEBUG_MODE:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # Content Security Policy - restrictive for API
@@ -491,8 +492,8 @@ async def health_check(request: Request):
     usage_stats = rate_limiter.get_usage_stats()
     return {
         "status": "healthy",
-        "version": settings.API_VERSION,
-        "debug_mode": settings.DEBUG_MODE,
+        "version": app_settings.API_VERSION,
+        "debug_mode": app_settings.DEBUG_MODE,
         "rate_limits": {
             "requests_per_minute": {
                 "current": usage_stats["requests"],
@@ -518,7 +519,7 @@ async def health_check(request: Request):
 #     """Root endpoint with API information"""
 #     return {
 #         "message": "Content Jumpstart API",
-#         "version": settings.API_VERSION,
+#         "version": app_settings.API_VERSION,
 #         "docs": "/docs",
 #         "health": "/health",
 #     }
@@ -607,6 +608,7 @@ app.include_router(trends.router, prefix="/api/trends", tags=["Google Trends"])
 app.include_router(pricing.router, prefix="/api/pricing", tags=["Pricing"])
 app.include_router(costs.router, tags=["Costs"])  # Prefix included in router
 app.include_router(assistant.router, prefix="/api/assistant", tags=["AI Assistant"])
+app.include_router(settings.router, tags=["Settings"])  # Prefix included in router
 app.include_router(database.router, prefix="/api", tags=["Database"])
 
 
@@ -615,8 +617,8 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "main:app",
-        host=settings.API_HOST,
-        port=settings.API_PORT,
-        reload=settings.DEBUG_MODE,
-        log_level="debug" if settings.DEBUG_MODE else "info",
+        host=app_settings.API_HOST,
+        port=app_settings.API_PORT,
+        reload=app_settings.DEBUG_MODE,
+        log_level="debug" if app_settings.DEBUG_MODE else "info",
     )

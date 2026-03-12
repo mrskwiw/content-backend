@@ -72,6 +72,13 @@ TOOL_DEPENDENCIES: Dict[str, ToolDependencies] = {
         used_by=["icp_workshop", "platform_strategy"],
         description="Detailed personas, pain points, motivations",
     ),
+    "determine_competitors": ToolDependencies(
+        tool_id="determine_competitors",
+        tier=1,  # Foundation tool, no prerequisites
+        prerequisites=[],
+        used_by=["competitive_analysis"],  # Recommended for competitive analysis
+        description="Automated competitor discovery and positioning analysis",
+    ),
     "competitive_analysis": ToolDependencies(
         tool_id="competitive_analysis",
         tier=1,

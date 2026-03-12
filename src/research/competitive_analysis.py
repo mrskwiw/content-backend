@@ -23,6 +23,7 @@ from ..validators.research_input_validator import (
     validate_competitor_list,
 )
 from ..utils.anthropic_client import get_default_client
+from ..utils.web_search import get_search_client, SearchResponse
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 import re
@@ -187,19 +188,37 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
         target_audience: str,
         industry: str,
     ) -> List[CompetitorProfile]:
-        """Analyze each competitor's strategy"""
+        """Analyze each competitor's strategy using web search for real-time data"""
         profiles = []
+        search_client = get_search_client()
 
         for competitor in competitors[:5]:  # Max 5
-            prompt = f"""Analyze this competitor in detail.
+            # STEP 1: Search the web for competitor information
+            logger.info(f"Searching web for competitor: {competitor}")
+            search_query = f"{competitor} {industry} content strategy blog social media"
+            search_results = search_client.search(search_query, max_results=10)
 
-Competitor: {competitor}
+            # Format search results for prompt
+            search_data = self._format_competitor_search_results(search_results, competitor)
 
-Our Business: {business_desc}
+            prompt = f"""Analyze this competitor based on the web search results below.
 
-Our Target Audience: {target_audience}
+**COMPETITOR:** {competitor}
 
-Industry: {industry}
+**OUR BUSINESS:** {business_desc}
+
+**OUR TARGET AUDIENCE:** {target_audience}
+
+**INDUSTRY:** {industry}
+
+**WEB SEARCH RESULTS (Use ONLY these for analysis):**
+{search_data}
+
+**CRITICAL INSTRUCTIONS:**
+- You MUST use ONLY the information found in the web search results above
+- Base your analysis on FACTUAL data from the search results, not assumptions
+- If information is not available in the search results, mark it as "Unknown" or "Not found in search"
+- Do NOT invent or hallucinate information not present in the search results
 
 Provide a comprehensive competitor profile including:
 1. Their positioning (how they position themselves in market)
@@ -222,8 +241,8 @@ estimated_reach, engagement_level"""
             try:
                 response = self.client.create_message(
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=2000,
-                    temperature=0.4,
+                    max_tokens=2500,  # Increased from 2000 for detailed analysis
+                    temperature=0.3,  # Lowered from 0.4 for factual extraction
                 )
 
                 # Parse JSON response (extract from markdown if needed)
@@ -271,23 +290,75 @@ estimated_reach, engagement_level"""
         logger.info(f"Analyzed {len(profiles)} competitors")
         return profiles
 
+    def _format_competitor_search_results(
+        self, search_response: SearchResponse, competitor_name: str
+    ) -> str:
+        """Format search results for competitor analysis prompt"""
+        if not search_response.results:
+            return f"No search results found for {competitor_name}. Analysis will be limited."
+
+        lines = []
+        lines.append(
+            f"Found {len(search_response.results)} search results for {competitor_name}:\n"
+        )
+
+        for i, result in enumerate(search_response.results[:10], 1):
+            lines.append(f"{i}. **{result.title}**")
+            lines.append(f"   URL: {result.url}")
+            lines.append(f"   Description: {result.snippet}")
+            if result.published_date:
+                lines.append(f"   Published: {result.published_date}")
+            lines.append("")
+
+        return "\n".join(lines)
+
+    def _format_trend_search_results(self, search_response: SearchResponse) -> str:
+        """Format trend search results for content gap analysis"""
+        if not search_response.results:
+            return "No trend data found. Analysis will focus on competitor gaps only."
+
+        lines = []
+        lines.append(f"Found {len(search_response.results)} results on current market trends:\n")
+
+        for i, result in enumerate(search_response.results[:10], 1):
+            lines.append(f"{i}. {result.title}")
+            lines.append(f"   {result.snippet}")
+            lines.append("")
+
+        return "\n".join(lines)
+
     def _identify_content_gaps(
         self,
         competitors: List[CompetitorProfile],
         business_desc: str,
         target_audience: str,
     ) -> List[ContentGap]:
-        """Identify content gaps and opportunities"""
+        """Identify content gaps and opportunities using web search for market trends"""
         # Collect all topics competitors cover
         competitor_topics = set()
         for comp in competitors:
             competitor_topics.update(comp.content_topics)
 
+        # STEP 1: Search for trending topics in the industry
+        search_client = get_search_client()
+        industry = competitors[0].positioning.split()[0] if competitors else "business"
+        trend_query = f"{industry} content marketing trends topics 2026"
+        logger.info(f"Searching for content trends: {trend_query}")
+        trend_results = search_client.search(trend_query, max_results=10)
+
+        # Format trend search results
+        trend_data = self._format_trend_search_results(trend_results)
+
         competitor_list = "\n".join(
             [f"- {c.name}: {', '.join(c.content_topics)}" for c in competitors]
         )
 
-        prompt = f"""Identify 5-7 content gap opportunities based on this competitive analysis.
+        prompt = f"""Identify 5-7 content gap opportunities based on this competitive analysis and current market trends.
+
+**CURRENT MARKET TRENDS (from web search):**
+{trend_data}
+
+**CRITICAL INSTRUCTION:** Use the market trends data above to identify gaps that align with what's currently trending and in-demand.
 
 Our Business: {business_desc}
 
@@ -314,8 +385,8 @@ topic, description, opportunity_score, competitors_missing (array), suggested_co
         try:
             response = self.client.create_message(
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=2000,
-                temperature=0.5,
+                max_tokens=2500,  # Increased for detailed gap analysis
+                temperature=0.3,  # Lowered from 0.5 for factual extraction
             )
 
             gaps_data = json.loads(response)

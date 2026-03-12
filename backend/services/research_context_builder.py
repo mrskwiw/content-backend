@@ -157,6 +157,7 @@ def _format_tool_result(tool_name: str, result: ResearchResult) -> str:
             "voice_analysis": _format_voice_analysis,
             "seo_keyword_research": _format_seo_keywords,
             "brand_archetype": _format_brand_archetype,
+            "determine_competitors": _format_determine_competitors,
             "competitive_analysis": _format_competitive_analysis,
             "content_gap_analysis": _format_content_gap,
             "market_trends_research": _format_market_trends,
@@ -195,8 +196,73 @@ def _format_brand_archetype(result):
     return f"Brand Archetype ({date}): {data.get('archetype','?')}"
 
 
+def _format_determine_competitors(result):
+    """Extract competitor insights for content generation context"""
+    data = result.data if hasattr(result, "data") else result
+
+    parts = []
+
+    # Primary competitors (names only, concise)
+    if data.get("primary_competitors"):
+        names = [
+            c.get("name", c) if isinstance(c, dict) else c for c in data["primary_competitors"][:3]
+        ]
+        parts.append(f"Main Competitors: {', '.join(names)}")
+
+    # Market gaps (opportunities)
+    if data.get("market_gaps"):
+        gaps = data["market_gaps"][:2]
+        parts.append(f"Market Gaps: {', '.join(gaps)}")
+
+    # Positioning recommendation (how to differentiate)
+    if data.get("recommended_positioning"):
+        positioning = data["recommended_positioning"][:80]  # First 80 chars
+        parts.append(f"Positioning: {positioning}")
+
+    return " | ".join(parts) if parts else "Competitors: Identified"
+
+
 def _format_competitive_analysis(result):
-    return "Competitive Analysis: See data field"
+    """Extract key competitive insights for content generation."""
+    data = result.data if hasattr(result, "data") else result
+
+    parts = []
+
+    # Quick wins (immediate opportunities)
+    if data.get("quick_wins"):
+        wins = data["quick_wins"][:2]  # Top 2
+        parts.append(f"Quick Wins: {', '.join(wins)}")
+
+    # Content gaps (opportunity areas)
+    if data.get("content_gaps"):
+        gaps = [
+            g.get("topic", g.get("gap_title", str(g))) if isinstance(g, dict) else str(g)
+            for g in data["content_gaps"][:3]
+        ]
+        parts.append(f"Content Gaps: {', '.join(gaps)}")
+
+    # Differentiation strategies (positioning)
+    if data.get("differentiation_strategies"):
+        strategies = [
+            s.get("strategy", s.get("title", str(s))) if isinstance(s, dict) else str(s)
+            for s in data["differentiation_strategies"][:2]
+        ]
+        parts.append(f"Differentiate Via: {', '.join(strategies)}")
+
+    # Recommended position (market positioning)
+    if data.get("recommended_position"):
+        pos = data["recommended_position"]
+        if isinstance(pos, dict):
+            positioning = pos.get("positioning_statement", pos.get("statement", ""))
+            if positioning:
+                parts.append(f"Position As: {positioning[:100]}")
+
+    # Competitive threats (what to watch)
+    if data.get("competitive_threats"):
+        threats = data["competitive_threats"][:2]
+        parts.append(f"Watch: {', '.join(threats)}")
+
+    return " | ".join(parts) if parts else "Competitive Analysis: Available"
 
 
 def _format_content_gap(result):
@@ -204,7 +270,38 @@ def _format_content_gap(result):
 
 
 def _format_market_trends(result):
-    return "Market Trends: See data field"
+    """Extract key market trends insights for content generation."""
+    data = result.data if hasattr(result, "data") else result
+
+    parts = []
+
+    # Market summary (high-level context)
+    if data.get("market_summary"):
+        parts.append(f"Market Context: {data['market_summary']}")
+
+    # Immediate opportunities (most actionable for content)
+    if data.get("immediate_opportunities"):
+        opps = data["immediate_opportunities"][:3]  # Top 3
+        parts.append(f"Hot Topics: {', '.join(opps)}")
+
+    # Top rising trends (trending now)
+    if data.get("top_rising_trends"):
+        trends = [
+            t.get("title", t) if isinstance(t, dict) else t for t in data["top_rising_trends"][:3]
+        ]
+        parts.append(f"Rising Trends: {', '.join(trends)}")
+
+    # Key themes (overarching narratives)
+    if data.get("key_themes"):
+        themes = data["key_themes"][:3]
+        parts.append(f"Key Themes: {', '.join(themes)}")
+
+    # Declining topics (what to avoid)
+    if data.get("declining_topics"):
+        declining = data["declining_topics"][:2]
+        parts.append(f"Avoid: {', '.join(declining)}")
+
+    return " | ".join(parts) if parts else "Market Trends: Available"
 
 
 def _format_platform_strategy(result):

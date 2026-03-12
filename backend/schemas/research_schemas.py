@@ -82,9 +82,9 @@ class CompetitiveAnalysisParams(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    competitors: List[str] = Field(
-        ...,
-        description="1-5 competitor names to analyze",
+    competitors: Optional[List[str]] = Field(
+        None,
+        description="1-5 competitor names to analyze (auto-populated from client profile if not provided)",
     )
 
     @field_validator("competitors")
@@ -384,6 +384,51 @@ class BrandArchetypeParams(BaseModel):
 
     # No additional parameters needed - uses client profile
     pass
+
+
+class DetermineCompetitorsParams(BaseModel):
+    """Parameters for Determine Competitors tool"""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    # Optional fields - user can provide or override client profile
+    industry: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Industry/vertical (e.g., 'B2B SaaS', 'Healthcare')",
+    )
+
+    location: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Geographic market/region (e.g., 'United States', 'Global', 'San Francisco Bay Area')",
+    )
+
+    @field_validator("industry")
+    @classmethod
+    def validate_industry(cls, v: Optional[str]) -> Optional[str]:
+        """Validate industry field"""
+        if v is None:
+            return None
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Industry is too short (minimum 3 characters)")
+        if len(v) > 200:
+            raise ValueError("Industry is too long (maximum 200 characters)")
+        return v
+
+    @field_validator("location")
+    @classmethod
+    def validate_location(cls, v: Optional[str]) -> Optional[str]:
+        """Validate location field"""
+        if v is None:
+            return None
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Location is too short (minimum 2 characters)")
+        if len(v) > 200:
+            raise ValueError("Location is too long (maximum 200 characters)")
+        return v
 
 
 # ==================== Research Result Response Schemas ====================

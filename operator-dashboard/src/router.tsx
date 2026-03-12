@@ -35,6 +35,9 @@ const ResearchToolsLibrary = lazyWithRetry(() => import('@/pages/ResearchTools/L
 const ResearchToolsResults = lazyWithRetry(() => import('@/pages/ResearchTools/Results'));
 const ResearchToolsAnalytics = lazyWithRetry(() => import('@/pages/ResearchTools/Analytics'));
 
+// Settings pages
+const SettingsIntegrations = lazyWithRetry(() => import('@/pages/Settings/Integrations'));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex h-screen items-center justify-center">
@@ -90,6 +93,7 @@ export const router = createBrowserRouter([
       { path: 'audit', element: withSuspense(AuditTrail) },
       { path: 'wizard', element: withSuspense(Wizard) },
       { path: 'settings', element: withSuspense(Settings) },
+      { path: 'settings/integrations', element: withSuspense(SettingsIntegrations) },
       // Research Tools section
       { path: 'research-tools/library', element: withSuspense(ResearchToolsLibrary) },
       { path: 'research-tools/results', element: withSuspense(ResearchToolsResults) },

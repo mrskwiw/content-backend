@@ -23,6 +23,7 @@ from .project import ProjectCreate, ProjectResponse, ProjectUpdate
 from .research_schemas import (
     VoiceAnalysisParams,
     SEOKeywordParams,
+    DetermineCompetitorsParams,
     CompetitiveAnalysisParams,
     ContentGapParams,
     ContentAuditParams,
@@ -78,6 +79,7 @@ __all__ = [
     # Research tool validation schemas
     "VoiceAnalysisParams",
     "SEOKeywordParams",
+    "DetermineCompetitorsParams",
     "CompetitiveAnalysisParams",
     "ContentGapParams",
     "ContentAuditParams",

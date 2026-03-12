@@ -476,6 +476,8 @@ def _generate_research_section(project_id: str, db: Session) -> dict:
                 lines.extend(_format_brand_archetype(result.data))
             elif result.tool_name == "seo_keyword_research":
                 lines.extend(_format_seo_keywords(result.data))
+            elif result.tool_name == "determine_competitors":
+                lines.extend(_format_determine_competitors(result.data))
             elif result.tool_name == "competitive_analysis":
                 lines.extend(_format_competitive_analysis(result.data))
             elif result.tool_name == "content_gap_analysis":
@@ -710,6 +712,34 @@ def _format_market_trends(data: dict) -> List[str]:
                 lines.append(f"- **{title}** (Impact: {impact})")
             else:
                 lines.append(f"- {trend}")
+    return lines
+
+
+def _format_determine_competitors(data: dict) -> List[str]:
+    """Format determine competitors results for export"""
+    lines = []
+
+    if "primary_competitors" in data and data["primary_competitors"]:
+        lines.append("**Identified Competitors:**")
+        lines.append("")
+        for comp in data["primary_competitors"][:5]:
+            name = comp.get("name", "Unknown")
+            threat = comp.get("threat_level", "medium").upper()
+            position = comp.get("market_position", "N/A")
+            diff = comp.get("differentiation_opportunity", "")
+
+            lines.append(f"### {name} ({threat} Threat)")
+            lines.append(f"**Position:** {position}")
+            if diff:
+                lines.append(f"**How to Differentiate:** {diff}")
+            lines.append("")
+
+    # Positioning recommendation
+    if "recommended_positioning" in data:
+        lines.append("**Recommended Positioning:**")
+        lines.append(data["recommended_positioning"])
+        lines.append("")
+
     return lines
 
 
