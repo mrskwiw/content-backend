@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..services import settings_service
-from ..services.auth_service import get_current_user
+from backend.middleware.auth_dependency import get_current_user
 from ..models.user import User
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
