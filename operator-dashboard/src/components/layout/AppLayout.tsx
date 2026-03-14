@@ -1,8 +1,12 @@
-import { LogOut, PanelsTopLeft, FileStack, ClipboardList, Settings, Rocket, Users, Library, FileSearch, BarChart3 } from 'lucide-react';
+import { LogOut, PanelsTopLeft, FileStack, ClipboardList, Settings, Rocket, Users, Library, FileSearch, BarChart3, Coins } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import AIAssistantSidebar from '@/components/ui/AIAssistantSidebar';
+import { creditsApi } from '@/api/credits';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 
 const navItems = [
   { to: '/dashboard', label: 'Overview', icon: PanelsTopLeft, end: true },
@@ -23,9 +27,21 @@ export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Fetch credit balance
+  const { data: creditBalance } = useQuery({
+    queryKey: ['credits', 'balance'],
+    queryFn: () => creditsApi.getBalance(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleBuyCredits = () => {
+    // TODO: Open purchase modal
+    navigate('/dashboard/settings?tab=credits');
   };
 
   return (
@@ -42,6 +58,29 @@ export default function AppLayout() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Credit Balance Display */}
+            {creditBalance && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
+                <Coins className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                  {creditBalance.balance.toLocaleString()}
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">credits</span>
+                {creditBalance.is_enterprise && (
+                  <Badge variant="secondary" className="text-xs ml-1">
+                    Enterprise
+                  </Badge>
+                )}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBuyCredits}
+              className="text-xs"
+            >
+              Buy Credits
+            </Button>
             <ThemeToggle />
             <div className="text-right">
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{user?.name || user?.email}</p>
