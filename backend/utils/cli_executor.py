@@ -9,7 +9,7 @@ import asyncio
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from backend.utils.logger import logger
 
@@ -29,7 +29,7 @@ class CLIExecutor:
         num_posts: int = 30,
         platform: Optional[str] = None,
         voice_samples: Optional[List[str]] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Run run_jumpstart.py to generate content
 
@@ -124,7 +124,7 @@ class CLIExecutor:
         brief_path: str,
         project_id: str,
         client_id: str,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Run a research tool
 

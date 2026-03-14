@@ -9,11 +9,12 @@ Our Target (70%):
 - 2,800 requests per minute
 - 280,000 tokens per minute
 """
+
 import asyncio
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from backend.config import settings
 
@@ -163,7 +164,7 @@ class RateLimitTracker:
 
         return int(estimated_seconds)
 
-    def get_usage_stats(self) -> Dict[str, any]:
+    def get_usage_stats(self) -> Dict[str, Any]:
         """Get current usage statistics"""
         usage = self._get_current_usage()
         return {

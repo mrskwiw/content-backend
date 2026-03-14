@@ -10,7 +10,7 @@ Handles:
 
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
@@ -104,7 +104,7 @@ class ResearchService:
 
     def _fetch_prerequisite_data(
         self, db: Session, project_id: str, tool_name: str
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Fetch results from prerequisite tools and extract relevant data.
 
@@ -279,7 +279,7 @@ class ResearchService:
         client_id: str,
         tool_name: str,
         params: Optional[Dict] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Execute a research tool
 

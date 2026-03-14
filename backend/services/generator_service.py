@@ -11,7 +11,7 @@ Handles:
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -51,7 +51,7 @@ class GeneratorService:
         template_quantities: Optional[Dict[str, int]] = None,
         custom_topics: Optional[List[str]] = None,  # NEW: topic override for generation
         run_id: Optional[str] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Generate all posts for a project
 
@@ -156,7 +156,7 @@ class GeneratorService:
         project_id: str,
         post_ids: List[str],
         feedback: Optional[str] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Regenerate specific posts with new content
 
@@ -298,12 +298,12 @@ class GeneratorService:
         self,
         db: Session,
         project: Project,
-        client: any,
+        client: Any,
         template_quantities: Dict[int, int],
         platform: Optional[str] = None,
         custom_topics: Optional[List[str]] = None,  # NEW: topic override for generation
         run_id: Optional[str] = None,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Generate posts using template quantities (direct content generator call)
 
@@ -526,7 +526,7 @@ class GeneratorService:
             # Re-raise with more context
             raise Exception(f"Template-based generation failed ({error_type}): {str(e)}") from e
 
-    def _create_brief_file(self, project: Project, client: any) -> Path:
+    def _create_brief_file(self, project: Project, client: Any) -> Path:
         """
         Create a brief file from project/client data
 

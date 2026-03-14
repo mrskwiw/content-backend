@@ -96,10 +96,24 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
 
         # Auto-generate topics if not provided
         if not main_topics:
-            logger.info("Auto-generating main topics from business context")
-            main_topics = self._auto_generate_topics(
-                business_desc, industry, inputs.get("value_proposition")
-            )
+            # Shortcut: If user provided 5+ keywords, use them directly as topics
+            user_keywords = inputs.get("keywords", [])
+            if user_keywords and len(user_keywords) >= 5:
+                logger.info(
+                    f"Using {len(user_keywords)} user-provided keywords as main topics (shortcut)"
+                )
+                main_topics = user_keywords[:10]  # Use first 10
+            else:
+                # Auto-generate from business context using AI
+                logger.info("Auto-generating main topics from business context")
+                main_topics = self._auto_generate_topics(
+                    business_description=business_desc,
+                    industry=industry,
+                    value_proposition=inputs.get("value_proposition"),
+                    ideal_customer=inputs.get("ideal_customer"),
+                    main_problem_solved=inputs.get("main_problem_solved"),
+                    keywords=user_keywords,
+                )
 
         logger.info(f"Researching keywords for {len(main_topics)} topics: {main_topics}")
 
@@ -165,16 +179,23 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
         business_description: str,
         industry: Optional[str] = None,
         value_proposition: Optional[str] = None,
+        ideal_customer: Optional[str] = None,
+        main_problem_solved: Optional[str] = None,
+        keywords: Optional[List[str]] = None,
     ) -> List[str]:
         """
-        Auto-generate 3-5 main topics from business description using AI.
+        Auto-generate 3-5 main topics from business context using AI.
 
         This makes the tool fully automatic - no user input required!
+        Leverages all available client data for intelligent topic extraction.
 
         Args:
             business_description: The company's business description
             industry: Optional industry context
-            value_proposition: Optional value prop for additional context
+            value_proposition: Optional value prop (legacy - usually not provided)
+            ideal_customer: Optional target customer description
+            main_problem_solved: Optional problem/pain point the business solves
+            keywords: Optional existing keywords to use as inspiration
 
         Returns:
             List of 3-5 main topic keywords
@@ -183,12 +204,24 @@ class SEOKeywordResearcher(ResearchTool, CommonValidationMixin):
 
         logger.info("Auto-generating topics from business context")
 
-        # Build context for topic extraction
+        # Build context for topic extraction from ALL available sources
         context_parts = [f"Business: {business_description}"]
+
         if industry:
             context_parts.append(f"Industry: {industry}")
+
         if value_proposition:
             context_parts.append(f"Value Proposition: {value_proposition}")
+
+        if ideal_customer:
+            context_parts.append(f"Target Customer: {ideal_customer}")
+
+        if main_problem_solved:
+            context_parts.append(f"Problem Solved: {main_problem_solved}")
+
+        if keywords and len(keywords) > 0:
+            # Include existing keywords as inspiration (limit to 5 to avoid token bloat)
+            context_parts.append(f"Existing Keywords: {', '.join(keywords[:5])}")
 
         context = "\n".join(context_parts)
 
@@ -202,6 +235,7 @@ IMPORTANT:
 - Focus on what customers search for, not internal jargon
 - Include industry-specific terms
 - Prioritize topics with search volume potential
+- If keywords are provided, use them as inspiration but create search-friendly variations
 
 Example output format:
 AI automation
@@ -233,7 +267,9 @@ Your topics:"""
             if len(topics) < 3:
                 # Fallback: extract key terms from business description
                 logger.warning(f"AI generated only {len(topics)} topics, using fallback")
-                topics = self._fallback_topic_extraction(business_description, industry)
+                topics = self._fallback_topic_extraction(
+                    business_description, industry, ideal_customer, main_problem_solved
+                )
 
             logger.info(f"Auto-generated {len(topics)} topics: {topics}")
             return topics
@@ -241,17 +277,21 @@ Your topics:"""
         except Exception as e:
             logger.error(f"Error auto-generating topics: {e}")
             # Fallback to simple extraction
-            return self._fallback_topic_extraction(business_description, industry)
+            return self._fallback_topic_extraction(
+                business_description, industry, ideal_customer, main_problem_solved
+            )
 
     def _fallback_topic_extraction(
         self,
         business_description: str,
         industry: Optional[str] = None,
+        ideal_customer: Optional[str] = None,
+        main_problem_solved: Optional[str] = None,
     ) -> List[str]:
         """
         Fallback method to extract topics if AI generation fails.
 
-        Uses simple keyword extraction from business description.
+        Uses simple keyword extraction from business description and other fields.
         """
         # Simple approach: use industry + key terms from description
         topics = []
@@ -259,8 +299,13 @@ Your topics:"""
         if industry and industry != "Not specified":
             topics.append(industry.lower())
 
-        # Extract potential topics from description
-        # Look for common business/tech keywords
+        # Extract potential topics from all available text fields
+        # Combine all text sources for keyword matching
+        combined_text = business_description.lower()
+        if ideal_customer:
+            combined_text += " " + ideal_customer.lower()
+        if main_problem_solved:
+            combined_text += " " + main_problem_solved.lower()
 
         # Common business/tech keywords that make good topics
         good_keywords = [
@@ -289,7 +334,7 @@ Your topics:"""
         ]
 
         for keyword in good_keywords:
-            if keyword in business_description.lower() and keyword not in topics:
+            if keyword in combined_text and keyword not in topics:
                 topics.append(keyword)
                 if len(topics) >= 5:
                     break

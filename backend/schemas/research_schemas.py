@@ -50,15 +50,19 @@ class SEOKeywordParams(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    main_topics: List[str] = Field(
-        ...,
-        description="1-10 main topics for keyword research",
+    main_topics: Optional[List[str]] = Field(
+        None,
+        description="1-10 main topics for keyword research (optional - auto-generates from business profile if not provided)",
     )
 
     @field_validator("main_topics")
     @classmethod
-    def validate_topics(cls, v: List[str]) -> List[str]:
-        """Validate topics list."""
+    def validate_topics(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Validate topics list if provided."""
+        # Allow None - will trigger auto-generation
+        if v is None or len(v) == 0:
+            return None
+
         if not 1 <= len(v) <= 10:
             raise ValueError("Must provide between 1-10 main topics")
 
