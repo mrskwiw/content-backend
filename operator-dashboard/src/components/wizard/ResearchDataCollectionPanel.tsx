@@ -79,12 +79,12 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
   content_gap_analysis: {
     fields: [{
       key: 'current_content_topics',
-      label: 'Current Content Topics',
+      label: 'Current Content Topics (Optional - Auto-Generated)',
       type: 'textarea',
-      required: true,
-      min: 2,
-      placeholder: 'e.g., SEO best practices, content strategy, social media marketing',
-      helperText: 'Required. Provide at least 2 topics (comma-separated) or a description of your current content topics (minimum 10 characters).'
+      required: false,
+      min: 0,
+      placeholder: 'Leave empty to auto-generate from SEO keywords, or describe your current content topics',
+      helperText: '✨ Auto-generates from SEO keyword research if available, or from your business profile. Or manually describe your current content topics (minimum 10 characters if provided).'
     }]
   },
   content_audit: {
@@ -132,6 +132,57 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
       placeholder: 'e.g., awareness and leads, thought leadership, customer education',
       helperText: 'Specific business objectives for your content.'
     }]
+  },
+  content_calendar_strategy: {
+    fields: [{
+      key: 'content_goals',
+      label: 'Content Goals (Optional)',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., brand awareness, lead generation, thought leadership',
+      helperText: 'Specific business objectives for your content calendar (10-1000 characters).'
+    }, {
+      key: 'primary_platforms',
+      label: 'Primary Platforms (Optional)',
+      type: 'text-list',
+      required: false,
+      placeholder: 'e.g., LinkedIn, Twitter, Blog',
+      helperText: 'Platforms where you plan to publish content. Leave empty to get recommendations.'
+    }]
+  },
+  audience_research: {
+    fields: []  // Fully automatic - uses business_description and target_audience from client profile
+  },
+  icp_workshop: {
+    fields: [{
+      key: 'existing_customer_data',
+      label: 'Existing Customer Data (Optional)',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Describe your current customers, their characteristics, common traits, etc.',
+      helperText: 'Optional. Provide any data you have about existing customers to inform the ICP analysis (0-5000 characters).'
+    }]
+  },
+  story_mining: {
+    fields: [{
+      key: 'customer_context',
+      label: 'Customer Context',
+      type: 'textarea',
+      required: true,
+      min: 30,
+      placeholder: 'Describe the customer success story context: who the customer is, their challenges, how they used your product/service, results achieved...',
+      helperText: 'Provide context about the customer story you want to mine (30-2000 characters). Include customer background, challenges faced, and outcomes.'
+    }, {
+      key: 'interview_notes',
+      label: 'Interview Notes (Optional)',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Paste interview transcript, customer quotes, or detailed notes from conversations...',
+      helperText: 'Optional. Add detailed interview notes or customer quotes to enrich the story (0-10000 characters).'
+    }]
+  },
+  brand_archetype: {
+    fields: []  // Fully automatic - uses business_description from client profile
   }
 };
 
@@ -233,24 +284,12 @@ export function ResearchDataCollectionPanel({
             }
           }
         } else if (typeof processedValue === 'string') {
-          // Special validation for content_gap_analysis topics
+          // Special validation for content_gap_analysis topics (optional field)
           if (field.key === 'current_content_topics') {
-            // Check if it's a comma-separated list
-            const topics = processedValue.split(',').map(item => item.trim()).filter(item => item.length > 0);
-            if (topics.length > 1 && topics.length < 2) {
-              newErrors[field.key] = 'Please enter at least 2 topics';
-              isValid = false;
-              return;
-            }
-            // If it's just one item (description), check minimum length
-            if (topics.length === 1 && processedValue.length < 10) {
-              newErrors[field.key] = 'Please enter at least 10 characters or provide 2+ topics separated by commas';
-              isValid = false;
-              return;
-            }
-            // If it looks like a list (has commas), require at least 2 topics
-            if (processedValue.includes(',') && topics.length < 2) {
-              newErrors[field.key] = 'Please enter at least 2 topics separated by commas';
+            // Field is optional - skip validation if empty (will auto-generate)
+            // If provided, enforce minimum length
+            if (processedValue.length > 0 && processedValue.length < 10) {
+              newErrors[field.key] = 'Please enter at least 10 characters or leave empty to auto-generate';
               isValid = false;
               return;
             }

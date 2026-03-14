@@ -554,7 +554,7 @@ async def run_research(
             result = cached_result
             logger.info(
                 f"Research cache HIT for {input.tool} (client {input.client_id}) "
-                f"- saved ${tool.price} API call"
+                f"- saved {tool.credits} credits"
             )
         else:
             # Execute research tool via service with sanitized params
@@ -585,7 +585,7 @@ async def run_research(
 
             logger.info(
                 f"Research cache MISS for {input.tool} (client {input.client_id}) "
-                f"- executed ${tool.price} API call"
+                f"- executed {tool.credits} credits"
             )
 
         if not result["success"]:
@@ -626,7 +626,7 @@ async def run_research(
             outputs=result["outputs"],
             metadata={
                 **result["metadata"],
-                "price": tool.price,
+                "credits": tool.credits,
                 "project_id": input.project_id,
                 "client_id": input.client_id,
             },

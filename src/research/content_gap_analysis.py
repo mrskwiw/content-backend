@@ -57,22 +57,29 @@ class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
         # SECURITY: Validate target audience with sanitization
         inputs["target_audience"] = self.validate_target_audience(inputs)
 
-        # SECURITY: Validate current content topics (can be string or list)
+        # SECURITY: Validate current content topics (optional - auto-generates if empty)
         current_content = inputs.get("current_content_topics")
-        if isinstance(current_content, str):
+
+        # Allow None/missing - will be auto-generated from SEO keywords or business description
+        if (
+            current_content is None
+            or current_content == ""
+            or (isinstance(current_content, list) and len(current_content) == 0)
+        ):
+            # Empty is valid - service layer will auto-populate from SEO keywords or business description
+            inputs["current_content_topics"] = ""
+        elif isinstance(current_content, str):
+            # If provided as string, validate length
             inputs["current_content_topics"] = self.validator.validate_text(
                 current_content,
                 field_name="current_content_topics",
                 min_length=10,
                 max_length=5000,
-                required=True,
+                required=False,  # Changed to optional
                 sanitize=True,
             )
         elif isinstance(current_content, list):
-            if len(current_content) == 0:
-                raise ValueError(
-                    "Provide at least 1 current content topic, or use 'None' if starting fresh"
-                )
+            # If provided as list, validate items
             inputs["current_content_topics"] = self.validator.validate_list(
                 current_content,
                 field_name="current_content_topics",
@@ -87,7 +94,7 @@ class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
                 ),
             )
         else:
-            raise ValueError("current_content_topics must be string or list")
+            raise ValueError("current_content_topics must be string, list, or empty")
 
         # SECURITY: Validate optional business name
         if "business_name" in inputs and inputs["business_name"]:

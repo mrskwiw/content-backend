@@ -119,16 +119,21 @@ class ContentGapParams(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     current_content_topics: str = Field(
-        ...,
-        description="Description of current content topics (10-5000 characters)",
+        default="",
+        description="Description of current content topics (optional - auto-generates from SEO keywords or business profile if empty)",
     )
 
     @field_validator("current_content_topics")
     @classmethod
     def validate_topics_text(cls, v: str) -> str:
-        """Validate topics text length."""
+        """Validate topics text length (optional field - empty is valid)."""
         v = v.strip()
 
+        # Allow empty - will auto-generate from SEO keywords or business profile
+        if len(v) == 0:
+            return v
+
+        # If provided, enforce minimum length
         if len(v) < 10:
             raise ValueError("Current content topics is too short (minimum 10 characters)")
 

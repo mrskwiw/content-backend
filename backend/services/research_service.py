@@ -363,6 +363,24 @@ class ResearchService:
                 f"Enhanced {tool_name} with prerequisite data: {list(prerequisite_data.keys())}"
             )
 
+        # Auto-populate current_content_topics for content_gap_analysis if empty
+        if tool_name == "content_gap_analysis":
+            current_topics = inputs.get("current_content_topics", "").strip()
+            if not current_topics:
+                # Try to use SEO keywords from prerequisite data
+                seo_keywords = inputs.get("seo_keywords", [])
+                if seo_keywords:
+                    current_topics = ", ".join(seo_keywords[:10])
+                    logger.info(
+                        f"Auto-generated current_content_topics from {len(seo_keywords[:10])} SEO keywords"
+                    )
+                else:
+                    # Fallback: use business description
+                    current_topics = client.business_description or "General business topics"
+                    logger.info("Auto-generated current_content_topics from business description")
+
+                inputs["current_content_topics"] = current_topics
+
         try:
             # Instantiate and execute tool
             tool = ToolClass(project_id=project_id)
@@ -818,8 +836,8 @@ class ResearchService:
             )
 
         elif tool_name == "content_gap_analysis":
-            # Content gap needs current topics
-            inputs["current_content_topics"] = params.get("current_content_topics", [])
+            # Content gap needs current topics - will auto-populate after prerequisite merge if empty
+            inputs["current_content_topics"] = params.get("current_content_topics", "")
 
         elif tool_name == "market_trends":
             # Market trends needs industry context
