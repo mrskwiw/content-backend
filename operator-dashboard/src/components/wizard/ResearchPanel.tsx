@@ -1,6 +1,6 @@
 import { useState, memo, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, DollarSign, Clock, Link2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, Coins, Clock, Link2, AlertCircle } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';
 import { clientsApi } from '@/api/clients';
 import { getApiErrorMessage } from '@/utils/apiError';
@@ -414,9 +414,9 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     { name: 'workshop', label: 'Workshop Assistants', description: 'Guided discovery sessions' },
   ];
 
-  const totalPrice = Array.from(selected).reduce((sum, toolName) => {
+  const totalCredits = Array.from(selected).reduce((sum, toolName) => {
     const tool = tools.find((t) => t.name === toolName);
-    return sum + (tool?.price || 0);
+    return sum + (tool?.credits || 0);
   }, 0);
 
   if (isLoading) {
@@ -639,7 +639,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
         </div>
       </div>
 
-      {totalPrice > 0 && (
+      {totalCredits > 0 && (
         <div className="mb-4 rounded-md bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-sm text-blue-800 dark:text-blue-200">
           <div className="flex items-center justify-between">
             <div>
@@ -647,9 +647,12 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
               {selected.size > 0 && ` (${Array.from(selected).join(', ')})`}
             </div>
             <div className="flex items-center gap-1 font-semibold">
-              <DollarSign className="h-4 w-4" />
-              {(totalPrice ?? 0).toFixed(2)}
+              <Coins className="h-4 w-4" />
+              {totalCredits} credits
             </div>
+          </div>
+          <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+            ≈ ${(totalCredits * 2).toFixed(2)} at $2/credit
           </div>
         </div>
       )}
@@ -711,8 +714,11 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                           {tool.description && <p className="mt-1 text-xs text-slate-600 dark:text-neutral-400">{tool.description}</p>}
                           <div className="mt-2 flex items-center justify-between gap-2">
                             {getStatusBadge(tool.status)}
-                            {tool.price && (
-                              <span className="text-xs font-medium text-slate-700 dark:text-neutral-300">${(tool?.price ?? 0).toFixed(2)}</span>
+                            {tool.credits && (
+                              <span className="text-xs font-medium text-slate-700 dark:text-neutral-300 flex items-center gap-1">
+                                <Coins className="h-3 w-3" />
+                                {tool.credits} credits
+                              </span>
                             )}
                           </div>
                           {(() => {

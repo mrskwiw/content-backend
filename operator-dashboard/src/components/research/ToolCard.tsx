@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, Coins } from 'lucide-react';
 import { ResearchTool } from '../../api/research';
 
 interface ToolCardProps {
@@ -58,9 +58,10 @@ export function ToolCard({ tool, isSelected, onToggle, executionStatus }: ToolCa
         {tool.label}
       </h3>
 
-      {/* Price */}
-      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-        ${tool.price?.toFixed(0) || '—'}
+      {/* Credit Cost */}
+      <div className="flex items-center gap-1.5 text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+        <Coins className="h-6 w-6" />
+        <span>{tool.credits || '—'} credits</span>
       </div>
 
       {/* Description */}

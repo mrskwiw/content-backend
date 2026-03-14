@@ -58,7 +58,7 @@ class ResearchTool(BaseModel):
 
     name: str
     label: str
-    price: Optional[float] = None
+    credits: Optional[int] = None  # Credit cost (not dollars)
     status: str = "available"  # available, coming_soon
     description: Optional[str] = None
     category: Optional[str] = None
@@ -81,13 +81,14 @@ class ResearchRunResult(BaseModel):
     metadata: Optional[Dict[str, Any]] = {}
 
 
-# Research tool catalog (6 implemented tools)
+# Research tool catalog - Credit costs based on labor replacement value
+# See backend/config/credit_pricing.py for pricing rationale
 RESEARCH_TOOLS = [
-    # Client Foundation Tools ($700 Total)
+    # Client Foundation Tools
     ResearchTool(
         name="voice_analysis",
         label="Voice Analysis",
-        price=400.0,
+        credits=100,  # Replaces 6-8 hours of manual tone extraction
         status="experimental",
         description="Extract writing patterns from client's existing content",
         category="foundation",
@@ -95,16 +96,16 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="brand_archetype",
         label="Brand Archetype Assessment",
-        price=300.0,
+        credits=75,  # Replaces 4-6 hours of brand strategy work
         status="experimental",
         description="Identify brand personality and messaging framework",
         category="foundation",
     ),
-    # SEO & Competition Tools ($1,400 Total)
+    # SEO & Competition Tools
     ResearchTool(
         name="seo_keyword_research",
         label="SEO Keyword Research",
-        price=400.0,
+        credits=150,  # Replaces 8-12 hours of keyword research
         status="available",
         description="Discover target keywords and search opportunities",
         category="seo",
@@ -112,7 +113,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="determine_competitors",
         label="Determine Competitors",
-        price=400.0,
+        credits=100,  # Replaces competitive intelligence research
         status="available",
         description="AI-powered competitor discovery and market positioning analysis",
         category="seo",
@@ -120,7 +121,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="competitive_analysis",
         label="Competitive Analysis",
-        price=500.0,
+        credits=100,  # Replaces 6-8 hours of competitive strategy analysis
         status="available",
         description="Research competitors and identify positioning gaps",
         category="seo",
@@ -128,16 +129,16 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="content_gap_analysis",
         label="Content Gap Analysis",
-        price=500.0,
+        credits=100,  # Replaces deep market analysis
         status="experimental",
         description="Identify content opportunities competitors are missing",
         category="seo",
     ),
-    # Market Intelligence Tools ($400 Total)
+    # Market Intelligence Tools
     ResearchTool(
         name="market_trends_research",
         label="Market Trends Research",
-        price=400.0,
+        credits=100,  # Replaces industry research
         status="available",
         description="Discover trending topics and emerging opportunities",
         category="market",
@@ -146,7 +147,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="content_audit",
         label="Content Audit",
-        price=400.0,
+        credits=75,  # Replaces manual content inventory
         status="experimental",
         description="Analyze existing content performance and opportunities",
         category="strategy",
@@ -154,7 +155,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="platform_strategy",
         label="Platform Strategy",
-        price=300.0,
+        credits=50,  # Replaces platform evaluation
         status="experimental",
         description="Recommend optimal platform mix for distribution",
         category="strategy",
@@ -162,7 +163,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="content_calendar",
         label="Content Calendar Strategy",
-        price=300.0,
+        credits=50,  # Replaces editorial planning
         status="experimental",
         description="Create strategic 90-day content calendar",
         category="strategy",
@@ -170,7 +171,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="audience_research",
         label="Audience Research",
-        price=500.0,
+        credits=75,  # Replaces persona interviews and analysis
         status="experimental",
         description="Deep-dive into target audience demographics and psychographics",
         category="strategy",
@@ -179,7 +180,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="icp_workshop",
         label="ICP Development Workshop",
-        price=600.0,
+        credits=150,  # Replaces full workshop (8-12 hours, most labor-intensive)
         status="experimental",
         description="Facilitate ideal customer profile definition through guided conversation",
         category="workshop",
@@ -187,7 +188,7 @@ RESEARCH_TOOLS = [
     ResearchTool(
         name="story_mining",
         label="Story Mining Interview",
-        price=500.0,
+        credits=125,  # Replaces interview and story extraction
         status="experimental",
         description="Extract customer success stories and case study material",
         category="workshop",
@@ -1063,15 +1064,15 @@ async def execute_research_batch(
 
 
 class PricingPreviewResponse(BaseModel):
-    """Response from pricing preview endpoint"""
+    """Response from pricing preview endpoint (credit-based)"""
 
-    base_cost: float
-    discount: float
-    final_cost: float
-    bundle_applied: Optional[str] = None
-    bundle_name: Optional[str] = None
-    savings_percent: float = 0.0
-    next_bundle_suggestion: Optional[Dict[str, Any]] = None
+    base_cost: int  # Total credits needed
+    discount: int  # Always 0 (no bundle discounts in credit system)
+    final_cost: int  # Same as base_cost
+    bundle_applied: Optional[str] = None  # Always None (no bundles)
+    bundle_name: Optional[str] = None  # Always None (no bundles)
+    savings_percent: float = 0.0  # Always 0 (no discounts)
+    next_bundle_suggestion: Optional[Dict[str, Any]] = None  # Always None (no bundles)
 
 
 @router.get("/pricing-preview", response_model=PricingPreviewResponse)
@@ -1082,128 +1083,44 @@ async def get_pricing_preview(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Calculate pricing with bundle detection for selected tools.
+    Calculate credit cost for selected research tools.
 
     Query params:
     - tool_ids: Comma-separated tool IDs (e.g. "voice_analysis,brand_archetype")
 
     Returns:
     {
-      "base_cost": 1800,
-      "discount": 300,
-      "final_cost": 1500,
-      "bundle_applied": "foundation_pack",
-      "bundle_name": "Foundation Pack",
-      "savings_percent": 16.7,
-      "next_bundle_suggestion": {
-        "bundle": "complete_strategy",
-        "missing_tools": ["seo_keyword_research", "competitive_analysis", "content_gap_analysis"],
-        "additional_cost": 700,
-        "potential_savings": 500
-      }
+      "base_cost": 175,  # Total credits needed
+      "discount": 0,      # No discounts in credit system
+      "final_cost": 175,  # Same as base_cost
+      "bundle_applied": null,
+      "bundle_name": null,
+      "savings_percent": 0.0,
+      "next_bundle_suggestion": null
     }
-    """
-    from src.config.pricing import calculate_tools_cost, TOOLS
 
+    Note: Bundle discounts removed - credit system uses flat per-tool pricing.
+    """
     # Parse tool IDs
     tool_list = [tid.strip() for tid in tool_ids.split(",") if tid.strip()]
 
-    # Calculate pricing with bundle detection
-    pricing = calculate_tools_cost(tool_list)
+    # Calculate total credit cost
+    total_credits = 0
+    for tool_id in tool_list:
+        tool = next((t for t in RESEARCH_TOOLS if t.name == tool_id), None)
+        if tool and tool.credits:
+            total_credits += tool.credits
 
-    # Calculate base cost (a la carte)
-    base_cost = sum(TOOLS.get(tid, {}).get("price", 0.0) for tid in tool_list)
-
-    # Determine which bundle was applied
-    bundle_applied = None
-    bundle_name = None
-    if pricing["applied_bundles"]:
-        # Get first bundle (highest priority)
-        bundle_name = pricing["applied_bundles"][0]
-        # Convert name to snake_case ID
-        bundle_applied = bundle_name.lower().replace(" ", "_")
-
-    # Calculate savings percentage
-    savings_percent = (
-        round((pricing["discount_amount"] / base_cost) * 100, 1) if base_cost > 0 else 0.0
-    )
-
-    # Add "next bundle" suggestion logic
-    next_bundle_suggestion = _suggest_next_bundle(tool_list, pricing["applied_bundles"])
-
+    # No discounts or bundles in credit system
     return PricingPreviewResponse(
-        base_cost=base_cost,
-        discount=pricing["discount_amount"],
-        final_cost=pricing["tools_cost"],
-        bundle_applied=bundle_applied,
-        bundle_name=bundle_name,
-        savings_percent=savings_percent,
-        next_bundle_suggestion=next_bundle_suggestion,
+        base_cost=total_credits,
+        discount=0,
+        final_cost=total_credits,
+        bundle_applied=None,
+        bundle_name=None,
+        savings_percent=0.0,
+        next_bundle_suggestion=None,
     )
-
-
-def _suggest_next_bundle(
-    current_tools: List[str], applied_bundles: List[str]
-) -> Optional[Dict[str, Any]]:
-    """
-    Analyze current tool selection and suggest bundle upgrade.
-    Returns bundle that requires fewest additional tools.
-    """
-    from src.config.pricing import BUNDLES, TOOLS
-
-    current_set = set(current_tools)
-
-    # If already in Ultimate Pack, no upgrade possible
-    if "Ultimate Pack" in applied_bundles:
-        return None
-
-    # Find the next best bundle to complete
-    best_suggestion = None
-    min_additional_tools = float("inf")
-
-    for bundle in BUNDLES:
-        bundle_name = bundle["name"]
-
-        # Skip if already applied
-        if bundle_name in applied_bundles:
-            continue
-
-        # Find missing tools for this bundle
-        required_tools = bundle["required_tools"]
-        missing_tools = required_tools - current_set
-
-        if not missing_tools:
-            # Already have all tools for this bundle (shouldn't happen if logic is correct)
-            continue
-
-        # Calculate cost to complete this bundle
-        missing_cost = sum(TOOLS.get(tid, {}).get("price", 0.0) for tid in missing_tools)
-
-        # Calculate potential savings if we complete this bundle
-        # Current a la carte cost for ALL bundle tools
-        current_bundle_tools_in_selection = required_tools & current_set
-        current_cost_for_bundle_tools = sum(
-            TOOLS.get(tid, {}).get("price", 0.0) for tid in current_bundle_tools_in_selection
-        )
-
-        # After adding missing tools, bundle price replaces a la carte
-        potential_savings = (current_cost_for_bundle_tools + missing_cost) - bundle["price"]
-
-        # Only suggest if there's actual savings
-        if potential_savings > 0 and len(missing_tools) < min_additional_tools:
-            min_additional_tools = len(missing_tools)
-            best_suggestion = {
-                "bundle": bundle_name.lower().replace(" ", "_"),
-                "bundle_name": bundle_name,
-                "missing_tools": sorted(list(missing_tools)),
-                "missing_tool_names": [
-                    TOOLS.get(tid, {}).get("name", tid) for tid in sorted(missing_tools)
-                ],
-                "additional_cost": missing_cost,
-                "potential_savings": round(potential_savings, 2),
-            }
-
-    return best_suggestion
 
 
 class ResearchAnalyticsResponse(BaseModel):

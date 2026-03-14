@@ -4,8 +4,8 @@ import { ResearchResult } from '../types/domain';
 export interface ResearchTool {
   name: string;
   label: string;
-  price?: number;
-  status?: 'available' | 'coming_soon';
+  credits?: number;  // Credit cost (not dollars)
+  status?: 'available' | 'coming_soon' | 'experimental';
   description?: string;
   category?: string;
 }
@@ -50,18 +50,18 @@ export interface NextBundleSuggestion {
   bundleName: string;
   missingTools: string[];
   missingToolNames: string[];
-  additionalCost: number;
-  potentialSavings: number;
+  additionalCost: number;  // Credits
+  potentialSavings: number;  // Credits
 }
 
 export interface PricingPreview {
-  baseCost: number;
-  discount: number;
-  finalCost: number;
-  bundleApplied: string | null;
-  bundleName: string | null;
-  savingsPercent: number;
-  nextBundleSuggestion?: NextBundleSuggestion;
+  baseCost: number;  // Total credits needed
+  discount: number;  // Always 0 (no discounts)
+  finalCost: number;  // Same as baseCost
+  bundleApplied: string | null;  // Always null
+  bundleName: string | null;  // Always null
+  savingsPercent: number;  // Always 0
+  nextBundleSuggestion?: NextBundleSuggestion;  // Always undefined
 }
 
 export interface ToolStats {
