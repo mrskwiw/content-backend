@@ -489,6 +489,164 @@ def init_db():
         # NOTE: ResearchResult table is auto-created by Base.metadata.create_all()
         # No manual migration needed - table will be created on first startup
 
+        # Credit system migration (users table)
+        if "users" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("users")]
+            new_user_columns = [
+                ("credit_balance", "INTEGER DEFAULT 0"),
+                ("total_credits_purchased", "INTEGER DEFAULT 0"),
+                ("total_credits_used", "INTEGER DEFAULT 0"),
+                ("is_enterprise", "BOOLEAN DEFAULT FALSE"),
+                ("custom_credit_rate", "REAL"),
+                ("enterprise_notes", "TEXT"),
+            ]
+
+            for col_name, col_type in new_user_columns:
+                if col_name not in columns:
+                    import re
+
+                    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", col_name):
+                        print(f">> ERROR: Invalid column name '{col_name}' (security check failed)")
+                        continue
+                    base_type = col_type.split()[0] if " " in col_type else col_type
+                    if base_type not in ALLOWED_TYPES:
+                        print(f">> ERROR: Invalid column type '{col_type}' (security check failed)")
+                        continue
+
+                    print(f">> Running migration: Adding {col_name} column to users table")
+                    try:
+                        from sqlalchemy.sql import quoted_name
+
+                        safe_col_name = quoted_name(col_name, quote=True)
+                        safe_col_type = col_type
+                        ddl_stmt = text(
+                            f"ALTER TABLE users ADD COLUMN {safe_col_name} {safe_col_type}"
+                        )
+                        conn.execute(ddl_stmt)
+                        conn.commit()
+                        print(f">> Migration for {col_name} completed successfully")
+                    except Exception as e:
+                        print(f">> Migration for {col_name} failed: {e}")
+
+        # Seed credit packages (only if table is empty)
+        # CreditPackage table is auto-created by Base.metadata.create_all()
+        if "credit_packages" in inspector.get_table_names():
+            # Check if packages already exist
+            result = conn.execute(text("SELECT COUNT(*) FROM credit_packages"))
+            count = result.scalar()
+
+            if count == 0:
+                print(">> Seeding credit_packages table with initial data")
+                try:
+                    import uuid
+
+                    # Standard packages ($2/credit)
+                    standard_packages = [
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Starter Pack",
+                            "credits": 100,
+                            "price_usd": 200.0,
+                            "package_type": "package",
+                            "description": "Perfect for trying out the platform",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Basic Pack",
+                            "credits": 300,
+                            "price_usd": 600.0,
+                            "package_type": "package",
+                            "description": "Great for small businesses",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Pro Pack",
+                            "credits": 600,
+                            "price_usd": 1200.0,
+                            "package_type": "package",
+                            "description": "Ideal for regular content creation",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Business Pack",
+                            "credits": 1200,
+                            "price_usd": 2400.0,
+                            "package_type": "package",
+                            "description": "Best for agencies and teams",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Premium Pack",
+                            "credits": 2500,
+                            "price_usd": 5000.0,
+                            "package_type": "package",
+                            "description": "Maximum value for high-volume users",
+                        },
+                    ]
+
+                    # Additional credits ($2.50/credit in 100-credit batches)
+                    additional_packages = [
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Additional 100 Credits",
+                            "credits": 100,
+                            "price_usd": 250.0,
+                            "package_type": "additional",
+                            "description": "Top-up credits at $2.50 each",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Additional 200 Credits",
+                            "credits": 200,
+                            "price_usd": 500.0,
+                            "package_type": "additional",
+                            "description": "Top-up credits at $2.50 each",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Additional 300 Credits",
+                            "credits": 300,
+                            "price_usd": 750.0,
+                            "package_type": "additional",
+                            "description": "Top-up credits at $2.50 each",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Additional 500 Credits",
+                            "credits": 500,
+                            "price_usd": 1250.0,
+                            "package_type": "additional",
+                            "description": "Top-up credits at $2.50 each",
+                        },
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Additional 1000 Credits",
+                            "credits": 1000,
+                            "price_usd": 2500.0,
+                            "package_type": "additional",
+                            "description": "Top-up credits at $2.50 each",
+                        },
+                    ]
+
+                    all_packages = standard_packages + additional_packages
+
+                    for pkg in all_packages:
+                        insert_stmt = text(
+                            """
+                            INSERT INTO credit_packages
+                            (id, name, credits, price_usd, package_type, is_active, description)
+                            VALUES
+                            (:id, :name, :credits, :price_usd, :package_type, TRUE, :description)
+                            """
+                        )
+                        conn.execute(insert_stmt, pkg)
+
+                    conn.commit()
+                    print(f">> Seeded {len(all_packages)} credit packages successfully")
+
+                except Exception as e:
+                    print(f">> Seeding credit_packages failed: {e}")
+
     # Update schema version to latest after all migrations
     config = load_migration_rules()
     latest_version = config["current_version"]

@@ -4,6 +4,7 @@ Database models.
 
 from .brief import Brief
 from .client import Client
+from .credit import CreditTransaction, CreditPackage
 from .deliverable import Deliverable
 from .post import Post
 from .project import Project
@@ -35,4 +36,6 @@ __all__ = [
     "TrendsInterestData",
     "TrendsRelatedQuery",
     "TrendsKeywordInsight",
+    "CreditTransaction",
+    "CreditPackage",
 ]
