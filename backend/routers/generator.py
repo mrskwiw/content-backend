@@ -115,6 +115,7 @@ async def run_generation_background(
         # Update run status to succeeded (use LogEntry format)
         from datetime import datetime
         from backend.schemas.run import LogEntry
+        from src.utils.cost_tracker import get_default_tracker
 
         timestamp = datetime.now().isoformat()
         logs = [
@@ -127,7 +128,36 @@ async def run_generation_background(
             LogEntry(timestamp=timestamp, message=f"Output directory: {result['output_dir']}"),
         ]
 
-        crud.update_run(db, run_id, status="succeeded", logs=[log.model_dump() for log in logs])
+        # Capture token usage and cost (Task #32)
+        try:
+            cost_tracker = get_default_tracker()
+            project_cost = cost_tracker.get_project_cost(project_id)
+
+            # Add token usage log entry
+            logs.append(
+                LogEntry(
+                    timestamp=timestamp,
+                    message=f"Token usage: {project_cost.total_input_tokens:,} input, "
+                    f"{project_cost.total_output_tokens:,} output "
+                    f"(${project_cost.total_cost:.2f})",
+                )
+            )
+
+            crud.update_run(
+                db,
+                run_id,
+                status="succeeded",
+                logs=[log.model_dump() for log in logs],
+                total_input_tokens=project_cost.total_input_tokens,
+                total_output_tokens=project_cost.total_output_tokens,
+                total_cache_creation_tokens=project_cost.total_cache_creation_tokens,
+                total_cache_read_tokens=project_cost.total_cache_read_tokens,
+                total_cost_usd=project_cost.total_cost,
+            )
+        except Exception as cost_err:
+            # If cost tracking fails, still update run status
+            logger.warning(f"Failed to track costs for run {run_id}: {cost_err}")
+            crud.update_run(db, run_id, status="succeeded", logs=[log.model_dump() for log in logs])
 
         logger.info(f"Background generation completed successfully for run {run_id}")
 
@@ -353,12 +383,43 @@ async def regenerate(
             ),
         ]
 
-        crud.update_run(
-            db,
-            db_run.id,
-            status="succeeded",
-            logs=[log.model_dump() for log in logs],  # Convert to dicts for JSON serialization
-        )
+        # Capture token usage and cost (Task #32)
+        from src.utils.cost_tracker import get_default_tracker
+
+        try:
+            cost_tracker = get_default_tracker()
+            project_cost = cost_tracker.get_project_cost(input.project_id)
+
+            # Add token usage log entry
+            logs.append(
+                LogEntry(
+                    timestamp=timestamp,
+                    message=f"Token usage: {project_cost.total_input_tokens:,} input, "
+                    f"{project_cost.total_output_tokens:,} output "
+                    f"(${project_cost.total_cost:.2f})",
+                )
+            )
+
+            crud.update_run(
+                db,
+                db_run.id,
+                status="succeeded",
+                logs=[log.model_dump() for log in logs],
+                total_input_tokens=project_cost.total_input_tokens,
+                total_output_tokens=project_cost.total_output_tokens,
+                total_cache_creation_tokens=project_cost.total_cache_creation_tokens,
+                total_cache_read_tokens=project_cost.total_cache_read_tokens,
+                total_cost_usd=project_cost.total_cost,
+            )
+        except Exception as cost_err:
+            # If cost tracking fails, still update run status
+            logger.warning(f"Failed to track costs for run {db_run.id}: {cost_err}")
+            crud.update_run(
+                db,
+                db_run.id,
+                status="succeeded",
+                logs=[log.model_dump() for log in logs],
+            )
 
         db.refresh(db_run)
         logger.info(f"Regeneration completed successfully for run {db_run.id}")

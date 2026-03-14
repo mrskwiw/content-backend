@@ -180,9 +180,28 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
   const toggleTool = (toolName: string) => {
     const newSelected = new Set(selected);
     if (newSelected.has(toolName)) {
+      // Deselecting a tool
       newSelected.delete(toolName);
     } else {
+      // Selecting a tool - auto-add required prerequisites
       newSelected.add(toolName);
+
+      // Auto-suggest: Add required prerequisites if not already completed
+      const prereqs = TOOL_PREREQUISITES[toolName];
+      if (prereqs && prereqs.required.length > 0) {
+        const missingRequired = prereqs.required.filter(
+          prereqTool => !completedTools.has(prereqTool) && !newSelected.has(prereqTool)
+        );
+
+        if (missingRequired.length > 0) {
+          // Auto-add required prerequisites
+          missingRequired.forEach(prereqTool => newSelected.add(prereqTool));
+
+          // Show notification
+          const prereqNames = missingRequired.map(p => TOOL_LABELS[p] || p).join(', ');
+          console.log(`Auto-added required prerequisites for ${TOOL_LABELS[toolName]}: ${prereqNames}`);
+        }
+      }
     }
     setSelected(newSelected);
   };
@@ -209,10 +228,38 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       if (onContinue) {
         onContinue();
       }
-    } else {
-      // Move to data collection step
-      setStep('data-collection');
+      return;
     }
+
+    // Block execution: Check for missing required prerequisites
+    const toolsWithMissingPrereqs: Array<{ tool: string; missing: string[] }> = [];
+
+    for (const toolName of selected) {
+      const prereqStatus = getPrerequisiteStatus(toolName);
+      if (prereqStatus.requiredUnfulfilled.length > 0) {
+        toolsWithMissingPrereqs.push({
+          tool: toolName,
+          missing: prereqStatus.requiredUnfulfilled,
+        });
+      }
+    }
+
+    // If any tools have missing required prerequisites, block and show error
+    if (toolsWithMissingPrereqs.length > 0) {
+      const errorMessages = toolsWithMissingPrereqs.map(({ tool, missing }) => {
+        const toolLabel = TOOL_LABELS[tool] || tool;
+        const missingLabels = missing.map(p => TOOL_LABELS[p] || p).join(', ');
+        return `• ${toolLabel} requires: ${missingLabels}`;
+      }).join('\n');
+
+      alert(
+        `Cannot proceed - some tools have missing required prerequisites:\n\n${errorMessages}\n\nPlease select the required prerequisites or remove these tools from your selection.`
+      );
+      return;
+    }
+
+    // All prerequisites met - move to data collection
+    setStep('data-collection');
   };
 
   const handleDataCollected = (data: Record<string, any>) => {
@@ -238,7 +285,20 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     const completed: string[] = [];
     const failed: Array<{ tool: string; error: string }> = [];
 
-    for (const tool of selected) {
+    // Feature 3: Get optimal execution order from backend
+    let executionOrder: string[];
+    try {
+      const orderResult = await researchApi.getExecutionOrder(Array.from(selected));
+      executionOrder = orderResult.executionOrder;
+      console.log(`Executing ${executionOrder.length} tools in optimal order:`, executionOrder);
+    } catch (error) {
+      console.error('Failed to get execution order, using selection order as fallback', error);
+      // Fallback to original selection order if API fails
+      executionOrder = Array.from(selected);
+    }
+
+    // Execute tools in dependency order (prerequisites first)
+    for (const tool of executionOrder) {
       // Update current tool being executed
       setExecutionState(prev => ({ ...prev, currentTool: tool }));
 

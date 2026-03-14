@@ -176,4 +176,15 @@ export const researchApi = {
     });
     return data;
   },
+
+  /**
+   * Get optimal execution order for research tools based on dependencies
+   */
+  async getExecutionOrder(toolNames: string[]): Promise<{ executionOrder: string[]; toolCount: number }> {
+    const { data } = await apiClient.post<{ executionOrder: string[]; toolCount: number }>(
+      '/api/research/execution-order',
+      { tool_names: toolNames }
+    );
+    return data;
+  },
 };

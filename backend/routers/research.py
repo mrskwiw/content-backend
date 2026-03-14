@@ -922,6 +922,56 @@ async def check_prerequisites(
     )
 
 
+class ExecutionOrderRequest(BaseModel):
+    """Request to get execution order for tools"""
+
+    tool_names: List[str]
+
+
+class ExecutionOrderResponse(BaseModel):
+    """Response with optimal execution order"""
+
+    execution_order: List[str]
+    tool_count: int
+
+
+@router.post("/execution-order", response_model=ExecutionOrderResponse)
+@lenient_limiter.limit("1000/hour")  # Lightweight calculation endpoint
+async def get_execution_order(
+    request: Request,
+    order_request: ExecutionOrderRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get optimal execution order for research tools based on dependencies.
+
+    Uses topological sort to ensure prerequisites run before dependent tools.
+    This is a read-only endpoint that doesn't execute anything - just calculates order.
+
+    Args:
+        order_request: List of tool names to order
+
+    Returns:
+        Optimal execution order (prerequisites first)
+    """
+    from backend.services.research_prerequisites import ResearchPrerequisites
+
+    prerequisites = ResearchPrerequisites()
+
+    # Get optimal execution order using topological sort
+    execution_order = prerequisites.get_execution_order(order_request.tool_names)
+
+    logger.info(
+        f"Calculated execution order for {len(order_request.tool_names)} tools: "
+        f"{execution_order}"
+    )
+
+    return ExecutionOrderResponse(
+        execution_order=execution_order,
+        tool_count=len(execution_order),
+    )
+
+
 class BatchToolConfig(BaseModel):
     """Configuration for a single tool in batch"""
 
