@@ -22,6 +22,9 @@ from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import strict_limiter, standard_limiter
 from src.validators.prompt_injection_defense import sanitize_prompt_input
 from src.utils.template_parser import template_parser
+from backend.services import credit_service
+from backend.services.credit_service import InsufficientCreditsError
+from backend.config.credit_pricing import get_content_cost
 
 router = APIRouter()
 
@@ -62,6 +65,7 @@ async def run_generation_background(
     run_id: str,
     project_id: str,
     client_id: str,
+    user_id: str,  # NEW: for credit refund on failure
     num_posts: int = 30,
     template_quantities: Optional[dict[str, int]] = None,
     custom_topics: Optional[list[str]] = None,  # NEW: topic override for generation
@@ -163,6 +167,20 @@ async def run_generation_background(
 
     except Exception as e:
         logger.error(f"Background generation failed for run {run_id}: {str(e)}", exc_info=True)
+
+        # CREDIT REFUND: Refund credits if generation failed
+        try:
+            credit_service.refund_credits(
+                db=db,
+                user_id=user_id,
+                amount=num_posts * get_content_cost(),
+                description=f"Refund for failed generation (run {run_id})",
+                reference_id=run_id,
+                reference_type="run_refund",
+            )
+            logger.info(f"Refunded {num_posts * get_content_cost()} credits to user {user_id}")
+        except Exception as refund_err:
+            logger.error(f"Failed to refund credits for run {run_id}: {refund_err}")
 
         # Update run status to failed
         crud.update_run(db, run_id, status="failed", error_message=str(e))
@@ -297,12 +315,36 @@ async def generate_all(
     # Determine target_platform: input > project setting > default 'generic'
     target_platform = input.target_platform or project.target_platform or "generic"
 
+    # CREDIT DEDUCTION: Calculate and deduct credits before generation
+    credit_cost = num_posts * get_content_cost()
+    try:
+        credit_service.deduct_credits(
+            db=db,
+            user_id=current_user.id,
+            amount=credit_cost,
+            description=f"Post generation: {num_posts} posts",
+            reference_id=db_run.id,
+            reference_type="run",
+        )
+        logger.info(
+            f"Deducted {credit_cost} credits from user {current_user.id} for {num_posts} posts"
+        )
+    except InsufficientCreditsError:
+        # Delete the run record since we're not proceeding
+        crud.delete_run(db, db_run.id)
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=f"Insufficient credits. Required: {credit_cost} credits for {num_posts} posts. "
+            f"Your balance: {current_user.credit_balance} credits. Please purchase more credits.",
+        )
+
     # Queue background task (returns immediately)
     background_tasks.add_task(
         run_generation_background,
         run_id=db_run.id,
         project_id=input.project_id,
         client_id=input.client_id,
+        user_id=current_user.id,  # NEW: pass user_id for refund on failure
         num_posts=num_posts,
         template_quantities=input.template_quantities,  # Pass template quantities from frontend
         custom_topics=input.custom_topics,  # NEW: pass topic override for generation
@@ -353,6 +395,31 @@ async def regenerate(
 
     # Create Run record for regeneration
     db_run = crud.create_run(db, project_id=input.project_id, is_batch=False)
+
+    # CREDIT DEDUCTION: Calculate and deduct credits for regeneration
+    num_posts_to_regenerate = len(input.post_ids)
+    credit_cost = num_posts_to_regenerate * get_content_cost()
+    try:
+        credit_service.deduct_credits(
+            db=db,
+            user_id=current_user.id,
+            amount=credit_cost,
+            description=f"Post regeneration: {num_posts_to_regenerate} posts",
+            reference_id=db_run.id,
+            reference_type="run",
+        )
+        logger.info(
+            f"Deducted {credit_cost} credits from user {current_user.id} "
+            f"for regenerating {num_posts_to_regenerate} posts"
+        )
+    except InsufficientCreditsError:
+        # Delete the run record since we're not proceeding
+        crud.delete_run(db, db_run.id)
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=f"Insufficient credits. Required: {credit_cost} credits for {num_posts_to_regenerate} posts. "
+            f"Your balance: {current_user.credit_balance} credits. Please purchase more credits.",
+        )
 
     # Update run status to running
     crud.update_run(db, db_run.id, status="running")
@@ -427,6 +494,21 @@ async def regenerate(
 
     except Exception as e:
         logger.error(f"Regeneration failed: {str(e)}", exc_info=True)
+
+        # CREDIT REFUND: Refund credits if regeneration failed
+        try:
+            credit_service.refund_credits(
+                db=db,
+                user_id=current_user.id,
+                amount=credit_cost,
+                description=f"Refund for failed regeneration (run {db_run.id})",
+                reference_id=db_run.id,
+                reference_type="run_refund",
+            )
+            logger.info(f"Refunded {credit_cost} credits to user {current_user.id}")
+        except Exception as refund_err:
+            logger.error(f"Failed to refund credits for run {db_run.id}: {refund_err}")
+
         crud.update_run(db, db_run.id, status="failed", error_message=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

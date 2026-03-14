@@ -35,6 +35,9 @@ from backend.schemas import (
 )
 from backend.services import crud
 from backend.services.research_service import research_service
+from backend.services import credit_service
+from backend.services.credit_service import InsufficientCreditsError
+from backend.config.credit_pricing import get_research_tool_cost
 from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import strict_limiter, lenient_limiter
 from backend.middleware.authorization import _check_ownership  # TR-021: IDOR prevention
@@ -538,6 +541,7 @@ async def run_research(
                     detail="Client profile incomplete: Competitive Analysis requires 1-5 competitor names. Please add competitors to the client profile or provide them manually.",
                 )
 
+    cached_result = None  # Track whether we got a cache hit (for credit refund logic)
     try:
         # PERFORMANCE: Check cache before executing expensive research ($300-600 per call)
         # Cache key includes tool name, client ID, and param hash for uniqueness
@@ -557,6 +561,27 @@ async def run_research(
                 f"- saved {tool.credits} credits"
             )
         else:
+            # CREDIT DEDUCTION: Deduct credits before executing expensive research tool
+            credit_cost = get_research_tool_cost(input.tool)
+            try:
+                credit_service.deduct_credits(
+                    db=db,
+                    user_id=current_user.id,
+                    amount=credit_cost,
+                    description=f"Research tool: {tool.label}",
+                    reference_id=input.project_id,
+                    reference_type="research",
+                )
+                logger.info(
+                    f"Deducted {credit_cost} credits from user {current_user.id} for {input.tool}"
+                )
+            except InsufficientCreditsError:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail=f"Insufficient credits. Required: {credit_cost} credits for {tool.label}. "
+                    f"Your balance: {current_user.credit_balance} credits. Please purchase more credits.",
+                )
+
             # Execute research tool via service with sanitized params
             result = await research_service.execute_research_tool(
                 db=db,
@@ -636,6 +661,26 @@ async def run_research(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Research execution failed: {str(e)}", exc_info=True)
+
+        # CREDIT REFUND: Refund credits if research execution failed (only if credits were deducted)
+        # Credits are only deducted on cache MISS, so check if we had a cache MISS
+        if not cached_result:
+            try:
+                credit_cost = get_research_tool_cost(input.tool)
+                credit_service.refund_credits(
+                    db=db,
+                    user_id=current_user.id,
+                    amount=credit_cost,
+                    description=f"Refund for failed research: {tool.label}",
+                    reference_id=input.project_id,
+                    reference_type="research_refund",
+                )
+                logger.info(
+                    f"Refunded {credit_cost} credits to user {current_user.id} for failed {input.tool}"
+                )
+            except Exception as refund_err:
+                logger.error(f"Failed to refund credits for {input.tool}: {refund_err}")
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Research execution failed: {str(e)}",
