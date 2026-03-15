@@ -20,11 +20,13 @@ export default function Integrations() {
   } | null>(null);
 
   // Form state
-  const [provider, setProvider] = useState<'brave' | 'tavily' | 'stub'>('stub');
+  const [provider, setProvider] = useState<'brave' | 'tavily' | 'serpapi' | 'stub'>('stub');
   const [braveApiKey, setBraveApiKey] = useState('');
   const [tavilyApiKey, setTavilyApiKey] = useState('');
+  const [serpapiApiKey, setSerpapiApiKey] = useState('');
   const [showBraveKey, setShowBraveKey] = useState(false);
   const [showTavilyKey, setShowTavilyKey] = useState(false);
+  const [showSerpapiKey, setShowSerpapiKey] = useState(false);
 
   // Load current configuration
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function Integrations() {
         provider,
         brave_api_key: braveApiKey || null,
         tavily_api_key: tavilyApiKey || null,
+        serpapi_api_key: serpapiApiKey || null,
       };
 
       const updated = await settingsApi.updateWebSearchConfig(update);
@@ -70,8 +73,8 @@ export default function Integrations() {
     }
   };
 
-  const handleTest = async (testProvider: 'brave' | 'tavily') => {
-    const apiKey = testProvider === 'brave' ? braveApiKey : tavilyApiKey;
+  const handleTest = async (testProvider: 'brave' | 'tavily' | 'serpapi') => {
+    const apiKey = testProvider === 'brave' ? braveApiKey : testProvider === 'tavily' ? tavilyApiKey : serpapiApiKey;
 
     if (!apiKey) {
       alert('Please enter an API key to test');
@@ -103,7 +106,7 @@ export default function Integrations() {
     }
   };
 
-  const handleDelete = async (deleteProvider: 'brave' | 'tavily') => {
+  const handleDelete = async (deleteProvider: 'brave' | 'tavily' | 'serpapi') => {
     if (!confirm(`Delete ${deleteProvider} API key?`)) {
       return;
     }
@@ -205,12 +208,13 @@ export default function Integrations() {
             </label>
             <select
               value={provider}
-              onChange={(e) => setProvider(e.target.value as 'brave' | 'tavily' | 'stub')}
+              onChange={(e) => setProvider(e.target.value as 'brave' | 'tavily' | 'serpapi' | 'stub')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               <option value="stub">Stub (Development - Synthetic Data)</option>
               <option value="brave">Brave Search ($5/month, 1000 free searches)</option>
               <option value="tavily">Tavily ($0.001/query, cheaper at scale)</option>
+              <option value="serpapi">SerpAPI ($50/month, 5000 searches)</option>
             </select>
           </div>
 
@@ -325,6 +329,64 @@ export default function Integrations() {
                 className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700"
               >
                 Get Tavily API Key
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+
+          {/* SerpAPI Configuration */}
+          <div className="border dark:border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                SerpAPI (Google Maps & Search)
+              </h3>
+              {config?.serpapi_api_key_configured && (
+                <button
+                  onClick={() => handleDelete('serpapi')}
+                  className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Key
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  API Key
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type={showSerpapiKey ? 'text' : 'password'}
+                    value={serpapiApiKey}
+                    onChange={(e) => setSerpapiApiKey(e.target.value)}
+                    placeholder="Enter SerpAPI key..."
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  />
+                  <button
+                    onClick={() => setShowSerpapiKey(!showSerpapiKey)}
+                    className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                  >
+                    {showSerpapiKey ? 'Hide' : 'Show'}
+                  </button>
+                  <button
+                    onClick={() => handleTest('serpapi')}
+                    disabled={!serpapiApiKey || testing}
+                    className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {testing ? 'Testing...' : 'Test'}
+                  </button>
+                </div>
+              </div>
+
+              <a
+                href="https://serpapi.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700"
+              >
+                Get SerpAPI Key
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>

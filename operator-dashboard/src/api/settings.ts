@@ -5,19 +5,21 @@
 import apiClient from './client';
 
 export interface WebSearchConfig {
-  provider: 'brave' | 'tavily' | 'stub';
+  provider: 'brave' | 'tavily' | 'serpapi' | 'stub';
   brave_api_key_configured: boolean;
   tavily_api_key_configured: boolean;
+  serpapi_api_key_configured: boolean;
 }
 
 export interface WebSearchConfigUpdate {
-  provider: 'brave' | 'tavily' | 'stub';
+  provider: 'brave' | 'tavily' | 'serpapi' | 'stub';
   brave_api_key?: string | null;
   tavily_api_key?: string | null;
+  serpapi_api_key?: string | null;
 }
 
 export interface TestConnectionRequest {
-  provider: 'brave' | 'tavily';
+  provider: 'brave' | 'tavily' | 'serpapi';
   api_key: string;
 }
 
@@ -59,7 +61,7 @@ export const settingsApi = {
   /**
    * Delete API key for a provider
    */
-  deleteApiKey: async (provider: 'brave' | 'tavily'): Promise<void> => {
+  deleteApiKey: async (provider: 'brave' | 'tavily' | 'serpapi'): Promise<void> => {
     await apiClient.delete(`/api/settings/web-search/keys/${provider}`);
   },
 };
