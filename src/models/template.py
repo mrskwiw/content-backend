@@ -1,4 +1,5 @@
 """Post template data models and structures"""
+
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -53,6 +54,16 @@ class Template(BaseModel):
     requires_story: bool = Field(False, description="Needs client story")
     requires_data: bool = Field(False, description="Needs statistics/data")
     requires_question: bool = Field(False, description="Needs real customer question")
+
+    # Research Tool Prerequisites
+    required_tools: List[str] = Field(
+        default_factory=list,
+        description="Research tools that MUST be run before this template (critical dependencies)",
+    )
+    recommended_tools: List[str] = Field(
+        default_factory=list,
+        description="Research tools that ENHANCE this template's results (optional but beneficial)",
+    )
 
     # Brackets
     placeholder_fields: List[str] = Field(

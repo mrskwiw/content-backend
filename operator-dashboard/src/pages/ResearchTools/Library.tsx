@@ -71,7 +71,10 @@ export default function ResearchToolsLibrary() {
   // Fetch projects for project selector
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => projectsApi.list(),
+    queryFn: async () => {
+      const response = await projectsApi.list();
+      return response.items;
+    },
     enabled: showProjectSelector
   });
 
