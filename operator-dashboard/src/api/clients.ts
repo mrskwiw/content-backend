@@ -12,6 +12,9 @@ export interface CreateClientInput {
   platforms?: Platform[];
   customerPainPoints?: string[];
   customerQuestions?: string[];
+  keywords?: string[];
+  competitors?: string[];
+  location?: string;
 }
 
 export interface UpdateClientInput {
@@ -25,6 +28,9 @@ export interface UpdateClientInput {
   platforms?: Platform[];
   customerPainPoints?: string[];
   customerQuestions?: string[];
+  keywords?: string[];
+  competitors?: string[];
+  location?: string;
 }
 
 export const clientsApi = {

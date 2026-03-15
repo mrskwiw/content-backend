@@ -18,6 +18,7 @@ const Settings = lazyWithRetry(() => import('@/pages/Settings'));
 
 // NEW: Priority 1 pages
 const Clients = lazyWithRetry(() => import('@/pages/Clients'));
+const NewClient = lazyWithRetry(() => import('@/pages/NewClient'));
 const ClientDetail = lazyWithRetry(() => import('@/pages/ClientDetail'));
 const ContentReview = lazyWithRetry(() => import('@/pages/ContentReview'));
 
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
       { path: 'projects', element: withSuspense(Projects) },
       { path: 'projects/:projectId', element: withSuspense(ProjectDetail) },
       { path: 'clients', element: withSuspense(Clients) },
+      { path: 'clients/new', element: withSuspense(NewClient) },
       { path: 'clients/:clientId', element: withSuspense(ClientDetail) },
       { path: 'content-review', element: withSuspense(ContentReview) },
       { path: 'deliverables', element: withSuspense(Deliverables) },

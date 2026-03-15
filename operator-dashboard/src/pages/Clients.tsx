@@ -168,7 +168,7 @@ export default function Clients() {
             Manage client relationships and project history
           </p>
         </div>
-        <Button variant="primary" onClick={() => navigate('/dashboard/wizard', { state: { createNewClient: true } })}>
+        <Button variant="primary" onClick={() => navigate('/dashboard/clients/new')}>
           <Plus className="h-4 w-4" />
           Add Client
         </Button>
