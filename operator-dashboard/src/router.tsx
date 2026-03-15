@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Suspense } from 'react';
 import ProtectedRoute from '@/components/layout/ProtectedRoute';
+import RootRedirect from '@/components/RootRedirect';
 import AppLayout from '@/components/layout/AppLayout';
 import { lazyWithRetry } from '@/utils/chunkRetry';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -60,7 +61,7 @@ const withSuspense = (Component: React.LazyExoticComponent<any>) => (
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/dashboard" replace />,
+    element: <RootRedirect />,
   },
   {
     path: '/login',
@@ -102,6 +103,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);
