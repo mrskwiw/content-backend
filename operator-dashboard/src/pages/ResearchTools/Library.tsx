@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { researchApi, costsApi, ResearchTool, projectsApi } from '@/api';
 import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
-import { Search, Filter, AlertCircle } from 'lucide-react';
+import { Search, Filter, AlertCircle, Link2, Info } from 'lucide-react';
 
 // Tool prerequisites mapping (from backend research_prerequisites.py)
 const TOOL_PREREQUISITES: Record<string, { required: string[]; recommended: string[] }> = {
@@ -178,6 +178,45 @@ export default function ResearchToolsLibrary() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Prerequisite Legend */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              Tool Prerequisites Guide
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="flex items-start gap-2">
+                <Link2 className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 mr-2">
+                    Required
+                  </span>
+                  <span className="text-blue-900 dark:text-blue-100">
+                    Must complete these tools first. Tool cannot execute without them.
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Link2 className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400 mr-2">
+                    Recommended
+                  </span>
+                  <span className="text-blue-900 dark:text-blue-100">
+                    Suggested for better results. Provides additional context and insights.
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-3">
+              💡 Tools without prerequisites can be run independently at any time.
+            </p>
           </div>
         </div>
       </div>
