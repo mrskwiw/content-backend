@@ -652,7 +652,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
             </div>
           </div>
           <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-            ≈ ${(totalCredits * 2).toFixed(2)} at $2/credit
+            ≈ ${(totalCredits * 0.1).toFixed(2)} at $0.10/credit
           </div>
         </div>
       )}

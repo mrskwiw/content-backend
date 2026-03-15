@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatorApi } from '@/api/generator';
 import { runsApi } from '@/api/runs';
+import { creditsApi } from '@/api/credits';
 import type { GenerateAllInput, Run } from '@/types/domain';
-import { Play, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Play, Loader2, CheckCircle2, XCircle, Coins, AlertTriangle } from 'lucide-react';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { TokenUsageDisplay } from '@/components/costs';
 
@@ -31,6 +32,18 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
     const timeout = setTimeout(() => setPollingEnabled(false), 5 * 60 * 1000);
     return () => clearTimeout(timeout);
   }, [pollingEnabled]);
+
+  // Fetch credit balance
+  const { data: creditBalance } = useQuery({
+    queryKey: ['credits', 'balance'],
+    queryFn: () => creditsApi.getBalance(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Calculate total posts and credit cost
+  const totalPosts = templateQuantities ? Object.values(templateQuantities).reduce((sum, qty) => sum + qty, 0) : 0;
+  const creditCost = totalPosts * 40; // 40 credits per post
+  const hasInsufficientCredits = creditBalance ? creditBalance.balance < creditCost : false;
 
   const generate = useMutation({
     mutationFn: (input: GenerateAllInput) => generatorApi.generateAll(input),
@@ -79,14 +92,38 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Generate All</h3>
           <p className="text-xs text-neutral-600 dark:text-neutral-400">
             {statusMessage || 'Run full batch generation for this project.'}
           </p>
+          {totalPosts > 0 && (
+            <div className="mt-2 flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs">
+                <Coins className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400" />
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                  {creditCost.toLocaleString()} credits
+                </span>
+                <span className="text-neutral-500 dark:text-neutral-400">
+                  ({totalPosts} {totalPosts === 1 ? 'post' : 'posts'} × 40 credits)
+                </span>
+              </div>
+              {creditBalance && (
+                <span className={`text-xs ${hasInsufficientCredits ? 'text-red-600 dark:text-red-400' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                  Balance: {creditBalance.balance.toLocaleString()} credits
+                </span>
+              )}
+            </div>
+          )}
+          {hasInsufficientCredits && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>Insufficient credits. Please purchase more credits to continue.</span>
+            </div>
+          )}
         </div>
         <button
-          disabled={isGenerating || isSucceeded}
+          disabled={isGenerating || isSucceeded || hasInsufficientCredits}
           onClick={() =>
             generate.mutate({
               projectId,

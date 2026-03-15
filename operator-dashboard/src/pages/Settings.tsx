@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import UsersTab from '@/components/settings/UsersTab';
+import { creditsApi } from '@/api/credits';
 import {
   Settings as SettingsIcon,
   Server,
@@ -29,6 +31,10 @@ import {
   HardDrive,
   Users,
   TrendingUp,
+  Coins,
+  CreditCard,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 
 // Interfaces
@@ -146,7 +152,16 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const isAdmin = user?.is_superuser === true;
-  const [activeTab, setActiveTab] = useState<'integrations' | 'workflows' | 'notifications' | 'preferences' | 'security' | 'database' | 'users'>('integrations');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'integrations' | 'workflows' | 'notifications' | 'preferences' | 'security' | 'database' | 'credits' | 'users'>('integrations');
+
+  // Handle tab parameter from URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'credits') {
+      setActiveTab('credits');
+    }
+  }, [searchParams]);
   const [showNewApiKeyModal, setShowNewApiKeyModal] = useState(false);
   const [showKeyValue, setShowKeyValue] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -202,6 +217,25 @@ export default function Settings() {
       await new Promise(resolve => setTimeout(resolve, 300));
       return mockWorkflowRules;
     },
+  });
+
+  // Credit queries
+  const { data: creditBalance } = useQuery({
+    queryKey: ['credits', 'balance'],
+    queryFn: () => creditsApi.getBalance(),
+    enabled: activeTab === 'credits',
+  });
+
+  const { data: creditPackages = [] } = useQuery({
+    queryKey: ['credits', 'packages'],
+    queryFn: () => creditsApi.getPackages(),
+    enabled: activeTab === 'credits',
+  });
+
+  const { data: creditTransactions = [] } = useQuery({
+    queryKey: ['credits', 'transactions'],
+    queryFn: () => creditsApi.getTransactions(50, 0),
+    enabled: activeTab === 'credits',
   });
 
   // Mutations
@@ -412,6 +446,7 @@ export default function Settings() {
             { id: 'notifications', label: 'Notifications', icon: Bell },
             { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
             { id: 'security', label: 'Security', icon: Shield },
+            { id: 'credits', label: 'Credits', icon: Coins },
             { id: 'database', label: 'Database', icon: HardDrive },
             { id: 'users', label: 'Users', icon: Users, adminOnly: true },
           ].filter(tab => !('adminOnly' in tab) || (tab.adminOnly && isAdmin)).map(tab => {
@@ -813,6 +848,192 @@ export default function Settings() {
                 Delete My Account
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credits Tab */}
+      {activeTab === 'credits' && (
+        <div className="space-y-4">
+          {/* Current Balance */}
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Credit Balance</h3>
+            {creditBalance ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="rounded-full bg-yellow-100 dark:bg-yellow-900/20 p-4">
+                    <Coins className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+                      {creditBalance.balance.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Available Credits</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                  <div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Purchased</p>
+                    <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                      {creditBalance.total_purchased.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Used</p>
+                    <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                      {creditBalance.total_used.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                {creditBalance.is_enterprise && (
+                  <div className="rounded-lg border border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 p-3">
+                    <div className="flex gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-primary-900 dark:text-primary-100">
+                          Enterprise Account
+                        </p>
+                        <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
+                          You have a custom credit rate: ${(creditBalance.custom_credit_rate ?? 0.1).toFixed(3)} per credit
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-600 dark:text-neutral-400">Loading balance...</div>
+            )}
+          </div>
+
+          {/* Credit Packages */}
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Purchase Credits</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {creditPackages.map(pkg => (
+                <div
+                  key={pkg.id}
+                  className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-4 hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                        {pkg.name}
+                      </h4>
+                      {pkg.description && (
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                          {pkg.description}
+                        </p>
+                      )}
+                    </div>
+                    {pkg.rate_per_credit < 0.1 && (
+                      <span className="inline-flex items-center rounded-md bg-green-100 dark:bg-green-900/20 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400">
+                        Best Value
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                      {pkg.credits.toLocaleString()} credits
+                    </p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                      ${pkg.price_usd.toFixed(2)} (${(pkg.rate_per_credit).toFixed(3)}/credit)
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      // TODO: Implement Stripe integration
+                      alert(`Purchase ${pkg.name} - Stripe integration coming soon`);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 dark:hover:bg-primary-600"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Purchase
+                  </button>
+                </div>
+              ))}
+            </div>
+            {creditPackages.length === 0 && (
+              <div className="text-sm text-neutral-600 dark:text-neutral-400 text-center py-8">
+                No credit packages available. Contact support for custom pricing.
+              </div>
+            )}
+          </div>
+
+          {/* Transaction History */}
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Transaction History</h3>
+            {creditTransactions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="text-right py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {creditTransactions.map(transaction => (
+                      <tr
+                        key={transaction.id}
+                        className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                      >
+                        <td className="py-3 px-2 text-sm text-neutral-900 dark:text-neutral-100">
+                          {new Date(transaction.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-2">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${
+                              transaction.transaction_type === 'purchase'
+                                ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                                : transaction.transaction_type === 'deduction'
+                                ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                                : transaction.transaction_type === 'refund'
+                                ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                            }`}
+                          >
+                            {transaction.transaction_type === 'purchase' && <ArrowUpRight className="h-3 w-3" />}
+                            {transaction.transaction_type === 'deduction' && <ArrowDownRight className="h-3 w-3" />}
+                            {transaction.transaction_type === 'refund' && <ArrowUpRight className="h-3 w-3" />}
+                            {transaction.transaction_type.charAt(0).toUpperCase() + transaction.transaction_type.slice(1)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-sm text-neutral-600 dark:text-neutral-400">
+                          {transaction.description}
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span
+                            className={`text-sm font-medium ${
+                              transaction.amount > 0
+                                ? 'text-green-700 dark:text-green-400'
+                                : 'text-red-700 dark:text-red-400'
+                            }`}
+                          >
+                            {transaction.amount > 0 ? '+' : ''}
+                            {transaction.amount.toLocaleString()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-600 dark:text-neutral-400 text-center py-8">
+                No transactions yet. Purchase credits to get started.
+              </div>
+            )}
           </div>
         </div>
       )}
