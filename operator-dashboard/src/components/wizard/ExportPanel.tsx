@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatorApi } from '@/api/generator';
 import { researchApi } from '@/api/research';
-import type { ExportInput } from '@/types/domain';
-import { Download, Loader2, CheckCircle, FlaskConical, DollarSign, Info } from 'lucide-react';
+import type { ExportInput, ExportTarget } from '@/types/domain';
+import { Download, Loader2, CheckCircle, FlaskConical, DollarSign, Info, Target } from 'lucide-react';
 
 interface Props {
   projectId: string;
@@ -13,6 +13,7 @@ interface Props {
 
 export function ExportPanel({ projectId, clientId, onExported }: Props) {
   const [format, setFormat] = useState<'txt' | 'md' | 'docx'>('docx');
+  const [exportTarget, setExportTarget] = useState<ExportTarget>('docx');
   const [includeAuditLog, setIncludeAuditLog] = useState(false);
   const [includeResearch, setIncludeResearch] = useState(false);
 
@@ -37,29 +38,75 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
       projectId,
       clientId,
       format,
+      target: exportTarget,
       includeAuditLog,
       includeResearch,
     });
   };
 
   return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Export Package</h3>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400">Generate deliverable file and create download record.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200"
-            value={format}
-            onChange={(e) => setFormat(e.target.value as 'txt' | 'md' | 'docx')}
-          >
+    <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-sm space-y-4">
+      {/* Header */}
+      <div>
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Export Package</h3>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">Select export target and file format for your content package.</p>
+      </div>
+
+      {/* Export Target Selection */}
+      <div>
+        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          <Target className="h-4 w-4" />
+          Export Target Platform
+        </label>
+        <select
+          className="w-full rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={exportTarget}
+          onChange={(e) => setExportTarget(e.target.value as ExportTarget)}
+        >
+          <optgroup label="Social Media">
+            <option value="linkedin-posts">LinkedIn Posts</option>
+            <option value="linkedin-articles">LinkedIn Articles</option>
+            <option value="twitter">Twitter/X</option>
+            <option value="twitter-threads">Twitter/X Threads</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+          </optgroup>
+          <optgroup label="Publishing Platforms">
+            <option value="substack">Substack</option>
+            <option value="medium">Medium</option>
+            <option value="wordpress">WordPress</option>
+            <option value="ghost">Ghost</option>
+          </optgroup>
+          <optgroup label="Productivity Tools">
+            <option value="notion">Notion</option>
+          </optgroup>
+          <optgroup label="Standard Formats">
             <option value="docx">DOCX</option>
-            <option value="md">Markdown</option>
-            <option value="txt">TXT</option>
-          </select>
-          <label className="inline-flex items-center gap-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200">
+            <option value="markdown">Markdown</option>
+            <option value="txt">Plain Text</option>
+          </optgroup>
+        </select>
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          Choose where you'll publish or use this content. Format will be optimized for the selected platform.
+        </p>
+      </div>
+
+      {/* File Format & Options */}
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">File Format:</label>
+            <select
+              className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as 'txt' | 'md' | 'docx')}
+            >
+              <option value="docx">DOCX</option>
+              <option value="md">Markdown</option>
+              <option value="txt">TXT</option>
+            </select>
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
             <input
               type="checkbox"
               checked={includeAuditLog}
@@ -68,7 +115,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
             />
             Include audit log
           </label>
-          <label className="inline-flex items-center gap-2 rounded-md border-2 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm font-medium text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+          <label className="inline-flex items-center gap-2 rounded-md border-2 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm font-medium text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors cursor-pointer">
             <input
               type="checkbox"
               checked={includeResearch}
@@ -83,15 +130,15 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
               </span>
             )}
           </label>
-          <button
-            disabled={exportMut.isPending}
-            onClick={handleExport}
-            className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-800 disabled:opacity-50"
-          >
-            {exportMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {exportMut.isPending ? 'Exporting...' : 'Export'}
-          </button>
         </div>
+        <button
+          disabled={exportMut.isPending}
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-800 disabled:opacity-50 transition-colors"
+        >
+          {exportMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {exportMut.isPending ? 'Exporting...' : 'Export'}
+        </button>
       </div>
 
       {/* Research Preview */}
