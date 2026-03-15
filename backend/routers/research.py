@@ -92,7 +92,7 @@ RESEARCH_TOOLS = [
         name="voice_analysis",
         label="Voice Analysis",
         credits=100,  # Replaces 6-8 hours of manual tone extraction
-        status="experimental",
+        status="available",
         description="Extract writing patterns from client's existing content",
         category="foundation",
     ),
@@ -100,7 +100,7 @@ RESEARCH_TOOLS = [
         name="brand_archetype",
         label="Brand Archetype Assessment",
         credits=75,  # Replaces 4-6 hours of brand strategy work
-        status="experimental",
+        status="available",
         description="Identify brand personality and messaging framework",
         category="foundation",
     ),
@@ -133,7 +133,7 @@ RESEARCH_TOOLS = [
         name="content_gap_analysis",
         label="Content Gap Analysis",
         credits=100,  # Replaces deep market analysis
-        status="experimental",
+        status="available",
         description="Identify content opportunities competitors are missing",
         category="seo",
     ),
@@ -151,7 +151,7 @@ RESEARCH_TOOLS = [
         name="content_audit",
         label="Content Audit",
         credits=75,  # Replaces manual content inventory
-        status="experimental",
+        status="available",
         description="Analyze existing content performance and opportunities",
         category="strategy",
     ),
@@ -159,7 +159,7 @@ RESEARCH_TOOLS = [
         name="platform_strategy",
         label="Platform Strategy",
         credits=50,  # Replaces platform evaluation
-        status="experimental",
+        status="available",
         description="Recommend optimal platform mix for distribution",
         category="strategy",
     ),
@@ -167,7 +167,7 @@ RESEARCH_TOOLS = [
         name="content_calendar",
         label="Content Calendar Strategy",
         credits=50,  # Replaces editorial planning
-        status="experimental",
+        status="available",
         description="Create strategic 90-day content calendar",
         category="strategy",
     ),
@@ -175,7 +175,7 @@ RESEARCH_TOOLS = [
         name="audience_research",
         label="Audience Research",
         credits=75,  # Replaces persona interviews and analysis
-        status="experimental",
+        status="available",
         description="Deep-dive into target audience demographics and psychographics",
         category="strategy",
     ),
@@ -184,7 +184,7 @@ RESEARCH_TOOLS = [
         name="icp_workshop",
         label="ICP Development Workshop",
         credits=150,  # Replaces full workshop (8-12 hours, most labor-intensive)
-        status="experimental",
+        status="available",
         description="Facilitate ideal customer profile definition through guided conversation",
         category="workshop",
     ),
@@ -192,7 +192,7 @@ RESEARCH_TOOLS = [
         name="story_mining",
         label="Story Mining Interview",
         credits=125,  # Replaces interview and story extraction
-        status="experimental",
+        status="available",
         description="Extract customer success stories and case study material",
         category="workshop",
     ),
