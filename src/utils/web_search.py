@@ -1,7 +1,7 @@
 """
 Web Search Utility for Research Tools
 
-Provides web search capabilities using Brave Search or Tavily API.
+Provides web search capabilities using Brave Search, Tavily, or SerpAPI.
 Can be stubbed for development/testing.
 """
 
@@ -40,20 +40,22 @@ class WebSearchClient:
 
     def __init__(
         self,
-        provider: str = "stub",  # "brave", "tavily", or "stub"
+        provider: str = "stub",  # "brave", "tavily", "serpapi", or "stub"
         api_key: Optional[str] = None,
     ):
         """Initialize web search client
 
         Args:
-            provider: Search provider ("brave", "tavily", or "stub")
+            provider: Search provider ("brave", "tavily", "serpapi", or "stub")
             api_key: API key for the provider (not needed for stub)
         """
         self.provider = provider
         self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
 
-        if provider not in ["stub", "brave", "tavily"]:
-            raise ValueError(f"Unsupported provider: {provider}. Use 'brave', 'tavily', or 'stub'")
+        if provider not in ["stub", "brave", "tavily", "serpapi"]:
+            raise ValueError(
+                f"Unsupported provider: {provider}. Use 'brave', 'tavily', 'serpapi', or 'stub'"
+            )
 
         if provider != "stub" and not self.api_key:
             logger.warning(
@@ -87,6 +89,8 @@ class WebSearchClient:
             return self._search_brave(query, max_results, **kwargs)
         elif self.provider == "tavily":
             return self._search_tavily(query, max_results, **kwargs)
+        elif self.provider == "serpapi":
+            return self._search_serpapi(query, max_results, **kwargs)
         else:
             return self._search_stub(query, max_results)
 
@@ -192,6 +196,56 @@ class WebSearchClient:
             # Fallback to stub
             return self._search_stub(query, max_results)
 
+    def _search_serpapi(self, query: str, max_results: int, **kwargs) -> SearchResponse:
+        """Search using SerpAPI (Google Search)
+
+        SerpAPI: https://serpapi.com/
+        Provides real-time Google search results with rich structured data.
+        """
+        try:
+            import requests
+
+            url = "https://serpapi.com/search"
+            params: dict[str, str | int] = {
+                "q": query,
+                "api_key": self.api_key,
+                "num": max_results,
+                "engine": "google",  # Use Google search engine
+            }
+
+            start_time = datetime.now()
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            search_time = (datetime.now() - start_time).total_seconds() * 1000
+
+            data = response.json()
+
+            # Parse SerpAPI results (organic_results key for Google)
+            results = []
+            for item in data.get("organic_results", [])[:max_results]:
+                results.append(
+                    SearchResult(
+                        title=item.get("title", ""),
+                        url=item.get("link", ""),
+                        snippet=item.get("snippet", ""),
+                        published_date=item.get("date"),
+                        source="serpapi",
+                    )
+                )
+
+            return SearchResponse(
+                query=query,
+                results=results,
+                total_results=len(results),
+                search_time_ms=search_time,
+                timestamp=datetime.now(),
+            )
+
+        except Exception as e:
+            logger.error(f"SerpAPI search failed: {e}")
+            # Fallback to stub
+            return self._search_stub(query, max_results)
+
     def _search_stub(self, query: str, max_results: int) -> SearchResponse:
         """Stub implementation for development/testing
 
@@ -200,7 +254,7 @@ class WebSearchClient:
         """
         logger.warning(
             "Using STUB web search (not real results). "
-            "Configure BRAVE_API_KEY or TAVILY_API_KEY for production use."
+            "Configure BRAVE_API_KEY, TAVILY_API_KEY, or SERPAPI_API_KEY for production use."
         )
 
         # Return realistic stub data based on query

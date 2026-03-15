@@ -19,9 +19,10 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 class WebSearchConfigResponse(BaseModel):
     """Web search configuration"""
 
-    provider: str = Field(..., description="Active provider: brave, tavily, or stub")
+    provider: str = Field(..., description="Active provider: brave, tavily, serpapi, or stub")
     brave_api_key_configured: bool = Field(..., description="Whether Brave API key is set")
     tavily_api_key_configured: bool = Field(..., description="Whether Tavily API key is set")
+    serpapi_api_key_configured: bool = Field(..., description="Whether SerpAPI key is set")
 
     class Config:
         json_schema_extra = {
@@ -29,6 +30,7 @@ class WebSearchConfigResponse(BaseModel):
                 "provider": "brave",
                 "brave_api_key_configured": True,
                 "tavily_api_key_configured": False,
+                "serpapi_api_key_configured": False,
             }
         }
 
@@ -36,9 +38,10 @@ class WebSearchConfigResponse(BaseModel):
 class WebSearchConfigUpdate(BaseModel):
     """Update web search configuration"""
 
-    provider: str = Field(..., description="Provider: brave, tavily, or stub")
+    provider: str = Field(..., description="Provider: brave, tavily, serpapi, or stub")
     brave_api_key: Optional[str] = Field(None, description="Brave Search API key (optional)")
     tavily_api_key: Optional[str] = Field(None, description="Tavily API key (optional)")
+    serpapi_api_key: Optional[str] = Field(None, description="SerpAPI key (optional)")
 
     class Config:
         json_schema_extra = {
@@ -46,6 +49,7 @@ class WebSearchConfigUpdate(BaseModel):
                 "provider": "brave",
                 "brave_api_key": "BSA1234567890...",  # pragma: allowlist secret
                 "tavily_api_key": None,
+                "serpapi_api_key": None,
             }
         }
 
@@ -53,7 +57,7 @@ class WebSearchConfigUpdate(BaseModel):
 class TestConnectionRequest(BaseModel):
     """Test web search connection"""
 
-    provider: str = Field(..., description="Provider to test: brave or tavily")
+    provider: str = Field(..., description="Provider to test: brave, tavily, or serpapi")
     api_key: str = Field(..., description="API key to test")
 
     class Config:
@@ -104,6 +108,7 @@ async def get_web_search_config(
         provider=config["provider"],
         brave_api_key_configured=bool(config["brave_api_key"]),
         tavily_api_key_configured=bool(config["tavily_api_key"]),
+        serpapi_api_key_configured=bool(config.get("serpapi_api_key")),
     )
 
 
@@ -116,15 +121,15 @@ async def update_web_search_config(
     """
     Update web search configuration.
 
-    - Set provider (brave, tavily, or stub)
+    - Set provider (brave, tavily, serpapi, or stub)
     - Update API keys (encrypted in database)
     - Empty string or null removes the key
     """
     # Validate provider
-    if update.provider not in ["brave", "tavily", "stub"]:
+    if update.provider not in ["brave", "tavily", "serpapi", "stub"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provider must be 'brave', 'tavily', or 'stub'",
+            detail="Provider must be 'brave', 'tavily', 'serpapi', or 'stub'",
         )
 
     # Update configuration
@@ -134,12 +139,14 @@ async def update_web_search_config(
         provider=update.provider,
         brave_api_key=update.brave_api_key,
         tavily_api_key=update.tavily_api_key,
+        serpapi_api_key=update.serpapi_api_key,
     )
 
     return WebSearchConfigResponse(
         provider=config["provider"],
         brave_api_key_configured=bool(config["brave_api_key"]),
         tavily_api_key_configured=bool(config["tavily_api_key"]),
+        serpapi_api_key_configured=bool(config.get("serpapi_api_key")),
     )
 
 
@@ -156,10 +163,10 @@ async def test_web_search_connection(
     """
     from src.utils.web_search import WebSearchClient
 
-    if test_request.provider not in ["brave", "tavily"]:
+    if test_request.provider not in ["brave", "tavily", "serpapi"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provider must be 'brave' or 'tavily' for testing",
+            detail="Provider must be 'brave', 'tavily', or 'serpapi' for testing",
         )
 
     try:
@@ -204,9 +211,10 @@ async def delete_web_search_key(
     Args:
         provider: "brave" or "tavily"
     """
-    if provider not in ["brave", "tavily"]:
+    if provider not in ["brave", "tavily", "serpapi"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Provider must be 'brave' or 'tavily'"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provider must be 'brave', 'tavily', or 'serpapi'",
         )
 
     key_name = f"{provider}_api_key"

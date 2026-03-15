@@ -152,16 +152,18 @@ def get_web_search_config(db: Session, user_id: int) -> dict:
     Get web search configuration for a user.
 
     Returns:
-        dict with keys: provider, brave_api_key, tavily_api_key
+        dict with keys: provider, brave_api_key, tavily_api_key, serpapi_api_key
     """
     provider = get_setting(db, user_id, "web_search_provider", decrypt=False) or "stub"
     brave_key = get_setting(db, user_id, "brave_api_key") or ""
     tavily_key = get_setting(db, user_id, "tavily_api_key") or ""
+    serpapi_key = get_setting(db, user_id, "serpapi_api_key") or ""
 
     return {
         "provider": provider,
         "brave_api_key": brave_key,
         "tavily_api_key": tavily_key,
+        "serpapi_api_key": serpapi_key,
     }
 
 
@@ -171,6 +173,7 @@ def set_web_search_config(
     provider: str,
     brave_api_key: Optional[str] = None,
     tavily_api_key: Optional[str] = None,
+    serpapi_api_key: Optional[str] = None,
 ) -> dict:
     """
     Set web search configuration for a user.
@@ -178,9 +181,10 @@ def set_web_search_config(
     Args:
         db: Database session
         user_id: User ID
-        provider: "brave", "tavily", or "stub"
+        provider: "brave", "tavily", "serpapi", or "stub"
         brave_api_key: Brave Search API key (optional)
         tavily_api_key: Tavily API key (optional)
+        serpapi_api_key: SerpAPI key (optional)
 
     Returns:
         Updated configuration dict
@@ -200,5 +204,11 @@ def set_web_search_config(
             set_setting(db, user_id, "tavily_api_key", tavily_api_key, encrypt=True)
         else:
             delete_setting(db, user_id, "tavily_api_key")
+
+    if serpapi_api_key is not None:
+        if serpapi_api_key:
+            set_setting(db, user_id, "serpapi_api_key", serpapi_api_key, encrypt=True)
+        else:
+            delete_setting(db, user_id, "serpapi_api_key")
 
     return get_web_search_config(db, user_id)

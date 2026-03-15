@@ -52,7 +52,7 @@ interface ApiKey {
 interface Integration {
   id: string;
   name: string;
-  type: 'anthropic' | 'pytrends' | 'email' | 'storage' | 'analytics' | 'brave' | 'tavily';
+  type: 'anthropic' | 'pytrends' | 'email' | 'storage' | 'analytics' | 'brave' | 'tavily' | 'serpapi';
   status: 'connected' | 'disconnected' | 'error';
   configured: boolean;
   lastSync?: string;
@@ -144,6 +144,13 @@ const mockIntegrations: Integration[] = [
     id: '7',
     name: 'Tavily Web Search',
     type: 'tavily',
+    status: 'disconnected',
+    configured: false,
+  },
+  {
+    id: '8',
+    name: 'SerpAPI (Google Search)',
+    type: 'serpapi',
     status: 'disconnected',
     configured: false,
   },
@@ -427,6 +434,8 @@ export default function Settings() {
       case 'brave':
         return Search;
       case 'tavily':
+        return Search;
+      case 'serpapi':
         return Search;
     }
   };
@@ -1344,6 +1353,7 @@ function ConfigureIntegrationModal({
       case 'analytics': return Globe;
       case 'brave': return Search;
       case 'tavily': return Search;
+      case 'serpapi': return Search;
       default: return Server;
     }
   })();
