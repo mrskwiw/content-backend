@@ -325,9 +325,7 @@ def _add_confidence_scores(parsed_brief, original_text: str) -> dict:
         "idealCustomer": parsed_brief.ideal_customer,
         "mainProblemSolved": parsed_brief.main_problem_solved,
         "tonePreference": (
-            [t.value for t in parsed_brief.brand_personality]
-            if parsed_brief.brand_personality
-            else []
+            parsed_brief.tone_preference.value if parsed_brief.tone_preference else "professional"
         ),
         "platforms": (
             [p.value for p in parsed_brief.target_platforms]

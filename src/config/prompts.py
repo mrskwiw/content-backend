@@ -55,7 +55,8 @@ Extract the following information and format it as JSON:
   "main_problem_solved": "Main problem the business solves",
   "customer_pain_points": ["pain point 1", "pain point 2", ...],
   "customer_questions": ["question 1", "question 2", ...],
-  "brand_personality": ["approachable", "direct", "witty", etc.],
+  "tone_preference": "professional",
+  "brand_personality": ["approachable", "direct", "witty"],
   "key_phrases": ["phrase 1", "phrase 2", ...],
   "target_platforms": ["LinkedIn", "Twitter", etc.],
   "posting_frequency": "3-4x weekly",
@@ -66,7 +67,12 @@ Extract the following information and format it as JSON:
 
 Guidelines:
 - Extract all available information, but leave fields empty if not provided
-- Infer brand personality from tone and language used
+- For tone_preference, choose ONE of: "professional", "conversational", "authoritative", "friendly", "innovative", or "educational"
+  • Map the overall communication style to the closest match
+  • Default to "professional" if unclear
+- For brand_personality, list personality traits (e.g., "approachable", "direct", "witty", "data-driven", "vulnerable")
+  • These are additional characteristics beyond the primary tone
+  • Can list multiple traits
 - Capture specific phrases and language patterns they use
 - Note any personal stories or examples mentioned
 - For data_usage, choose: "minimal", "moderate", or "heavy"

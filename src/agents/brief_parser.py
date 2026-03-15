@@ -81,13 +81,18 @@ class BriefParserAgent:
         Raises:
             ValueError: If required fields missing or invalid
         """
-        # Convert string personality values to enum
-        brand_personality = []
-        for personality in data.get("brand_personality", []):
+        # Convert tone_preference string to enum (single value)
+        tone_preference = None
+        tone_str = data.get("tone_preference")
+        if tone_str:
             try:
-                brand_personality.append(TonePreference(personality.lower()))
+                tone_preference = TonePreference(tone_str.lower())
             except ValueError:
-                logger.warning(f"Unknown personality type: {personality}, skipping")
+                logger.warning(f"Unknown tone preference: {tone_str}, defaulting to professional")
+                tone_preference = TonePreference.PROFESSIONAL
+
+        # brand_personality is now just a list of strings (personality traits)
+        brand_personality = data.get("brand_personality", [])
 
         # Convert platform strings to enum
         target_platforms = []
@@ -114,6 +119,7 @@ class BriefParserAgent:
                 main_problem_solved=data.get("main_problem_solved", "Not specified"),
                 customer_pain_points=data.get("customer_pain_points", []),
                 customer_questions=data.get("customer_questions", []),
+                tone_preference=tone_preference,
                 brand_personality=brand_personality,
                 key_phrases=data.get("key_phrases", []),
                 target_platforms=target_platforms,

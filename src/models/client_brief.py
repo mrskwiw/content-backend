@@ -7,15 +7,14 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class TonePreference(str, Enum):
-    """Tone preferences"""
+    """Tone preferences - must match frontend ClientProfilePanel.tsx options"""
 
-    APPROACHABLE = "approachable"
-    DIRECT = "direct"
-    AUTHORITATIVE = "authoritative"
-    WITTY = "witty"
-    VULNERABLE = "vulnerable"
-    DATA_DRIVEN = "data_driven"
+    PROFESSIONAL = "professional"
     CONVERSATIONAL = "conversational"
+    AUTHORITATIVE = "authoritative"
+    FRIENDLY = "friendly"
+    INNOVATIVE = "innovative"
+    EDUCATIONAL = "educational"
 
 
 class Platform(str, Enum):
@@ -91,8 +90,12 @@ class ClientBrief(BaseModel):
     )
 
     # Voice & Tone
-    brand_personality: List[TonePreference] = Field(
-        default_factory=list, description="Brand personality traits"
+    tone_preference: Optional[TonePreference] = Field(
+        None, description="Primary tone/voice (single value: professional, conversational, etc.)"
+    )
+    brand_personality: List[str] = Field(
+        default_factory=list,
+        description="Brand personality traits (e.g., approachable, direct, witty)",
     )
     brand_voice: Optional[str] = Field(
         None, description="Enhanced brand voice description (for AI context)"
@@ -164,7 +167,7 @@ class ClientBrief(BaseModel):
             "company_name": self.company_name,
             "ideal_customer": self.ideal_customer,
             "problem_solved": self.main_problem_solved,
-            "brand_voice": ", ".join([t.value for t in self.brand_personality]),
+            "brand_voice": ", ".join(self.brand_personality),
             "pain_points": self.customer_pain_points,
             "key_phrases": self.key_phrases,
             "stories": self.stories,
