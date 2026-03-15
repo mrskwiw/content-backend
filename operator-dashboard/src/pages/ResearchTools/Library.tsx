@@ -6,6 +6,47 @@ import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
 import { Search, Filter, AlertCircle } from 'lucide-react';
 
+// Tool prerequisites mapping (from backend research_prerequisites.py)
+const TOOL_PREREQUISITES: Record<string, { required: string[]; recommended: string[] }> = {
+  // Tier 1 - Foundation (no prerequisites)
+  voice_analysis: { required: [], recommended: [] },
+  brand_archetype: { required: [], recommended: [] },
+  seo_keyword_research: { required: [], recommended: [] },
+  audience_research: { required: [], recommended: [] },
+  determine_competitors: { required: [], recommended: [] },
+  competitive_analysis: { required: [], recommended: ['determine_competitors'] },
+
+  // Tier 2 - Analysis
+  content_gap_analysis: { required: [], recommended: ['competitive_analysis', 'seo_keyword_research'] },
+  market_trends_research: { required: [], recommended: ['seo_keyword_research'] },
+  icp_workshop: { required: [], recommended: ['audience_research'] },
+  content_audit: { required: [], recommended: [] },
+
+  // Tier 3 - Strategy
+  platform_strategy: { required: ['audience_research'], recommended: ['content_gap_analysis', 'market_trends_research'] },
+  story_mining: { required: [], recommended: ['voice_analysis', 'brand_archetype'] },
+
+  // Tier 4 - Execution
+  content_calendar: { required: ['seo_keyword_research', 'platform_strategy'], recommended: ['content_gap_analysis', 'market_trends_research'] },
+};
+
+// Tool name label mapping
+const TOOL_LABELS: Record<string, string> = {
+  voice_analysis: 'Voice Analysis',
+  brand_archetype: 'Brand Archetype',
+  seo_keyword_research: 'SEO Keywords',
+  audience_research: 'Audience Research',
+  determine_competitors: 'Determine Competitors',
+  competitive_analysis: 'Competitive Analysis',
+  content_gap_analysis: 'Content Gap',
+  market_trends_research: 'Market Trends',
+  icp_workshop: 'ICP Workshop',
+  content_audit: 'Content Audit',
+  platform_strategy: 'Platform Strategy',
+  story_mining: 'Story Mining',
+  content_calendar: 'Content Calendar',
+};
+
 export default function ResearchToolsLibrary() {
   const navigate = useNavigate();
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
@@ -154,6 +195,8 @@ export default function ResearchToolsLibrary() {
             tool={tool}
             isSelected={selectedTools.includes(tool.name)}
             onToggle={() => handleToggleTool(tool.name)}
+            prerequisites={TOOL_PREREQUISITES[tool.name]}
+            toolLabels={TOOL_LABELS}
           />
         ))}
       </div>
