@@ -114,9 +114,8 @@ const mockIntegrations: Integration[] = [
     id: '3',
     name: 'Email Service (SendGrid)',
     type: 'email',
-    status: 'connected',
-    configured: true,
-    lastSync: '2025-12-17T12:00:00',
+    status: 'disconnected',
+    configured: false,
   },
   {
     id: '4',
