@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { researchApi, costsApi, ResearchTool } from '@/api';
+import { useNavigate } from 'react-router-dom';
+import { researchApi, costsApi, ResearchTool, projectsApi } from '@/api';
 import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, AlertCircle } from 'lucide-react';
 
 export default function ResearchToolsLibrary() {
+  const navigate = useNavigate();
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch available tools
   const { data: tools = [], isLoading: toolsLoading } = useQuery({
@@ -21,6 +25,13 @@ export default function ResearchToolsLibrary() {
     queryKey: ['pricing-preview', selectedTools],
     queryFn: () => researchApi.getPricingPreview(selectedTools),
     enabled: selectedTools.length > 0
+  });
+
+  // Fetch projects for project selector
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => projectsApi.list(),
+    enabled: showProjectSelector
   });
 
   // Filter tools by category and search
@@ -45,6 +56,27 @@ export default function ResearchToolsLibrary() {
 
   const handleClearSelection = () => {
     setSelectedTools([]);
+  };
+
+  const handleAddToProject = () => {
+    if (selectedTools.length === 0) {
+      setError('Please select at least one research tool');
+      return;
+    }
+    setError(null);
+    setShowProjectSelector(true);
+  };
+
+  const handleSelectProject = (projectId: string) => {
+    try {
+      // Navigate to wizard research panel with selected tools
+      // Store selected tools in sessionStorage so wizard can pick them up
+      sessionStorage.setItem('selectedResearchTools', JSON.stringify(selectedTools));
+      navigate(`/dashboard/wizard?projectId=${projectId}&step=research`);
+    } catch (err) {
+      setError('Failed to navigate to project. Please try again.');
+      console.error('Navigation error:', err);
+    }
   };
 
   if (toolsLoading) {
@@ -135,6 +167,25 @@ export default function ResearchToolsLibrary() {
         </div>
       )}
 
+      {/* Error Display */}
+      {error && (
+        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-red-900 dark:text-red-100">Error</h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Action Bar */}
       {selectedTools.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-700 p-4 shadow-lg">
@@ -143,7 +194,7 @@ export default function ResearchToolsLibrary() {
               {selectedTools.length} tool{selectedTools.length !== 1 ? 's' : ''} selected
               {pricing && (
                 <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">
-                  • ${(pricing?.finalCost ?? 0).toFixed(2)}
+                  • {pricing.finalCost} credits
                 </span>
               )}
             </div>
@@ -155,11 +206,56 @@ export default function ResearchToolsLibrary() {
                 Clear Selection
               </button>
               <button
+                onClick={handleAddToProject}
                 className="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
                 Add to Project
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Selector Modal */}
+      {showProjectSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Select Project
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Choose a project to use these {selectedTools.length} research tool{selectedTools.length !== 1 ? 's' : ''}
+            </p>
+            <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
+              {projects.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  No projects found. Create a project first.
+                </p>
+              ) : (
+                projects.map((project: any) => (
+                  <button
+                    key={project.id}
+                    onClick={() => handleSelectProject(project.id)}
+                    className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-neutral-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  >
+                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                      {project.name}
+                    </div>
+                    {project.clientName && (
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Client: {project.clientName}
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+            <button
+              onClick={() => setShowProjectSelector(false)}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
