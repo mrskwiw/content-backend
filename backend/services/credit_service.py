@@ -426,9 +426,9 @@ def estimate_cost(
         Dictionary with breakdown and total credits
 
     Note:
-        Research tool costs are defined in backend/config/credit_pricing.py
+        Research tool costs are defined in backend/pricing/credit_pricing.py
     """
-    from backend.config.credit_pricing import RESEARCH_TOOL_COSTS
+    from backend.pricing.credit_pricing import RESEARCH_TOOL_COSTS
 
     # Blog posts: 20 credits each
     post_credits = num_posts * 20

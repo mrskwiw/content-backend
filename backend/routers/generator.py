@@ -24,7 +24,7 @@ from src.validators.prompt_injection_defense import sanitize_prompt_input
 from src.utils.template_parser import template_parser
 from backend.services import credit_service
 from backend.services.credit_service import InsufficientCreditsError
-from backend.config.credit_pricing import get_content_cost
+from backend.pricing.credit_pricing import get_content_cost
 
 router = APIRouter()
 

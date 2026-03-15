@@ -37,7 +37,7 @@ from backend.services import crud
 from backend.services.research_service import research_service
 from backend.services import credit_service
 from backend.services.credit_service import InsufficientCreditsError
-from backend.config.credit_pricing import get_research_tool_cost
+from backend.pricing.credit_pricing import get_research_tool_cost
 from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import strict_limiter, lenient_limiter
 from backend.middleware.authorization import _check_ownership  # TR-021: IDOR prevention
