@@ -793,7 +793,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                             );
                           })()}
                           {hasResult && (
-                            <div className="mt-2 rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+                            <div className="mt-2 rounded bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 text-xs text-emerald-700 dark:text-emerald-400">
                               ✓ Research completed
                             </div>
                           )}
@@ -808,8 +808,8 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
         })}
       </div>
 
-      <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
-        <div className="text-sm text-slate-600">
+      <div className="mt-6 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-4">
+        <div className="text-sm text-slate-600 dark:text-neutral-400">
           {selected.size === 0 && 'Research is optional - you can skip this step'}
           {selected.size > 0 && 'Click "Continue" to provide required data and run research'}
         </div>

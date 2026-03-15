@@ -35,6 +35,7 @@ import {
   CreditCard,
   ArrowUpRight,
   ArrowDownRight,
+  Search,
 } from 'lucide-react';
 
 // Interfaces
@@ -51,7 +52,7 @@ interface ApiKey {
 interface Integration {
   id: string;
   name: string;
-  type: 'anthropic' | 'pytrends' | 'email' | 'storage' | 'analytics';
+  type: 'anthropic' | 'pytrends' | 'email' | 'storage' | 'analytics' | 'brave' | 'tavily';
   status: 'connected' | 'disconnected' | 'error';
   configured: boolean;
   lastSync?: string;
@@ -131,6 +132,20 @@ const mockIntegrations: Integration[] = [
     status: 'error',
     configured: true,
     lastSync: '2025-12-16T08:00:00',
+  },
+  {
+    id: '6',
+    name: 'Brave Search',
+    type: 'brave',
+    status: 'disconnected',
+    configured: false,
+  },
+  {
+    id: '7',
+    name: 'Tavily Web Search',
+    type: 'tavily',
+    status: 'disconnected',
+    configured: false,
   },
 ];
 
@@ -409,6 +424,10 @@ export default function Settings() {
         return Database;
       case 'analytics':
         return Globe;
+      case 'brave':
+        return Search;
+      case 'tavily':
+        return Search;
     }
   };
 
@@ -1323,6 +1342,8 @@ function ConfigureIntegrationModal({
       case 'email': return Mail;
       case 'storage': return Database;
       case 'analytics': return Globe;
+      case 'brave': return Search;
+      case 'tavily': return Search;
       default: return Server;
     }
   })();
