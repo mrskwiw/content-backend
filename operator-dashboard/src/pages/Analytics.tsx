@@ -186,14 +186,6 @@ export default function Analytics() {
       icon: Award,
       color: 'purple',
     },
-    {
-      label: 'Total MSRP',
-      value: `$${metrics.revenue.value.toLocaleString()}`,
-      change: metrics.revenue.change,
-      trend: metrics.revenue.change > 0 ? 'up' : metrics.revenue.change < 0 ? 'down' : 'neutral',
-      icon: DollarSign,
-      color: 'amber',
-    },
   ];
 
   // Quality breakdown
@@ -215,7 +207,7 @@ export default function Analytics() {
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Analytics</h1>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Performance metrics, quality trends, and MSRP reporting
+            Performance metrics and quality trends
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -341,39 +333,6 @@ export default function Analytics() {
             })}
           </div>
         </div>
-
-        {/* Revenue Over Time */}
-        <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">MSRP Trends</h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Monthly MSRP breakdown</p>
-            </div>
-            <DollarSign className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
-          </div>
-          <div className="space-y-3">
-            {filteredData.map((data) => {
-              const maxRevenue = Math.max(...filteredData.map(d => d.revenue));
-              const percentage = (data.revenue / maxRevenue) * 100;
-              return (
-                <div key={data.month}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-neutral-700 dark:text-neutral-300">
-                      {format(new Date(data.month), 'MMM yyyy')}
-                    </span>
-                    <span className="text-neutral-900 dark:text-neutral-100">${data.revenue.toLocaleString()}</span>
-                  </div>
-                  <div className="mt-1 h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-700">
-                    <div
-                      className="h-2 rounded-full bg-emerald-600 dark:bg-emerald-500 transition-all"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Charts Row 2: Quality & Time */}
@@ -446,17 +405,6 @@ export default function Analytics() {
                 </div>
               </div>
             </div>
-            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-600 dark:bg-emerald-500 p-2">
-                  <DollarSign className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">MSRP Per Hour</p>
-                  <p className="text-2xl font-semibold text-emerald-900 dark:text-emerald-300">${timeMetrics.revenuePerHour}/h</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -518,7 +466,7 @@ export default function Analytics() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Top Clients</h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">Client performance ranked by projects and MSRP</p>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">Client performance ranked by projects and quality</p>
           </div>
           <Users className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
         </div>
@@ -530,7 +478,6 @@ export default function Analytics() {
                 <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Projects</th>
                 <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Posts</th>
                 <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Avg Quality</th>
-                <th className="pb-3 text-right text-sm font-medium text-neutral-600 dark:text-neutral-400">Total MSRP</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -559,9 +506,6 @@ export default function Analytics() {
                     }`}>
                       {client.avgQualityScore}%
                     </span>
-                  </td>
-                  <td className="py-3 text-right text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    ${client.totalRevenue.toLocaleString()}
                   </td>
                 </tr>
               ))}

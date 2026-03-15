@@ -208,22 +208,6 @@ export default function Clients() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-purple-100 dark:bg-purple-900/20 p-2">
-                <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Total MSRP</div>
-                <div className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-                  ${totalRevenue.toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
               <div className="rounded-lg bg-indigo-100 dark:bg-indigo-900/20 p-2">
                 <Briefcase className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
@@ -288,15 +272,6 @@ export default function Clients() {
                   </div>
                 </TableHead>
                 <TableHead
-                  onClick={() => toggleSort('revenue')}
-                  className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                >
-                  <div className="flex items-center gap-2">
-                    MSRP
-                    <ArrowUpDown className="h-3 w-3" />
-                  </div>
-                </TableHead>
-                <TableHead
                   onClick={() => toggleSort('activity')}
                   className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 >
@@ -311,7 +286,7 @@ export default function Clients() {
             <TableBody>
               {filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex flex-col items-center">
                       <Users className="h-12 w-12 text-neutral-300 dark:text-neutral-600 mb-2" />
                       <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">No clients found</p>
@@ -371,9 +346,6 @@ export default function Clients() {
                           {client.activeProjects} active
                         </div>
                       )}
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      ${client.totalRevenue.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-neutral-500 dark:text-neutral-400">
                       {client.lastActivity ? (

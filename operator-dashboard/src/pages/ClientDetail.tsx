@@ -362,9 +362,6 @@ export default function ClientDetail() {
                 <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-300">
                   {packageTier}
                 </span>
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  ${totalRevenue.toLocaleString()} MSRP
-                </span>
               </div>
             </div>
           </div>
@@ -1255,13 +1252,7 @@ export default function ClientDetail() {
         {activeTab === 'billing' && (
           <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Total MSRP</p>
-                <p className="mt-2 text-3xl font-semibold text-neutral-900 dark:text-neutral-100">
-                  ${totalRevenue.toLocaleString()}
-                </p>
-              </div>
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">Outstanding</p>
                 <p className="mt-2 text-3xl font-semibold text-amber-600 dark:text-amber-400">

@@ -147,15 +147,6 @@ export default function Overview() {
       ) / 10
     : 0;
 
-  // MSRP: sum totalPrice for completed projects; fall back to numPosts × pricePerPost
-  // for projects created before the pricing builder (totalPrice was not stored then).
-  const totalRevenue = projects
-    .filter(p => p.status === 'delivered' || p.status === 'exported')
-    .reduce((sum, p) => {
-      if (p.totalPrice != null) return sum + p.totalPrice;
-      return sum + (p.numPosts ?? 0) * (p.pricePerPost ?? 40);
-    }, 0);
-
   // Client metrics
   const totalClients = clients.length;
 
@@ -276,13 +267,6 @@ export default function Overview() {
           icon={Star}
           color="purple"
           trend="Average across recent projects"
-        />
-        <StatCard
-          title="MSRP This Month"
-          value={`$${totalRevenue.toLocaleString()}`}
-          icon={DollarSign}
-          color="emerald"
-          trend={`${completedProjects} completed`}
         />
       </div>
 
