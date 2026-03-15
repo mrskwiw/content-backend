@@ -70,6 +70,18 @@ class ClientBrief(BaseModel):
         None,
         description="Specific industry/niche that defines direct competitors (e.g., dental practice, medical equipment manufacturer, project management software)",
     )
+    keywords: List[str] = Field(
+        default_factory=list,
+        description="SEO keywords and key terms for content optimization (extracted from business description and value props)",
+    )
+    competitors: List[str] = Field(
+        default_factory=list,
+        description="List of competitor company names mentioned in the brief (1-5 competitors)",
+    )
+    location: Optional[str] = Field(
+        None,
+        description="Geographic location or region served (e.g., 'San Francisco', 'USA', 'Remote', 'Global')",
+    )
 
     # Audience
     ideal_customer: str = Field(..., description="Ideal customer profile")

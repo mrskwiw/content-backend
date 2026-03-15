@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { ClientBriefSchema, type ClientBrief, type Platform } from '@/types/domain';
-import { User, Building2, Target, Lightbulb, MessageSquare, Save } from 'lucide-react';
+import { User, Building2, Target, Lightbulb, MessageSquare, Save, MapPin } from 'lucide-react';
 import { BriefImportSection, type ParsedBriefResponse } from './BriefImportSection';
 import { ImportPreviewModal } from '../ui/ImportPreviewModal';
 
@@ -15,6 +15,7 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
   const [formData, setFormData] = useState<Partial<ClientBrief>>({
     companyName: initialData?.companyName || '',
     industry: initialData?.industry || '',
+    location: initialData?.location || '',
     businessDescription: initialData?.businessDescription || '',
     idealCustomer: initialData?.idealCustomer || '',
     mainProblemSolved: initialData?.mainProblemSolved || '',
@@ -279,6 +280,24 @@ export const ClientProfilePanel = memo(function ClientProfilePanel({ projectId: 
           {errors.industry && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.industry}</p>}
           <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
             Be specific (defines direct competitors). Use "dental practice" not "healthcare", "accounting firm" not "finance". Auto-inferred if not provided.
+          </p>
+        </div>
+
+        {/* Location */}
+        <div>
+          <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-neutral-200">
+            <MapPin className="h-4 w-4 text-slate-600 dark:text-neutral-400" />
+            Location
+          </label>
+          <input
+            type="text"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            placeholder="e.g., San Francisco, California, USA, Remote, Global"
+            className="w-full rounded-md border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500"
+          />
+          <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
+            Geographic area or regions served. Helps with location-aware content and market context.
           </p>
         </div>
 

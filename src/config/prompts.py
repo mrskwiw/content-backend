@@ -48,6 +48,9 @@ Extract the following information and format it as JSON:
   "company_name": "Company name",
   "business_description": "Brief description of what they do",
   "industry": "Specific industry/niche (e.g., dental practice, medical equipment manufacturer, project management software, accounting firm)",
+  "keywords": ["keyword 1", "keyword 2", ...],
+  "competitors": ["Competitor Name 1", "Competitor Name 2", ...],
+  "location": "Geographic location or region",
   "ideal_customer": "Description of ideal customer",
   "main_problem_solved": "Main problem the business solves",
   "customer_pain_points": ["pain point 1", "pain point 2", ...],
@@ -75,6 +78,21 @@ Guidelines:
   • "restaurant" NOT "food & beverage" or "hospitality"
   • "real estate agency" NOT "real estate" or "services"
   The industry label should help identify direct competitors, not broad categories
+- For keywords, extract 5-10 SEO-relevant terms from:
+  • Business description (core services/products)
+  • Value propositions and benefits
+  • Industry terminology and jargon
+  • Problem/solution keywords
+  Keep keywords specific and actionable (e.g., "dental implants", "employee engagement software")
+- For competitors, extract company names mentioned in the brief:
+  • Look for phrases like "unlike X", "better than Y", "alternatives to Z"
+  • Extract 1-5 specific company names if mentioned
+  • Leave empty if no competitors are explicitly named
+- For location, extract geographic information:
+  • City, state, region, or country served (e.g., "San Francisco", "California", "USA")
+  • Service area descriptors (e.g., "Remote", "Global", "Nationwide")
+  • Infer from context if not explicitly stated
+  • Leave empty if truly location-independent
 - Be thorough but concise
 
 Return ONLY the JSON, no additional commentary."""
