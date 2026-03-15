@@ -1,8 +1,9 @@
 import { useState, memo, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, Coins, Clock, Link2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, Coins, Clock, Link2, AlertCircle, Settings } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';
 import { clientsApi } from '@/api/clients';
+import { settingsApi } from '@/api/settings';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { ResearchDataCollectionPanel } from './ResearchDataCollectionPanel';
 
@@ -95,6 +96,13 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     queryFn: () => projectId ? researchApi.getClientHistory(projectId) : Promise.resolve(null),
     enabled: !!projectId,
     staleTime: 60 * 1000, // 1 minute
+  });
+
+  // Fetch integration status to check which tools can be enabled
+  const { data: integrationStatus } = useQuery({
+    queryKey: ['integrations', 'status'],
+    queryFn: () => settingsApi.getIntegrationStatus(),
+    staleTime: 30 * 1000, // 30 seconds
   });
 
   // Fetch client data for pre-populating research tool inputs
@@ -406,6 +414,40 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     return tools.filter((t) => t.category === category);
   };
 
+  // Check if a tool is enabled based on integration requirements
+  const isToolEnabled = (tool: ResearchTool): { enabled: boolean; missingIntegrations: string[] } => {
+    if (!tool.required_integrations || tool.required_integrations.length === 0) {
+      return { enabled: true, missingIntegrations: [] };
+    }
+
+    if (!integrationStatus) {
+      // If we haven't loaded integration status yet, assume enabled to avoid flashing
+      return { enabled: true, missingIntegrations: [] };
+    }
+
+    const missing: string[] = [];
+
+    for (const requirement of tool.required_integrations) {
+      if (requirement === 'web_search') {
+        // web_search requires ANY web search provider (Brave, Tavily, or SerpAPI)
+        if (!integrationStatus.web_search) {
+          missing.push('Web Search (Brave, Tavily, or SerpAPI)');
+        }
+      } else if (requirement === 'serpapi') {
+        // serpapi specifically requires SerpAPI
+        if (!integrationStatus.serpapi) {
+          missing.push('SerpAPI');
+        }
+      }
+      // Add more integration checks here as needed
+    }
+
+    return {
+      enabled: missing.length === 0,
+      missingIntegrations: missing,
+    };
+  };
+
   const categories = [
     { name: 'foundation', label: 'Client Foundation', description: 'Build foundational understanding' },
     { name: 'seo', label: 'SEO & Competition', description: 'Research keywords and competitors' },
@@ -689,17 +731,19 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                   const isSelected = selected.has(tool.name);
                   const isAvailable = tool.status === 'available';
                   const hasResult = results.has(tool.name);
+                  const { enabled: integrationEnabled, missingIntegrations } = isToolEnabled(tool);
+                  const canSelect = isAvailable && integrationEnabled;
 
                   return (
                     <button
                       key={tool.name}
-                      onClick={() => isAvailable && toggleTool(tool.name)}
-                      disabled={!isAvailable}
+                      onClick={() => canSelect && toggleTool(tool.name)}
+                      disabled={!canSelect}
                       className={`group relative rounded-lg border-2 p-3 text-left transition-all ${
                         isSelected
                           ? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
                           : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-neutral-800 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm'
-                      } ${!isAvailable && 'cursor-not-allowed opacity-60'}`}
+                      } ${!canSelect && 'cursor-not-allowed opacity-60'}`}
                     >
                       <div className="flex items-start gap-2">
                         {isSelected ? (
@@ -792,6 +836,24 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
                               </div>
                             );
                           })()}
+                          {missingIntegrations.length > 0 && (
+                            <div className="mt-2 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-1.5 text-xs text-red-700 dark:text-red-400">
+                              <div className="flex items-start gap-1.5">
+                                <Settings className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-semibold">Integration Required</p>
+                                  <p className="mt-0.5">{missingIntegrations.join(', ')}</p>
+                                  <a
+                                    href="/dashboard/settings?tab=integrations"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="mt-1 inline-block text-red-600 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
+                                  >
+                                    Configure in Settings →
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {hasResult && (
                             <div className="mt-2 rounded bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 text-xs text-emerald-700 dark:text-emerald-400">
                               ✓ Research completed

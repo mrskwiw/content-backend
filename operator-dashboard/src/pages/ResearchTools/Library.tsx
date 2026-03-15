@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { researchApi, costsApi, ResearchTool, projectsApi } from '@/api';
+import { researchApi, costsApi, ResearchTool, projectsApi, settingsApi } from '@/api';
 import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
 import { Search, Filter, AlertCircle, Link2, Info } from 'lucide-react';
@@ -61,6 +61,13 @@ export default function ResearchToolsLibrary() {
     queryFn: () => researchApi.listTools()
   });
 
+  // Fetch integration status to check which tools can be enabled
+  const { data: integrationStatus } = useQuery({
+    queryKey: ['integrations', 'status'],
+    queryFn: () => settingsApi.getIntegrationStatus(),
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
   // Real-time pricing preview with bundle detection
   const { data: pricing } = useQuery({
     queryKey: ['pricing-preview', selectedTools],
@@ -73,7 +80,7 @@ export default function ResearchToolsLibrary() {
     queryKey: ['projects'],
     queryFn: async () => {
       const response = await projectsApi.list();
-      return response.items;
+      return response?.items || [];
     },
     enabled: showProjectSelector
   });
@@ -90,7 +97,50 @@ export default function ResearchToolsLibrary() {
   // Get unique categories
   const categories: string[] = ['all', ...new Set(tools.map((t: ResearchTool) => t.category).filter((c): c is string => Boolean(c)))];
 
+  // Check if a tool is enabled based on integration requirements
+  const isToolEnabled = (tool: ResearchTool): { enabled: boolean; missingIntegrations: string[] } => {
+    if (!tool.required_integrations || tool.required_integrations.length === 0) {
+      return { enabled: true, missingIntegrations: [] };
+    }
+
+    if (!integrationStatus) {
+      // If we haven't loaded integration status yet, assume enabled to avoid flashing
+      return { enabled: true, missingIntegrations: [] };
+    }
+
+    const missing: string[] = [];
+
+    for (const requirement of tool.required_integrations) {
+      if (requirement === 'web_search') {
+        // web_search requires ANY web search provider (Brave, Tavily, or SerpAPI)
+        if (!integrationStatus.web_search) {
+          missing.push('Web Search (Brave, Tavily, or SerpAPI)');
+        }
+      } else if (requirement === 'serpapi') {
+        // serpapi specifically requires SerpAPI
+        if (!integrationStatus.serpapi) {
+          missing.push('SerpAPI');
+        }
+      }
+      // Add more integration checks here as needed
+    }
+
+    return {
+      enabled: missing.length === 0,
+      missingIntegrations: missing,
+    };
+  };
+
   const handleToggleTool = (toolId: string) => {
+    // Check if tool is enabled before allowing selection
+    const tool = tools.find(t => t.name === toolId);
+    if (tool) {
+      const { enabled } = isToolEnabled(tool);
+      if (!enabled) {
+        return; // Don't allow selecting disabled tools
+      }
+    }
+
     setSelectedTools(prev =>
       prev.includes(toolId)
         ? prev.filter(id => id !== toolId)
@@ -231,16 +281,21 @@ export default function ResearchToolsLibrary() {
 
       {/* Tool Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTools.map((tool: ResearchTool) => (
-          <ToolCard
-            key={tool.name}
-            tool={tool}
-            isSelected={selectedTools.includes(tool.name)}
-            onToggle={() => handleToggleTool(tool.name)}
-            prerequisites={TOOL_PREREQUISITES[tool.name]}
-            toolLabels={TOOL_LABELS}
-          />
-        ))}
+        {filteredTools.map((tool: ResearchTool) => {
+          const { enabled, missingIntegrations } = isToolEnabled(tool);
+          return (
+            <ToolCard
+              key={tool.name}
+              tool={tool}
+              isSelected={selectedTools.includes(tool.name)}
+              onToggle={() => handleToggleTool(tool.name)}
+              prerequisites={TOOL_PREREQUISITES[tool.name]}
+              toolLabels={TOOL_LABELS}
+              disabled={!enabled}
+              missingIntegrations={missingIntegrations}
+            />
+          );
+        })}
       </div>
 
       {/* Empty State */}

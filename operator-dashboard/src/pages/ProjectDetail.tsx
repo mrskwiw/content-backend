@@ -197,38 +197,27 @@ export default function ProjectDetail() {
       {/* Project Header Card */}
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-sm">
         <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{project.name}</h1>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  statusColors[project.status] || 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
-                }`}
-              >
-                {project.status}
-              </span>
-              <div className="flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/20 px-2.5 py-0.5">
-                <BarChart3 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300">{qualityScore}% Quality</span>
-              </div>
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-600 dark:bg-primary-500 text-2xl font-semibold text-white">
+              {project.name.charAt(0).toUpperCase()}
             </div>
-            <div className="mt-2 flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
-              <button
-                onClick={() => client && navigate(`/dashboard/clients/${client.id}`)}
-                className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
-              >
-                <User className="h-4 w-4" />
-                {client?.name || 'Unknown Client'}
-                <ExternalLink className="h-3 w-3" />
-              </button>
-              <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Created {safeFormatDate(project.createdAt)}
-              </span>
-              <span className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-              {projectPosts.length} posts
-              </span>
+
+            {/* Project Info */}
+            <div>
+              <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{project.name}</h1>
+              <div className="mt-2 flex items-center gap-3">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    statusColors[project.status] || 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
+                  }`}
+                >
+                  {project.status}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/20 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                  {qualityScore}% Quality
+                </span>
+              </div>
             </div>
           </div>
 
@@ -253,14 +242,8 @@ export default function ProjectDetail() {
           </div>
         </div>
 
-        {/* Project Progress */}
-        <div className="mt-6 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 p-4">
-          <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-3">Project Progress</h3>
-          <StatusProgressBar status={project.status} size="lg" showLabels />
-        </div>
-
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-5 gap-6 border-t border-neutral-200 dark:border-neutral-700 pt-6">
+        <div className="mt-6 grid grid-cols-4 gap-6 border-t border-neutral-200 dark:border-neutral-700 pt-6">
           <div>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">Posts Generated</p>
             <p className="mt-1 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{projectPosts.length}</p>
@@ -276,12 +259,6 @@ export default function ProjectDetail() {
           <div>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">Revisions</p>
             <p className="mt-1 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{mockRevisions.length}</p>
-          </div>
-          <div>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">Last Updated</p>
-            <p className="mt-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              {project.lastRunAt ? formatDistanceToNow(new Date(project.lastRunAt), { addSuffix: true }) : 'Never'}
-            </p>
           </div>
         </div>
       </div>
@@ -338,6 +315,29 @@ export default function ProjectDetail() {
                     <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">{project.name}</p>
                   </div>
                   <div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Client</p>
+                    <button
+                      onClick={() => client && navigate(`/dashboard/clients/${client.id}`)}
+                      className="mt-1 flex items-center gap-1 font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                    >
+                      <User className="h-4 w-4" />
+                      {client?.name || 'Unknown Client'}
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Created</p>
+                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">
+                      {safeFormatDate(project.createdAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Last Updated</p>
+                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">
+                      {project.lastRunAt ? formatDistanceToNow(new Date(project.lastRunAt), { addSuffix: true }) : 'Never'}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">Package Tier</p>
                     <span className="mt-1 inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-3 py-1 text-sm font-medium text-primary-800 dark:text-primary-300">
                       Professional
@@ -352,6 +352,12 @@ export default function ProjectDetail() {
                       <span className="inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 text-xs font-medium text-neutral-800 dark:text-neutral-300">
                         Twitter
                       </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Project Progress</p>
+                    <div className="mt-2">
+                      <StatusProgressBar status={project.status} size="md" showLabels />
                     </div>
                   </div>
                 </div>

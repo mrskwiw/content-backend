@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle, Coins, Link2 } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, Coins, Link2, Settings } from 'lucide-react';
 import { ResearchTool } from '../../api/research';
 
 interface ToolCardProps {
@@ -16,9 +16,11 @@ interface ToolCardProps {
     recommended: string[];
   };
   toolLabels?: Record<string, string>;
+  disabled?: boolean;
+  missingIntegrations?: string[];
 }
 
-export function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequisites, toolLabels }: ToolCardProps) {
+export function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequisites, toolLabels, disabled, missingIntegrations }: ToolCardProps) {
   const categoryColors = {
     foundation: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
     seo: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -32,8 +34,10 @@ export function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequi
 
   return (
     <div
-      onClick={onToggle}
-      className={`relative p-4 rounded-lg border-2 transition-all cursor-pointer ${
+      onClick={disabled ? undefined : onToggle}
+      className={`relative p-4 rounded-lg border-2 transition-all ${
+        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+      } ${
         isSelected
           ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
           : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-gray-300 dark:hover:border-neutral-600'
@@ -105,6 +109,26 @@ export function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequi
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Integration Warning */}
+      {missingIntegrations && missingIntegrations.length > 0 && (
+        <div className="mt-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2">
+          <div className="flex items-start gap-2">
+            <Settings className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+            <div className="flex-1 text-xs">
+              <p className="font-semibold text-red-700 dark:text-red-400">Integration Required</p>
+              <p className="mt-1 text-red-600 dark:text-red-400">{missingIntegrations.join(', ')}</p>
+              <a
+                href="/dashboard/settings?tab=integrations"
+                onClick={(e) => e.stopPropagation()}
+                className="mt-1.5 inline-block text-red-600 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
+              >
+                Configure in Settings →
+              </a>
+            </div>
+          </div>
         </div>
       )}
 

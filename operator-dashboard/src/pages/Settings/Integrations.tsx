@@ -5,10 +5,12 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Search, Check, X, AlertCircle, Loader2, ExternalLink, Trash2 } from 'lucide-react';
 import { settingsApi, WebSearchConfig } from '../../api/settings';
 
 export default function Integrations() {
+  const queryClient = useQueryClient();
   const [config, setConfig] = useState<WebSearchConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -63,6 +65,11 @@ export default function Integrations() {
       // Clear form after save
       setBraveApiKey('');
       setTavilyApiKey('');
+      setSerpapiApiKey('');
+
+      // Invalidate integrations cache to update status badges in Settings.tsx
+      queryClient.invalidateQueries({ queryKey: ['settings', 'web-search'] });
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
 
       alert('Settings saved successfully!');
     } catch (error) {
@@ -114,6 +121,11 @@ export default function Integrations() {
     try {
       await settingsApi.deleteApiKey(deleteProvider);
       await loadConfig();
+
+      // Invalidate integrations cache to update status badges in Settings.tsx
+      queryClient.invalidateQueries({ queryKey: ['settings', 'web-search'] });
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+
       alert('API key deleted successfully');
     } catch (error) {
       console.error('Failed to delete key:', error);

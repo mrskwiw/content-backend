@@ -65,6 +65,9 @@ class ResearchTool(BaseModel):
     status: str = "available"  # available, coming_soon
     description: Optional[str] = None
     category: Optional[str] = None
+    required_integrations: Optional[List[str]] = (
+        []
+    )  # List of required integrations: 'web_search', 'serpapi', etc.
 
 
 class RunResearchInput(BaseModel):
@@ -120,6 +123,7 @@ RESEARCH_TOOLS = [
         status="available",
         description="AI-powered competitor discovery and market positioning analysis",
         category="seo",
+        required_integrations=["web_search"],  # Requires web search (Brave, Tavily, or SerpAPI)
     ),
     ResearchTool(
         name="competitive_analysis",
@@ -127,6 +131,7 @@ RESEARCH_TOOLS = [
         credits=100,  # Replaces 6-8 hours of competitive strategy analysis
         status="available",
         description="Research competitors and identify positioning gaps",
+        required_integrations=["web_search"],  # Requires web search (Brave, Tavily, or SerpAPI)
         category="seo",
     ),
     ResearchTool(

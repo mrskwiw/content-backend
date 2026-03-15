@@ -30,6 +30,13 @@ export interface TestConnectionResponse {
   results_count?: number;
 }
 
+export interface IntegrationStatus {
+  web_search: boolean;
+  brave: boolean;
+  tavily: boolean;
+  serpapi: boolean;
+}
+
 export const settingsApi = {
   /**
    * Get current web search configuration
@@ -63,5 +70,13 @@ export const settingsApi = {
    */
   deleteApiKey: async (provider: 'brave' | 'tavily' | 'serpapi'): Promise<void> => {
     await apiClient.delete(`/api/settings/web-search/keys/${provider}`);
+  },
+
+  /**
+   * Get integration availability status
+   */
+  getIntegrationStatus: async (): Promise<IntegrationStatus> => {
+    const response = await apiClient.get<IntegrationStatus>('/api/settings/integrations/status');
+    return response.data;
   },
 };

@@ -8,6 +8,7 @@ export interface ResearchTool {
   status?: 'available' | 'coming_soon' | 'experimental';
   description?: string;
   category?: string;
+  required_integrations?: string[];
 }
 
 export interface RunResearchInput {

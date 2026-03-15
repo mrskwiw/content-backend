@@ -90,6 +90,25 @@ class TestConnectionResponse(BaseModel):
         }
 
 
+class IntegrationStatusResponse(BaseModel):
+    """Integration availability status"""
+
+    web_search: bool = Field(..., description="Whether any web search provider is configured")
+    brave: bool = Field(..., description="Whether Brave Search is configured")
+    tavily: bool = Field(..., description="Whether Tavily is configured")
+    serpapi: bool = Field(..., description="Whether SerpAPI is configured")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "web_search": True,
+                "brave": True,
+                "tavily": False,
+                "serpapi": False,
+            }
+        }
+
+
 # ===== Endpoints =====
 
 
@@ -226,3 +245,31 @@ async def delete_web_search_key(
         )
 
     return {"message": f"{provider.title()} API key deleted successfully"}
+
+
+@router.get("/integrations/status", response_model=IntegrationStatusResponse)
+async def get_integrations_status(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """
+    Get integration availability status for research tools.
+
+    Returns which integrations are configured and available for use.
+    Used by frontend to disable tools that require missing integrations.
+    """
+    # Get web search configuration
+    config = settings_service.get_web_search_config(db, current_user.id)
+
+    brave_configured = config.get("brave_api_key_configured", False)
+    tavily_configured = config.get("tavily_api_key_configured", False)
+    serpapi_configured = config.get("serpapi_api_key_configured", False)
+
+    # web_search is true if ANY web search provider is configured
+    web_search = brave_configured or tavily_configured or serpapi_configured
+
+    return IntegrationStatusResponse(
+        web_search=web_search,
+        brave=brave_configured,
+        tavily=tavily_configured,
+        serpapi=serpapi_configured,
+    )

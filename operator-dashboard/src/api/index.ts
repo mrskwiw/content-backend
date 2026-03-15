@@ -8,6 +8,7 @@ export { generatorApi } from './generator';
 export { postsApi } from './posts';
 export { projectsApi } from './projects';
 export { runsApi } from './runs';
+export { settingsApi } from './settings';
 export { storiesApi } from './stories';
 export { usersApi } from './users';
 

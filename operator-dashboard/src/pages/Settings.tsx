@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import UsersTab from '@/components/settings/UsersTab';
 import { creditsApi } from '@/api/credits';
+import { settingsApi } from '@/api/settings';
 import {
   Settings as SettingsIcon,
   Server,
@@ -212,11 +213,18 @@ export default function Settings() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
+  // Fetch web search configuration status
+  const { data: webSearchConfig } = useQuery({
+    queryKey: ['settings', 'web-search'],
+    queryFn: () => settingsApi.getWebSearchConfig(),
+    enabled: activeTab === 'integrations',
+  });
+
   const { data: integrations = mockIntegrations } = useQuery({
-    queryKey: ['integrations', pytrendsHealth],
+    queryKey: ['integrations', pytrendsHealth, webSearchConfig],
     queryFn: async (): Promise<Integration[]> => {
-      // Update Google Trends status based on health check
       return mockIntegrations.map(integration => {
+        // Update Google Trends status based on health check
         if (integration.type === 'pytrends' && pytrendsHealth) {
           const status: Integration['status'] = pytrendsHealth.status === 'connected' ? 'connected' :
                     pytrendsHealth.status === 'warning' ? 'error' : 'error';
@@ -227,6 +235,32 @@ export default function Settings() {
             lastSync: new Date().toISOString(),
           };
         }
+
+        // Update web search integration statuses based on API key configuration
+        if (webSearchConfig) {
+          if (integration.type === 'brave') {
+            return {
+              ...integration,
+              status: webSearchConfig.brave_api_key_configured ? 'connected' : 'disconnected',
+              configured: webSearchConfig.brave_api_key_configured,
+            };
+          }
+          if (integration.type === 'tavily') {
+            return {
+              ...integration,
+              status: webSearchConfig.tavily_api_key_configured ? 'connected' : 'disconnected',
+              configured: webSearchConfig.tavily_api_key_configured,
+            };
+          }
+          if (integration.type === 'serpapi') {
+            return {
+              ...integration,
+              status: webSearchConfig.serpapi_api_key_configured ? 'connected' : 'disconnected',
+              configured: webSearchConfig.serpapi_api_key_configured,
+            };
+          }
+        }
+
         return integration;
       });
     },
