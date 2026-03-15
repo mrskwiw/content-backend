@@ -17,6 +17,7 @@ from ..models.determine_competitors_models import (
 from ..utils.anthropic_client import get_default_client
 from ..utils.logger import logger
 from ..utils.web_search import get_search_client, SearchResponse
+from ..utils.google_maps_search import get_google_maps_client, GoogleMapsPlace
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
@@ -103,7 +104,7 @@ class CompetitorDeterminer(ResearchTool, CommonValidationMixin):
         business_name: str,
         location: Optional[str] = None,
     ) -> Dict[str, List[DiscoveredCompetitor]]:
-        """Use web search + Claude to identify competitors based on real-time data"""
+        """Use web search + Google Maps + Claude to identify competitors based on real-time data"""
 
         # Step 1: Search the web for competitors
         logger.info("Searching web for competitors...")
@@ -119,23 +120,47 @@ class CompetitorDeterminer(ResearchTool, CommonValidationMixin):
         # Format search results for prompt
         search_data = self._format_search_results(search_results)
 
+        # Step 2: If location provided, also search Google Maps for local competitors
+        maps_data = ""
+        if location:
+            logger.info(f"Searching Google Maps for local competitors in {location}...")
+            maps_client = get_google_maps_client()
+            maps_query = f"{industry} {location}"
+            local_businesses = maps_client.search_local_businesses(
+                query=maps_query, location=location, max_results=10
+            )
+
+            if local_businesses:
+                maps_data = self._format_google_maps_results(local_businesses)
+                logger.info(f"Found {len(local_businesses)} local competitors on Google Maps")
+
         location_context = f"\n**Geographic Market:** {location}" if location else ""
 
-        prompt = f"""Based on the web search results below, analyze this business and identify its top 5-7 market competitors.
+        # Build prompt with both web search and Google Maps data
+        maps_section = ""
+        if maps_data:
+            maps_section = f"""
+
+**GOOGLE MAPS LOCAL COMPETITORS:**
+{maps_data}
+"""
+
+        prompt = f"""Based on the web search results and local business data below, analyze this business and identify its top 5-7 market competitors.
 
 **Business:** {business_name}
 **Industry:** {industry}{location_context}
 **Description:** {business_description}
 
-**WEB SEARCH RESULTS (Use ONLY these for competitor identification):**
-{search_data}
+**WEB SEARCH RESULTS:**
+{search_data}{maps_section}
 
 CRITICAL INSTRUCTIONS:
-- You MUST use ONLY the companies/information found in the web search results above
+- Use ONLY the companies/information found in the search results above
+- Prioritize LOCAL competitors from Google Maps when available (they have verified reviews/ratings)
 - Identify 5-7 PRIMARY competitors (direct and adjacent)
 - Identify 0-2 EMERGING competitors if found in search results
 - Do NOT invent or hallucinate companies not in the search results
-- If a company appears in search results, it's a real competitor you can analyze
+- Include Google Maps rating and review count in your analysis when available
 
 For each competitor found in search results, provide:
 - Name (exact company/brand name from search results)
@@ -208,6 +233,33 @@ Your analysis:"""
 
         if not lines:
             return "No search results found. Please analyze based on general market knowledge."
+
+        return "\n".join(lines)
+
+    def _format_google_maps_results(self, places: List[GoogleMapsPlace]) -> str:
+        """Format Google Maps results for Claude prompt"""
+        lines = []
+
+        for i, place in enumerate(places, 1):
+            lines.append(f"{i}. **{place.name}** ({place.category or 'Business'})")
+            lines.append(f"   Address: {place.address}")
+
+            if place.rating:
+                stars = "⭐" * int(place.rating)
+                lines.append(
+                    f"   Rating: {place.rating}/5.0 {stars} ({place.reviews_count or 0} reviews)"
+                )
+
+            if place.website:
+                lines.append(f"   Website: {place.website}")
+
+            if place.phone:
+                lines.append(f"   Phone: {place.phone}")
+
+            lines.append("")
+
+        if not lines:
+            return "No local competitors found on Google Maps."
 
         return "\n".join(lines)
 

@@ -24,6 +24,7 @@ from ..validators.research_input_validator import (
 )
 from ..utils.anthropic_client import get_default_client
 from ..utils.web_search import get_search_client, SearchResponse
+from ..utils.google_maps_search import get_google_maps_client
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 import re
@@ -112,6 +113,11 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
         # SECURITY: Validate optional industry
         inputs["industry"] = self.validate_optional_industry(inputs)
 
+        # Optional: location (for Google Maps review analysis)
+        location = inputs.get("location")
+        if location:
+            inputs["location"] = location.strip()
+
         return True
 
     def run_analysis(self, inputs: Dict[str, Any]) -> CompetitiveAnalysis:
@@ -121,12 +127,13 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
         competitors = inputs["competitors"]
         industry = inputs.get("industry", "Not specified")
         business_name = inputs.get("business_name", "Client")
+        location = inputs.get("location")  # Optional location for Google Maps reviews
 
         logger.info(f"Analyzing {len(competitors)} competitors")
 
         # Step 1: Analyze each competitor
         competitor_profiles = self._analyze_competitors(
-            competitors, business_desc, target_audience, industry
+            competitors, business_desc, target_audience, industry, location
         )
 
         # Step 2: Identify content gaps
@@ -187,10 +194,12 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
         business_desc: str,
         target_audience: str,
         industry: str,
+        location: Optional[str] = None,
     ) -> List[CompetitorProfile]:
-        """Analyze each competitor's strategy using web search for real-time data"""
+        """Analyze each competitor's strategy using web search + Google Maps reviews"""
         profiles = []
         search_client = get_search_client()
+        maps_client = get_google_maps_client() if location else None
 
         for competitor in competitors[:5]:  # Max 5
             # STEP 1: Search the web for competitor information
@@ -201,7 +210,52 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
             # Format search results for prompt
             search_data = self._format_competitor_search_results(search_results, competitor)
 
-            prompt = f"""Analyze this competitor based on the web search results below.
+            # STEP 2: If location provided, try to find competitor on Google Maps and get reviews
+            review_data = ""
+            if maps_client and location:
+                logger.info(f"Searching Google Maps for {competitor} reviews in {location}")
+                # Search for the business on Google Maps
+                local_results = maps_client.search_local_businesses(
+                    query=f"{competitor} {industry}",
+                    location=location,
+                    max_results=3,  # Get top 3 matches
+                )
+
+                # If we find a match, get reviews
+                if local_results:
+                    # Take the first result (best match)
+                    place = local_results[0]
+                    logger.info(
+                        f"Found Google Maps listing: {place.name} ({place.reviews_count} reviews)"
+                    )
+
+                    if place.place_id and place.reviews_count and place.reviews_count > 0:
+                        place_reviews = maps_client.get_place_reviews(
+                            place_id=place.place_id, max_reviews=20  # Get top 20 reviews
+                        )
+
+                        if place_reviews.reviews:
+                            review_data = self._format_google_reviews(place_reviews)
+                            logger.info(
+                                f"Fetched {len(place_reviews.reviews)} reviews for analysis"
+                            )
+
+            # Add review section if available
+            review_section = ""
+            if review_data:
+                review_section = f"""
+
+**GOOGLE MAPS REVIEWS (Customer Feedback):**
+{review_data}
+
+Use the reviews to understand:
+- Customer sentiment and satisfaction
+- Common complaints or weaknesses
+- Praised strengths and features
+- Service quality perception
+"""
+
+            prompt = f"""Analyze this competitor based on the web search results and customer reviews below.
 
 **COMPETITOR:** {competitor}
 
@@ -212,11 +266,12 @@ class CompetitiveAnalyzer(ResearchTool, CommonValidationMixin):
 **INDUSTRY:** {industry}
 
 **WEB SEARCH RESULTS (Use ONLY these for analysis):**
-{search_data}
+{search_data}{review_section}
 
 **CRITICAL INSTRUCTIONS:**
-- You MUST use ONLY the information found in the web search results above
+- You MUST use ONLY the information found in the search results and reviews above
 - Base your analysis on FACTUAL data from the search results, not assumptions
+- When reviews are available, incorporate customer feedback into strengths/weaknesses
 - If information is not available in the search results, mark it as "Unknown" or "Not found in search"
 - Do NOT invent or hallucinate information not present in the search results
 
@@ -309,6 +364,55 @@ estimated_reach, engagement_level"""
             if result.published_date:
                 lines.append(f"   Published: {result.published_date}")
             lines.append("")
+
+        return "\n".join(lines)
+
+    def _format_google_reviews(self, place_reviews) -> str:
+        """Format Google Maps reviews for competitor analysis"""
+
+        if not place_reviews.reviews:
+            return "No customer reviews available."
+
+        lines = []
+        place = place_reviews.place
+        reviews = place_reviews.reviews
+
+        # Summary
+        lines.append(f"**{place.name}**")
+        if place.rating:
+            stars = "⭐" * int(place.rating)
+            lines.append(
+                f"Overall Rating: {place.rating}/5.0 {stars} ({place_reviews.total_reviews} total reviews)"
+            )
+        lines.append("")
+
+        # Calculate review sentiment
+        positive = sum(1 for r in reviews if r.rating >= 4)
+        negative = sum(1 for r in reviews if r.rating <= 2)
+        lines.append(
+            f"Review Sentiment: {positive} positive, {negative} negative (from {len(reviews)} sampled)"
+        )
+        lines.append("")
+
+        # Top reviews (mix of positive and negative for balanced view)
+        positive_reviews = [r for r in reviews if r.rating >= 4][:5]
+        negative_reviews = [r for r in reviews if r.rating <= 2][:5]
+
+        if positive_reviews:
+            lines.append("**Top Positive Reviews:**")
+            for i, review in enumerate(positive_reviews, 1):
+                stars = "⭐" * review.rating
+                lines.append(f"{i}. {stars} - {review.author}")
+                lines.append(f"   \"{review.text[:200]}{'...' if len(review.text) > 200 else ''}\"")
+                lines.append("")
+
+        if negative_reviews:
+            lines.append("**Top Negative Reviews:**")
+            for i, review in enumerate(negative_reviews, 1):
+                stars = "⭐" * review.rating
+                lines.append(f"{i}. {stars} - {review.author}")
+                lines.append(f"   \"{review.text[:200]}{'...' if len(review.text) > 200 else ''}\"")
+                lines.append("")
 
         return "\n".join(lines)
 
