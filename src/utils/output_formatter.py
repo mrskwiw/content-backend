@@ -136,7 +136,7 @@ class OutputFormatter:
         lines.append("\n## Voice & Tone\n")
         if client_brief.brand_personality:
             lines.append(
-                f"**Personality:** {', '.join([p.value for p in client_brief.brand_personality])}\n"
+                f"**Personality:** {', '.join([str(p) for p in client_brief.brand_personality])}\n"
             )
 
         if client_brief.key_phrases:

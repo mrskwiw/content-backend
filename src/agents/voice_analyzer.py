@@ -413,8 +413,9 @@ class VoiceAnalyzer:
         }
 
         for tone in client_brief.brand_personality:
-            if tone.value in tone_indicators:
-                indicators = tone_indicators[tone.value]
+            tone_str = str(tone)
+            if tone_str in tone_indicators:
+                indicators = tone_indicators[tone_str]
                 presence = sum(1 for ind in indicators if ind in all_content) / len(indicators)
                 score += presence
                 checks += 1
@@ -430,7 +431,7 @@ class VoiceAnalyzer:
 
     def _extract_dominant_tones(self, posts: List[Post], client_brief: ClientBrief) -> List[str]:
         """Identify top 3 tones"""
-        tones = [tone.value for tone in client_brief.brand_personality]
+        tones = [str(tone) for tone in client_brief.brand_personality]
         return tones[:3] if tones else ["conversational", "professional"]
 
     def _generate_dos(
