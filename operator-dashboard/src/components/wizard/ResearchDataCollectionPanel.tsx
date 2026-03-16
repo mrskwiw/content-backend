@@ -114,6 +114,13 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
       required: false,
       placeholder: 'Leave empty to auto-generate from SEO keywords',
       helperText: '✨ Auto-generates from SEO keywords and business profile if left empty. Or manually add 1-10 custom focus areas.'
+    }, {
+      key: 'location',
+      label: 'Location (Optional - Enables Review Analysis)',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., San Francisco, CA',
+      helperText: '🗺️ Add location to analyze Google Maps reviews from industry businesses in your market for real customer insights.'
     }]
   },
   platform_strategy: {

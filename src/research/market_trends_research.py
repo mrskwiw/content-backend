@@ -20,6 +20,7 @@ from ..models.market_trends_models import (
 from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from ..utils.anthropic_client import get_default_client
+from ..utils.google_maps_search import get_google_maps_client
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 
@@ -104,6 +105,20 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
             # Will auto-generate from SEO keywords if available
             inputs["focus_areas"] = None
 
+        # Optional: location (for Google Maps industry review analysis)
+        location = inputs.get("location")
+        if location:
+            inputs["location"] = self.validator.validate_text(
+                location,
+                field_name="location",
+                min_length=2,
+                max_length=200,
+                required=False,
+                sanitize=True,
+            )
+        else:
+            inputs["location"] = None
+
         return True
 
     def run_analysis(self, inputs: Dict[str, Any]) -> TrendReport:
@@ -129,9 +144,18 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
 
         logger.info(f"Researching market trends for {industry} with {len(focus_areas)} focus areas")
 
+        # Step 0: Extract industry customer insights from Google Maps reviews (if location provided)
+        location = inputs.get("location")
+        industry_insights = ""
+        if location:
+            logger.info(f"Extracting industry insights from Google Maps reviews in {location}")
+            industry_insights = self._extract_industry_insights_from_reviews(
+                industry, location, focus_areas
+            )
+
         # Step 1: Identify trending topics by category
         trend_categories = self._research_trending_topics(
-            business_desc, industry, target_audience, focus_areas
+            business_desc, industry, target_audience, focus_areas, industry_insights
         )
 
         # Step 2: Identify emerging conversations
@@ -366,15 +390,145 @@ Your focus areas:"""
 
         return unique_areas[:5]
 
+    def _extract_industry_insights_from_reviews(
+        self,
+        industry: str,
+        location: str,
+        focus_areas: List[str],
+    ) -> str:
+        """Extract customer insights from Google Maps reviews of industry businesses.
+
+        Searches for businesses in the industry at the given location,
+        extracts their reviews, and identifies common themes, pain points,
+        and emerging customer demands.
+
+        Args:
+            industry: Industry to research
+            location: Geographic location for search
+            focus_areas: Focus areas to guide analysis
+
+        Returns:
+            Formatted string with industry insights from customer reviews
+        """
+        try:
+            maps_client = get_google_maps_client()
+
+            # Search for top businesses in this industry
+            search_query = f"{industry} businesses"
+            logger.info(f"Searching for {industry} businesses in {location}")
+
+            businesses = maps_client.search_local_businesses(
+                query=search_query,
+                location=location,
+                max_results=5,  # Get top 5 businesses
+            )
+
+            if not businesses:
+                logger.warning("No businesses found for industry review analysis")
+                return ""
+
+            logger.info(f"Found {len(businesses)} businesses, extracting reviews...")
+
+            # Collect reviews from multiple businesses
+            all_reviews = []
+            business_names = []
+
+            for business in businesses[:3]:  # Top 3 to avoid too much data
+                if not business.place_id:
+                    continue
+
+                business_names.append(business.name)
+                logger.info(f"Fetching reviews for {business.name}")
+
+                place_reviews = maps_client.get_place_reviews(
+                    place_id=business.place_id,
+                    max_reviews=10,  # 10 reviews per business
+                )
+
+                if place_reviews.reviews:
+                    all_reviews.extend(place_reviews.reviews)
+
+            if not all_reviews:
+                logger.warning("No reviews found for industry analysis")
+                return ""
+
+            logger.info(
+                f"Collected {len(all_reviews)} reviews from {len(business_names)} businesses"
+            )
+
+            # Format reviews for analysis
+            review_text = self._format_industry_reviews(all_reviews, business_names)
+
+            return review_text
+
+        except Exception as e:
+            logger.error(f"Failed to extract industry insights from reviews: {e}")
+            return ""
+
+    def _format_industry_reviews(self, reviews, business_names: List[str]) -> str:
+        """Format industry reviews for trend analysis prompt."""
+        if not reviews:
+            return ""
+
+        lines = []
+        lines.append(f"**INDUSTRY CUSTOMER FEEDBACK** (from {len(business_names)} businesses):")
+        lines.append(f"Businesses analyzed: {', '.join(business_names)}")
+        lines.append("")
+
+        # Calculate sentiment
+        positive = sum(1 for r in reviews if r.rating >= 4)
+        negative = sum(1 for r in reviews if r.rating <= 2)
+        lines.append(
+            f"Sentiment: {positive} positive, {negative} negative (from {len(reviews)} reviews)"
+        )
+        lines.append("")
+
+        # Show mix of positive and negative for balanced insights
+        positive_reviews = [r for r in reviews if r.rating >= 4][:8]
+        negative_reviews = [r for r in reviews if r.rating <= 2][:8]
+
+        if positive_reviews:
+            lines.append("**What Customers Love:**")
+            for i, review in enumerate(positive_reviews, 1):
+                stars = "⭐" * review.rating
+                text = review.text[:150] + "..." if len(review.text) > 150 else review.text
+                lines.append(f'{i}. {stars} - "{text}"')
+            lines.append("")
+
+        if negative_reviews:
+            lines.append("**Common Complaints/Unmet Needs:**")
+            for i, review in enumerate(negative_reviews, 1):
+                stars = "⭐" * review.rating
+                text = review.text[:150] + "..." if len(review.text) > 150 else review.text
+                lines.append(f'{i}. {stars} - "{text}"')
+            lines.append("")
+
+        return "\n".join(lines)
+
     def _research_trending_topics(
         self,
         business_desc: str,
         industry: str,
         target_audience: str,
         focus_areas: List[str],
+        industry_insights: str = "",
     ) -> List[TrendCategory]:
         """Research trending topics organized by category"""
         focus_context = f"Focus particularly on: {', '.join(focus_areas)}" if focus_areas else ""
+
+        # Add customer insights section if available
+        insights_section = ""
+        if industry_insights:
+            insights_section = f"""
+
+{industry_insights}
+
+Use these customer insights to:
+- Validate trending topics (what customers actually care about)
+- Identify emerging needs (complaints = opportunities)
+- Ground trends in real customer feedback
+- Spot gaps between what customers want vs. what's available
+"""
 
         prompt = f"""Research current market trends and organize them into 4-5 categories.
 
@@ -384,7 +538,7 @@ Business: {business_desc}
 
 Target Audience: {target_audience}
 
-{focus_context}
+{focus_context}{insights_section}
 
 For each category:
 1. Category name and description

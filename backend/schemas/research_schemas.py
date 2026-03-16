@@ -214,6 +214,12 @@ class MarketTrendsParams(BaseModel):
         None, description="Specific areas to emphasize (optional, max 10)"
     )
 
+    location: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Geographic location for industry review analysis (optional, e.g., 'San Francisco, CA')",
+    )
+
     @field_validator("industry")
     @classmethod
     def validate_industry(cls, v: Optional[str]) -> Optional[str]:
