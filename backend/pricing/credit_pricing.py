@@ -24,6 +24,7 @@ RESEARCH_TOOL_COSTS = {
     "platform_strategy": 50,  # Platform-specific recommendations (3-4 hours)
     "content_calendar": 50,  # 30-day content calendar generation (3-4 hours)
     "market_trends": 50,  # Industry trends and insights (3-4 hours)
+    "business_report": 50,  # Business perception analysis with web+Maps data (3-4 hours)
     # Medium research (75 credits ~ $150-187.50)
     "brand_archetype": 75,  # Brand personality analysis (4-6 hours)
     "audience_research": 75,  # Demographic and psychographic profiling (4-6 hours)

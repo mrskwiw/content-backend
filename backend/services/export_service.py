@@ -484,6 +484,8 @@ def _generate_research_section(project_id: str, db: Session) -> dict:
                 lines.extend(_format_content_gap(result.data))
             elif result.tool_name == "market_trends_research":
                 lines.extend(_format_market_trends(result.data))
+            elif result.tool_name == "business_report":
+                lines.extend(_format_business_report(result.data))
             else:
                 # Generic fallback for other tools
                 lines.extend(_format_generic_research(result.data))
@@ -3113,6 +3115,138 @@ def _format_determine_competitors(data: dict) -> List[str]:
         lines.append("**Recommended Positioning:**")
         lines.append(data["recommended_positioning"])
         lines.append("")
+
+    return lines
+
+
+def _format_business_report(data: dict) -> List[str]:
+    """Format business report with company perception, strengths, and positioning analysis."""
+    lines = []
+
+    # Company Overview
+    company_name = data.get("company_name", "Company")
+    location = data.get("location", "")
+    perception_score = data.get("perception_score", 0)
+
+    lines.append(f"**Company:** {company_name}")
+    if location:
+        lines.append(f"**Location:** {location}")
+    lines.append(f"**Perception Score:** {perception_score}/100")
+    lines.append("")
+
+    # Overall Perception
+    overall_perception = data.get("overall_perception", "")
+    if overall_perception:
+        lines.append("### Overall Perception")
+        lines.append("")
+        lines.append(overall_perception)
+        lines.append("")
+
+    # Perception Insights
+    perception_insights = data.get("perception_insights", [])
+    if perception_insights:
+        lines.append("### Perception Analysis")
+        lines.append("")
+        for insight in perception_insights:
+            if isinstance(insight, dict):
+                category = insight.get("category", "").title()
+                text = insight.get("insight", "")
+                confidence = insight.get("confidence", "")
+                source_count = insight.get("source_count", 0)
+                emoji = "✅" if category == "Positive" else "⚠️" if category == "Negative" else "ℹ️"
+                lines.append(
+                    f"{emoji} **{category}** (Confidence: {confidence}, {source_count} sources)"
+                )
+                lines.append(f"   {text}")
+                lines.append("")
+
+    # Strengths to Advertise
+    top_strengths = data.get("top_strengths", [])
+    if top_strengths:
+        lines.append("### Strengths to Advertise")
+        lines.append("")
+        for i, strength in enumerate(top_strengths, 1):
+            if isinstance(strength, dict):
+                strength_text = strength.get("strength", "")
+                messaging = strength.get("recommended_messaging", "")
+                target = strength.get("target_audience", "")
+                evidence = strength.get("evidence", [])
+
+                lines.append(f"**{i}. {strength_text}**")
+                lines.append("")
+                if target:
+                    lines.append(f"*Target Audience:* {target}")
+                    lines.append("")
+                if messaging:
+                    lines.append(f"*Recommended Messaging:* {messaging}")
+                    lines.append("")
+                if evidence:
+                    lines.append("*Evidence:*")
+                    for item in evidence:
+                        lines.append(f"- {item}")
+                    lines.append("")
+
+    # Customer Pain Points
+    pain_points = data.get("customer_pain_points", [])
+    if pain_points:
+        lines.append("### Customer Pain Points")
+        lines.append("")
+        for i, pain in enumerate(pain_points, 1):
+            if isinstance(pain, dict):
+                pain_text = pain.get("pain_point", "")
+                frequency = pain.get("frequency", "")
+                severity = pain.get("severity", "")
+                quotes = pain.get("customer_quotes", [])
+
+                lines.append(f"**{i}. {pain_text}**")
+                lines.append("")
+                lines.append(f"*Frequency:* {frequency} | *Severity:* {severity}")
+                lines.append("")
+                if quotes:
+                    lines.append("*Customer Quotes:*")
+                    for quote in quotes:
+                        lines.append(f'> "{quote}"')
+                        lines.append("")
+
+    # Problems Solved
+    problems_solved = data.get("problems_solved", [])
+    if problems_solved:
+        lines.append("### Problems Solved")
+        lines.append("")
+        for i, problem in enumerate(problems_solved, 1):
+            if isinstance(problem, dict):
+                problem_text = problem.get("problem", "")
+                solution = problem.get("solution_approach", "")
+                value_prop = problem.get("value_proposition", "")
+                differentiation = problem.get("differentiation", "")
+
+                lines.append(f"**{i}. {problem_text}**")
+                lines.append("")
+                if solution:
+                    lines.append(f"*Solution Approach:* {solution}")
+                    lines.append("")
+                if value_prop:
+                    lines.append(f"*Value Proposition:* {value_prop}")
+                    lines.append("")
+                if differentiation:
+                    lines.append(f"*Differentiation:* {differentiation}")
+                    lines.append("")
+
+    # Data Sources
+    web_sources = data.get("web_sources_analyzed", 0)
+    reviews = data.get("reviews_analyzed", 0)
+    avg_rating = data.get("average_rating")
+    total_reviews = data.get("total_reviews")
+
+    lines.append("### Data Sources")
+    lines.append("")
+    lines.append(f"- Web sources analyzed: {web_sources}")
+    lines.append(f"- Reviews analyzed: {reviews}")
+    if avg_rating:
+        lines.append(f"- Average rating: {avg_rating:.1f}/5.0")
+    if total_reviews:
+        lines.append(f"- Total reviews: {total_reviews}")
+    lines.append("")
 
     return lines
 

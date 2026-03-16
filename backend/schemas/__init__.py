@@ -35,6 +35,7 @@ from .research_schemas import (
     ICPWorkshopParams,
     StoryMiningParams,
     BrandArchetypeParams,
+    BusinessReportInput,
     ResearchResultResponse,
     ResearchResultListResponse,
 )
@@ -91,6 +92,7 @@ __all__ = [
     "ICPWorkshopParams",
     "StoryMiningParams",
     "BrandArchetypeParams",
+    "BusinessReportInput",
     # Research result responses
     "ResearchResultResponse",
     "ResearchResultListResponse",

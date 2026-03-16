@@ -9,4 +9,24 @@ Contains:
 - KeywordStrategy: SEO keyword recommendations
 - QualityProfile: Quality threshold configuration
 - PostingSchedule: Content calendar and scheduling
+- BusinessReportOutput: Business report analysis (research tool)
 """
+
+# Research tool models
+from .business_report_models import (
+    BusinessReportOutput,
+    PerceptionInsight,
+    StrengthRecommendation,
+    PainPoint,
+    ProblemSolved,
+    get_analysis_date,
+)
+
+__all__ = [
+    "BusinessReportOutput",
+    "PerceptionInsight",
+    "StrengthRecommendation",
+    "PainPoint",
+    "ProblemSolved",
+    "get_analysis_date",
+]

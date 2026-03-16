@@ -45,6 +45,7 @@ try:
     from src.research.audience_research import AudienceResearcher
     from src.research.icp_workshop import ICPWorkshopFacilitator
     from src.research.story_mining import StoryMiner
+    from src.research.business_report import BusinessReportTool
 
     RESEARCH_TOOLS_AVAILABLE = True
     RESEARCH_TOOL_MAP = {
@@ -61,6 +62,7 @@ try:
         "audience_research": AudienceResearcher,
         "icp_workshop": ICPWorkshopFacilitator,
         "story_mining": StoryMiner,
+        "business_report": BusinessReportTool,
     }
 except ImportError as e:
     # Research tools not available - service will return stub responses

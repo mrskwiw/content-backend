@@ -144,6 +144,13 @@ TOOL_DEPENDENCIES: Dict[str, ToolDependencies] = {
         used_by=["content_gap_analysis", "content_calendar"],
         description="Performance analysis, update/archive recommendations",
     ),
+    "business_report": ToolDependencies(
+        tool_id="business_report",
+        tier=2,
+        prerequisites=[],
+        used_by=[],
+        description="Company perception analysis, strengths, pain points, value proposition",
+    ),
     # Tier 3: Strategy Tools (Synthesize Research)
     "platform_strategy": ToolDependencies(
         tool_id="platform_strategy",

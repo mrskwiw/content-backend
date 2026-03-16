@@ -30,6 +30,7 @@ from backend.schemas import (
     StoryMiningParams,
     BrandArchetypeParams,
     DetermineCompetitorsParams,
+    BusinessReportInput,
     ResearchResultResponse,
     ResearchResultListResponse,
 )
@@ -151,6 +152,15 @@ RESEARCH_TOOLS = [
         description="Discover trending topics and emerging opportunities",
         category="market",
     ),
+    ResearchTool(
+        name="business_report",
+        label="Business Report",
+        credits=50,  # Light research tier (~$100-125, replaces 3-4 hours)
+        status="available",
+        description="Analyze company perception, strengths, pain points, and value proposition",
+        category="competitive_analysis",
+        required_integrations=["web_search", "serpapi"],
+    ),
     # Strategy & Planning Tools
     ResearchTool(
         name="content_audit",
@@ -219,6 +229,7 @@ VALIDATION_SCHEMAS = {
     "icp_workshop": ICPWorkshopParams,
     "story_mining": StoryMiningParams,
     "brand_archetype": BrandArchetypeParams,
+    "business_report": BusinessReportInput,
 }
 
 

@@ -167,6 +167,7 @@ def _format_tool_result(tool_name: str, result: ResearchResult) -> str:
             "icp_workshop": _format_icp_workshop,
             "story_mining": _format_story_mining,
             "content_audit": _format_content_audit,
+            "business_report": _format_business_report,
         }
         formatter = formatters.get(tool_name)
         if not formatter:
@@ -968,6 +969,57 @@ def _format_content_audit(result):
         context = f"Content Audit ({date}): {' | '.join(parts)}"
     else:
         context = f"Content Audit ({date}): Available"
+
+    return context
+
+
+def _format_business_report(result):
+    """Format business report for content generation context.
+
+    Provides key insights about company perception, strengths, and positioning
+    to inform content strategy and messaging.
+    """
+    data = result.data or {}
+    date = result.created_at.strftime("%b %d") if result.created_at else "recently"
+
+    parts = []
+
+    # Company info
+    company_name = data.get("company_name", "Company")
+
+    # Perception score (high-level indicator)
+    perception_score = data.get("perception_score", 0)
+    if perception_score > 0:
+        parts.append(f"Perception: {perception_score}/100")
+
+    # Top 2-3 strengths to advertise
+    top_strengths = data.get("top_strengths", [])
+    if top_strengths:
+        strength_names = [s.get("strength", "") for s in top_strengths[:3] if isinstance(s, dict)]
+        if strength_names:
+            parts.append(f"Strengths: {', '.join(strength_names)}")
+
+    # Top pain points (2-3)
+    pain_points = data.get("customer_pain_points", [])
+    if pain_points:
+        pain_texts = [p.get("pain_point", "")[:40] for p in pain_points[:2] if isinstance(p, dict)]
+        if pain_texts:
+            parts.append(f"Pain Points: {pain_texts[0]}")
+
+    # Problems solved (value propositions)
+    problems_solved = data.get("problems_solved", [])
+    if problems_solved:
+        value_props = [
+            p.get("value_proposition", "")[:50] for p in problems_solved[:2] if isinstance(p, dict)
+        ]
+        if value_props:
+            parts.append(f"Value: {value_props[0]}")
+
+    # Assemble final context
+    if parts:
+        context = f"Business Report - {company_name} ({date}): {' | '.join(parts)}"
+    else:
+        context = f"Business Report - {company_name} ({date}): Available"
 
     return context
 

@@ -183,6 +183,37 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
   },
   brand_archetype: {
     fields: []  // Fully automatic - uses business_description from client profile
+  },
+  business_report: {
+    fields: [{
+      key: 'company_name',
+      label: 'Company Name',
+      type: 'text',
+      required: true,
+      placeholder: 'e.g., Acme Coffee Co',
+      helperText: 'Name of the company to analyze (2-200 characters).'
+    }, {
+      key: 'location',
+      label: 'Location',
+      type: 'text',
+      required: true,
+      placeholder: 'e.g., Seattle, WA',
+      helperText: 'Location of the company - city and state or city and country (2-200 characters).'
+    }, {
+      key: 'max_web_results',
+      label: 'Max Web Results (Optional)',
+      type: 'text',
+      required: false,
+      placeholder: '10',
+      helperText: 'Maximum number of web search results to analyze (1-50, default: 10).'
+    }, {
+      key: 'max_reviews',
+      label: 'Max Reviews (Optional)',
+      type: 'text',
+      required: false,
+      placeholder: '50',
+      helperText: 'Maximum number of Google Maps reviews to analyze (1-200, default: 50).'
+    }]
   }
 };
 

@@ -440,6 +440,72 @@ class DetermineCompetitorsParams(BaseModel):
         return v
 
 
+class BusinessReportInput(BaseModel):
+    """Parameters for Business Report research tool."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    company_name: str = Field(
+        ...,
+        max_length=200,
+        description="Name of the company to analyze",
+    )
+
+    location: str = Field(
+        ...,
+        max_length=200,
+        description="Location of the company (city, state or city, country)",
+    )
+
+    max_web_results: Optional[int] = Field(
+        10,
+        ge=1,
+        le=50,
+        description="Maximum number of web search results to analyze (default: 10)",
+    )
+
+    max_reviews: Optional[int] = Field(
+        50,
+        ge=1,
+        le=200,
+        description="Maximum number of Google Maps reviews to analyze (default: 50)",
+    )
+
+    @field_validator("company_name")
+    @classmethod
+    def validate_company_name(cls, v: str) -> str:
+        """Validate company name field."""
+        v = v.strip()
+
+        if len(v) == 0:
+            raise ValueError("Company name cannot be empty")
+
+        if len(v) < 2:
+            raise ValueError("Company name is too short (minimum 2 characters)")
+
+        if len(v) > 200:
+            raise ValueError("Company name is too long (maximum 200 characters)")
+
+        return v
+
+    @field_validator("location")
+    @classmethod
+    def validate_location_field(cls, v: str) -> str:
+        """Validate location field."""
+        v = v.strip()
+
+        if len(v) == 0:
+            raise ValueError("Location cannot be empty")
+
+        if len(v) < 2:
+            raise ValueError("Location is too short (minimum 2 characters)")
+
+        if len(v) > 200:
+            raise ValueError("Location is too long (maximum 200 characters)")
+
+        return v
+
+
 # ==================== Research Result Response Schemas ====================
 
 
