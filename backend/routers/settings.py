@@ -260,9 +260,10 @@ async def get_integrations_status(
     # Get web search configuration
     config = settings_service.get_web_search_config(db, current_user.id)
 
-    brave_configured = config.get("brave_api_key_configured", False)
-    tavily_configured = config.get("tavily_api_key_configured", False)
-    serpapi_configured = config.get("serpapi_api_key_configured", False)
+    # Check if API keys are configured (non-empty strings)
+    brave_configured = bool(config.get("brave_api_key", ""))
+    tavily_configured = bool(config.get("tavily_api_key", ""))
+    serpapi_configured = bool(config.get("serpapi_api_key", ""))
 
     # web_search is true if ANY web search provider is configured
     web_search = brave_configured or tavily_configured or serpapi_configured
