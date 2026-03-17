@@ -67,11 +67,8 @@ WORKDIR /app
 # Copy Python dependencies from builder
 COPY --from=backend-builder /root/.local /home/appuser/.local
 
-# Copy ENTIRE project (agents, backend, CLI)
+# Copy ENTIRE project (agents, backend, CLI, including template file)
 COPY --chown=appuser:appuser . .
-
-# Copy template files from parent directory (business docs)
-COPY --chown=appuser:appuser 02_POST_TEMPLATE_LIBRARY.md /app/../02_POST_TEMPLATE_LIBRARY.md
 
 # Copy built frontend from frontend-builder stage
 COPY --from=frontend-builder --chown=appuser:appuser /frontend/dist /app/operator-dashboard/dist

@@ -16,133 +16,6 @@ interface Template {
 
 // REMOVED: Hardcoded templates (Bug #41 fix - now fetched from API)
 // Templates are now loaded from /api/generator/templates with updated P0/P1/P2 prerequisites
-  {
-    id: 2,
-    name: 'Statistic + Insight',
-    description: 'Stat → What it means → Unexpected angle',
-    bestFor: 'Credibility, thought leadership',
-    difficulty: 'fast',
-    requiredTools: [],
-    recommendedTools: ['content_gap_analysis', 'market_trends_research', 'seo_keyword_research'],
-  },
-  {
-    id: 3,
-    name: 'Contrarian Take',
-    description: 'Challenge conventional wisdom → Show why → Give nuance',
-    bestFor: 'Differentiation, starting conversations',
-    difficulty: 'medium',
-    requiredTools: [],
-    recommendedTools: ['competitive_analysis', 'market_trends_research', 'voice_analysis'],
-  },
-  {
-    id: 4,
-    name: 'What Changed',
-    description: 'Old way → What changed → New results',
-    bestFor: 'Authority, sharing lessons',
-    difficulty: 'medium',
-    requiredTools: [],
-    recommendedTools: ['market_trends_research', 'competitive_analysis'],
-  },
-  {
-    id: 5,
-    name: 'Question Post',
-    description: 'Thought-provoking question with context',
-    bestFor: 'Engagement magnet',
-    difficulty: 'fast',
-    requiredTools: [],
-    recommendedTools: ['audience_research', 'content_gap_analysis'],
-  },
-  {
-    id: 6,
-    name: 'Personal Story',
-    description: 'Vulnerable narrative with lesson learned',
-    bestFor: 'Connection, vulnerability',
-    difficulty: 'slow',
-    requiredTools: [],
-    recommendedTools: ['story_mining', 'voice_analysis', 'brand_archetype'],
-  },
-  {
-    id: 7,
-    name: 'Myth Busting',
-    description: 'Common belief → Why it is wrong → What is true',
-    bestFor: 'Education, correction',
-    difficulty: 'medium',
-    requiredTools: [],
-    recommendedTools: ['content_gap_analysis', 'audience_research', 'seo_keyword_research'],
-  },
-  {
-    id: 8,
-    name: 'Things I Got Wrong',
-    description: 'Past mistakes and lessons learned',
-    bestFor: 'Credibility, humility',
-    difficulty: 'slow',
-    requiredTools: [],
-    recommendedTools: ['story_mining', 'voice_analysis', 'brand_archetype'],
-  },
-  {
-    id: 9,
-    name: 'How-To',
-    description: 'Step-by-step actionable guide',
-    bestFor: 'Actionable value',
-    difficulty: 'fast',
-    requiredTools: [],
-    recommendedTools: ['seo_keyword_research', 'content_gap_analysis', 'audience_research'],
-  },
-  {
-    id: 10,
-    name: 'Comparison',
-    description: 'Option A vs Option B breakdown',
-    bestFor: 'Decision-making',
-    difficulty: 'fast',
-    requiredTools: [],
-    recommendedTools: ['competitive_analysis', 'content_gap_analysis'],
-  },
-  {
-    id: 11,
-    name: 'What I Learned From',
-    description: 'Lessons from books, events, or experiences',
-    bestFor: 'Cultural relevance',
-    difficulty: 'medium',
-    requiredTools: [],
-    recommendedTools: ['voice_analysis', 'content_audit'],
-  },
-  {
-    id: 12,
-    name: 'Inside Look',
-    description: 'Behind-the-scenes process reveal',
-    bestFor: 'Transparency, trust',
-    difficulty: 'slow',
-    requiredTools: [],
-    recommendedTools: ['story_mining', 'brand_archetype', 'voice_analysis'],
-  },
-  {
-    id: 13,
-    name: 'Future Thinking',
-    description: 'Predictions and forward-looking insights',
-    bestFor: 'Thought leadership',
-    difficulty: 'medium',
-    requiredTools: [],
-    recommendedTools: ['market_trends_research', 'competitive_analysis'],
-  },
-  {
-    id: 14,
-    name: 'Reader Q Response',
-    description: 'Answer common customer questions',
-    bestFor: 'Community building',
-    difficulty: 'medium',
-    requiredTools: [],
-    recommendedTools: ['audience_research', 'content_gap_analysis'],
-  },
-  {
-    id: 15,
-    name: 'Milestone',
-    description: 'Celebrate achievements and progress',
-    bestFor: 'Celebration',
-    difficulty: 'slow',
-    requiredTools: [],
-    recommendedTools: ['story_mining', 'brand_archetype'],
-  },
-];
 
 // Tool labels for prerequisite badges
 const TOOL_LABELS: Record<string, string> = {
@@ -210,7 +83,7 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
   };
 
   const selectAll = () => {
-    setSelected(new Set(TEMPLATES.map((t) => t.id)));
+    setSelected(new Set(templates.map((t) => t.id)));
   };
 
   const clearAll = () => {
