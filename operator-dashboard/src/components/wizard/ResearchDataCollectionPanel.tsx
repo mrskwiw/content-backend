@@ -1,15 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, Button, Input, Textarea } from '@/components/ui';
-import { AlertCircle, Plus, X, FileText } from 'lucide-react';
+import { AlertCircle, Plus, X, FileText, CheckCircle2 } from 'lucide-react';
 import { ContentAuditCollector } from './ContentAuditCollector';
 import type { Client } from '@/types/domain';
 
 interface ResearchDataCollectionPanelProps {
   selectedTools: string[];
   clientData: Client | null;
+  projectId?: string;
   onContinue: (collectedData: Record<string, unknown>) => void;
   onBack: () => void;
 }
+
+// Client field → Tool input field mappings
+const CLIENT_TO_TOOL_FIELD_MAPPINGS: Record<string, Record<string, string>> = {
+  determine_competitors: {
+    industry: 'industry',
+    location: 'location'
+  },
+  competitive_analysis: {
+    competitors: 'competitors'
+  },
+  market_trends_research: {
+    industry: 'industry',
+    location: 'location'
+  },
+  platform_strategy: {
+    platforms: 'current_platforms'
+  },
+  content_calendar_strategy: {
+    platforms: 'primary_platforms'
+  },
+  business_report: {
+    name: 'company_name',
+    location: 'location'
+  }
+};
 
 // Tool data requirements mapping
 const TOOL_DATA_REQUIREMENTS: Record<string, {
@@ -227,39 +253,73 @@ const TOOL_DATA_REQUIREMENTS: Record<string, {
 export function ResearchDataCollectionPanel({
   selectedTools,
   clientData,
+  projectId,
   onContinue,
   onBack
 }: ResearchDataCollectionPanelProps) {
   const [collectedData, setCollectedData] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
 
-  // Pre-populate industry and location fields from client data
+  // Auto-populate fields from client data based on selected tools
   useEffect(() => {
-    const updates: Record<string, string> = {};
+    if (!clientData) return;
 
-    if (clientData?.industry && !collectedData.industry) {
-      updates.industry = clientData.industry;
-    }
+    const updates: Record<string, any> = {};
+    const autoFilled = new Set<string>();
 
-    if (clientData?.location && !collectedData.location) {
-      updates.location = clientData.location;
-    }
+    // Process each selected tool
+    selectedTools.forEach(toolId => {
+      const mapping = CLIENT_TO_TOOL_FIELD_MAPPINGS[toolId];
+      if (!mapping) return;
+
+      // Apply each field mapping
+      Object.entries(mapping).forEach(([sourceField, targetField]) => {
+        // Skip if field already has data
+        if (collectedData[targetField]) return;
+
+        // Get value from client
+        const value = clientData[sourceField as keyof Client];
+
+        if (value !== undefined && value !== null && value !== '') {
+          // Handle array → string conversion for text-list fields
+          if (Array.isArray(value)) {
+            updates[targetField] = value.join(', ');
+          } else {
+            updates[targetField] = value;
+          }
+          autoFilled.add(targetField);
+        }
+      });
+    });
 
     if (Object.keys(updates).length > 0) {
       setCollectedData(prev => ({ ...prev, ...updates }));
+      setAutoFilledFields(autoFilled);
     }
-  }, [clientData, collectedData.industry, collectedData.location]);
+  }, [clientData, selectedTools]);
 
   // Get all required fields for selected tools
   const requiredFields = selectedTools.flatMap(tool =>
     TOOL_DATA_REQUIREMENTS[tool]?.fields || []
   );
 
+  const handleFieldChange = (fieldKey: string, value: any) => {
+    setCollectedData(prev => ({ ...prev, [fieldKey]: value }));
+    setErrors(prev => ({ ...prev, [fieldKey]: '' }));
+
+    // Remove auto-fill indicator when user edits
+    setAutoFilledFields(prev => {
+      const next = new Set(prev);
+      next.delete(fieldKey);
+      return next;
+    });
+  };
+
   const handleTextListChange = (key: string, value: string) => {
     // Store the raw string value directly without processing
     // Processing will happen during validation/submission
-    setCollectedData(prev => ({ ...prev, [key]: value }));
-    setErrors(prev => ({ ...prev, [key]: '' }));
+    handleFieldChange(key, value);
   };
 
   const handleContentListChange = (key: string, index: number, value: string) => {
@@ -377,6 +437,18 @@ export function ResearchDataCollectionPanel({
     }
   };
 
+  // Auto-fill badge component
+  const AutoFillBadge = ({ isAutoFilled }: { isAutoFilled: boolean }) => {
+    if (!isAutoFilled) return null;
+
+    return (
+      <span className="ml-2 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+        <CheckCircle2 className="h-3 w-3" />
+        Auto-filled
+      </span>
+    );
+  };
+
   // If no data is needed, skip this step
   if (requiredFields.length === 0) {
     onContinue({});
@@ -403,15 +475,17 @@ export function ResearchDataCollectionPanel({
                   <label className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
                     {field.label}
                     {field.required && <span className="text-rose-500">*</span>}
+                    <AutoFillBadge isAutoFilled={autoFilledFields.has(field.key)} />
                   </label>
                   <Input
                     value={typeof collectedData[field.key] === 'string' ? collectedData[field.key] as string : ''}
-                    onChange={(e) => {
-                      setCollectedData(prev => ({ ...prev, [field.key]: e.target.value }));
-                      setErrors(prev => ({ ...prev, [field.key]: '' }));
-                    }}
+                    onChange={(e) => handleFieldChange(field.key, e.target.value)}
                     placeholder={field.placeholder}
-                    className={errors[field.key] ? 'border-rose-500' : ''}
+                    className={`${errors[field.key] ? 'border-rose-500' : ''} ${
+                      autoFilledFields.has(field.key)
+                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
+                        : ''
+                    }`}
                   />
                   {errors[field.key] && (
                     <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors[field.key]}</p>
@@ -427,16 +501,18 @@ export function ResearchDataCollectionPanel({
                   <label className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
                     {field.label}
                     {field.required && <span className="text-rose-500">*</span>}
+                    <AutoFillBadge isAutoFilled={autoFilledFields.has(field.key)} />
                   </label>
                   <Textarea
                     value={typeof collectedData[field.key] === 'string' ? collectedData[field.key] as string : ''}
-                    onChange={(e) => {
-                      setCollectedData(prev => ({ ...prev, [field.key]: e.target.value }));
-                      setErrors(prev => ({ ...prev, [field.key]: '' }));
-                    }}
+                    onChange={(e) => handleFieldChange(field.key, e.target.value)}
                     placeholder={field.placeholder}
                     rows={4}
-                    className={errors[field.key] ? 'border-rose-500' : ''}
+                    className={`${errors[field.key] ? 'border-rose-500' : ''} ${
+                      autoFilledFields.has(field.key)
+                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
+                        : ''
+                    }`}
                   />
                   {errors[field.key] && (
                     <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors[field.key]}</p>
@@ -452,13 +528,18 @@ export function ResearchDataCollectionPanel({
                   <label className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
                     {field.label}
                     {field.required && <span className="text-rose-500">*</span>}
+                    <AutoFillBadge isAutoFilled={autoFilledFields.has(field.key)} />
                   </label>
                   <Textarea
                     value={typeof collectedData[field.key] === 'string' ? collectedData[field.key] as string : ''}
                     onChange={(e) => handleTextListChange(field.key, e.target.value)}
                     placeholder={field.placeholder}
                     rows={3}
-                    className={errors[field.key] ? 'border-rose-500' : ''}
+                    className={`${errors[field.key] ? 'border-rose-500' : ''} ${
+                      autoFilledFields.has(field.key)
+                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
+                        : ''
+                    }`}
                   />
                   <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
                     Separate items with commas

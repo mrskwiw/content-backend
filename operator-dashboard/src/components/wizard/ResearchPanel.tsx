@@ -476,6 +476,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       <ResearchDataCollectionPanel
         selectedTools={Array.from(selected)}
         clientData={clientData || null}
+        projectId={projectId}
         onContinue={handleDataCollected}
         onBack={() => setStep('selection')}
       />

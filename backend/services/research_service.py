@@ -785,7 +785,10 @@ class ResearchService:
         params: Dict,
     ) -> Dict:
         """
-        Prepare inputs for research tool execution
+        Prepare inputs for research tool execution.
+
+        Note: Frontend now pre-populates most fields. This method serves as
+        fallback for missing data or direct API calls.
 
         Args:
             project: Project model
@@ -796,6 +799,9 @@ class ResearchService:
         Returns:
             Dict of inputs for the research tool
         """
+        # Track which fields came from frontend
+        frontend_provided = set(params.keys())
+
         # Base inputs common to all tools
         # Use Client model fields (business_description, ideal_customer) instead of non-existent Project fields
         inputs = {
@@ -877,6 +883,13 @@ class ResearchService:
 
             inputs["current_platforms"] = current_platforms if current_platforms else []
             inputs["content_goals"] = params.get("content_goals", "")
+
+        # Log data sources for transparency
+        backend_injected = set(inputs.keys()) - frontend_provided
+        if backend_injected:
+            logger.info(f"{tool_name}: Backend injected fields: {backend_injected}")
+        if frontend_provided:
+            logger.info(f"{tool_name}: Frontend provided fields: {frontend_provided}")
 
         return inputs
 
