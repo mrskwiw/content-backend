@@ -829,7 +829,7 @@ class ResearchService:
 
         elif tool_name == "competitive_analysis":
             # Competitive analysis needs competitor list and industry
-            inputs["competitors"] = params.get("competitors", [])
+            inputs["competitors"] = params.get("competitors") or client.competitors or []
             inputs["industry"] = (
                 params.get("industry")
                 or client.industry
