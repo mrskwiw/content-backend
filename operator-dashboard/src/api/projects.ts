@@ -1,6 +1,6 @@
 import apiClient from './client';
-import type { Project, ProjectStatus } from '@/types/domain';
-import type { PaginatedResponse, PaginationParams } from '@/types/pagination';
+import { ProjectSchema, type Project, type ProjectStatus } from '@/types/domain';
+import { createPaginatedResponseSchema, type PaginatedResponse, type PaginationParams } from '@/types/pagination';
 
 export interface ProjectFilters extends PaginationParams {
   clientId?: string;
@@ -55,8 +55,9 @@ export const projectsApi = {
    * @returns Paginated response with projects and metadata
    */
   async list(params?: ProjectFilters): Promise<PaginatedResponse<Project>> {
-    const { data } = await apiClient.get<PaginatedResponse<Project>>('/api/projects/', { params });
-    return data;
+    const { data } = await apiClient.get('/api/projects/', { params });
+    const schema = createPaginatedResponseSchema(ProjectSchema);
+    return schema.parse(data);
   },
 
   /**
@@ -70,12 +71,12 @@ export const projectsApi = {
     return response.items;
   },
 
-  async get(projectId: string) {
-    const { data } = await apiClient.get<Project>(`/api/projects/${projectId}`);
-    return data;
+  async get(projectId: string): Promise<Project> {
+    const { data } = await apiClient.get(`/api/projects/${projectId}`);
+    return ProjectSchema.parse(data);
   },
 
-  async create(input: CreateProjectInput) {
+  async create(input: CreateProjectInput): Promise<Project> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput = {
       name: input.name,
@@ -97,11 +98,11 @@ export const projectsApi = {
       platforms: input.platforms,
       tone: input.tone,
     };
-    const { data } = await apiClient.post<Project>('/api/projects/', backendInput);
-    return data;
+    const { data } = await apiClient.post('/api/projects/', backendInput);
+    return ProjectSchema.parse(data);
   },
 
-  async update(projectId: string, input: UpdateProjectInput) {
+  async update(projectId: string, input: UpdateProjectInput): Promise<Project> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput: Record<string, string | number | string[] | Record<string, number> | undefined> = {};
     if (input.name !== undefined) backendInput.name = input.name;
@@ -123,7 +124,7 @@ export const projectsApi = {
     if (input.platforms !== undefined) backendInput.platforms = input.platforms;
     if (input.tone !== undefined) backendInput.tone = input.tone;
 
-    const { data } = await apiClient.patch<Project>(`/api/projects/${projectId}`, backendInput);
-    return data;
+    const { data } = await apiClient.patch(`/api/projects/${projectId}`, backendInput);
+    return ProjectSchema.parse(data);
   },
 };

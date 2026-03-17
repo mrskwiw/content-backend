@@ -1,6 +1,17 @@
 import apiClient from './client';
-import type { ExportInput, GenerateAllInput, RegenerateInput, Run } from '@/types/domain';
-import type { Deliverable } from '@/types/domain';
+import { RunSchema, DeliverableSchema, type ExportInput, type GenerateAllInput, type RegenerateInput, type Run, type Deliverable } from '@/types/domain';
+import { z } from 'zod';
+
+const TemplateDependenciesSchema = z.object({
+  required: z.array(z.string()),
+  recommended: z.array(z.string()),
+});
+
+const TemplateDependenciesResponseSchema = z.object({
+  template_number: z.number(),
+  template_title: z.string(),
+  research_dependencies: TemplateDependenciesSchema,
+});
 
 export interface TemplateDependencies {
   required: string[];
@@ -14,7 +25,7 @@ export interface TemplateDependenciesResponse {
 }
 
 export const generatorApi = {
-  async generateAll(input: GenerateAllInput) {
+  async generateAll(input: GenerateAllInput): Promise<Run> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput = {
       project_id: input.projectId,
@@ -24,22 +35,22 @@ export const generatorApi = {
       custom_topics: input.customTopics,  // NEW: topic override for content generation
       target_platform: input.targetPlatform,  // NEW: target platform for platform-specific generation
     };
-    const { data } = await apiClient.post<Run>('/api/generator/generate-all', backendInput);
-    return data;
+    const { data } = await apiClient.post('/api/generator/generate-all', backendInput);
+    return RunSchema.parse(data);
   },
 
-  async regenerate(input: RegenerateInput) {
+  async regenerate(input: RegenerateInput): Promise<Run> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput = {
       project_id: input.projectId,
       post_ids: input.postIds,
       reason: input.reason,
     };
-    const { data } = await apiClient.post<Run>('/api/generator/regenerate', backendInput);
-    return data;
+    const { data } = await apiClient.post('/api/generator/regenerate', backendInput);
+    return RunSchema.parse(data);
   },
 
-  async exportPackage(input: ExportInput) {
+  async exportPackage(input: ExportInput): Promise<Deliverable> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput = {
       project_id: input.projectId,
@@ -48,14 +59,14 @@ export const generatorApi = {
       include_audit_log: input.includeAuditLog,
       include_research: input.includeResearch,
     };
-    const { data } = await apiClient.post<Deliverable>('/api/generator/export', backendInput);
-    return data;
+    const { data } = await apiClient.post('/api/generator/export', backendInput);
+    return DeliverableSchema.parse(data);
   },
 
-  async getTemplateDependencies(templateNumber: number) {
-    const { data } = await apiClient.get<TemplateDependenciesResponse>(
+  async getTemplateDependencies(templateNumber: number): Promise<TemplateDependenciesResponse> {
+    const { data } = await apiClient.get(
       `/api/generator/template-dependencies/${templateNumber}`
     );
-    return data;
+    return TemplateDependenciesResponseSchema.parse(data);
   },
 };

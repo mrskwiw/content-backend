@@ -5,6 +5,20 @@
  * that automatically selects the best strategy based on page depth.
  */
 
+import { z } from 'zod';
+
+export const PaginationMetadataSchema = z.object({
+  total: z.number().int().optional(),
+  page: z.number().int().optional(),
+  page_size: z.number().int(),
+  total_pages: z.number().int().optional(),
+  has_next: z.boolean(),
+  has_prev: z.boolean(),
+  next_cursor: z.string().optional(),
+  prev_cursor: z.string().optional(),
+  strategy: z.enum(['offset', 'cursor']),
+});
+
 export interface PaginationMetadata {
   /** Total number of items across all pages */
   total?: number;
@@ -70,4 +84,15 @@ export const createPaginationParams = (
  */
 export const shouldUseCursor = (page: number): boolean => {
   return page > 5;
+};
+
+/**
+ * Helper to create a PaginatedResponse Zod schema for a specific item type
+ * Usage: createPaginatedResponseSchema(ProjectSchema)
+ */
+export const createPaginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) => {
+  return z.object({
+    items: z.array(itemSchema),
+    metadata: PaginationMetadataSchema,
+  });
 };

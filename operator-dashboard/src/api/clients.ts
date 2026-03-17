@@ -1,5 +1,6 @@
 import apiClient from './client';
-import type { Client, Platform } from '@/types/domain';
+import { ClientSchema, type Client, type Platform } from '@/types/domain';
+import { z } from 'zod';
 
 export interface CreateClientInput {
   name: string;
@@ -34,17 +35,17 @@ export interface UpdateClientInput {
 }
 
 export const clientsApi = {
-  async list() {
-    const { data } = await apiClient.get<Client[]>('/api/clients/');
-    return data;
+  async list(): Promise<Client[]> {
+    const { data } = await apiClient.get('/api/clients/');
+    return z.array(ClientSchema).parse(data);
   },
 
-  async get(clientId: string) {
-    const { data } = await apiClient.get<Client>(`/api/clients/${clientId}`);
-    return data;
+  async get(clientId: string): Promise<Client> {
+    const { data } = await apiClient.get(`/api/clients/${clientId}`);
+    return ClientSchema.parse(data);
   },
 
-  async create(input: CreateClientInput) {
+  async create(input: CreateClientInput): Promise<Client> {
     // Convert camelCase to snake_case for backend compatibility
     // Exclude undefined values to prevent validation errors
     const backendInput: Record<string, string | string[] | Platform[] | undefined> = {
@@ -61,11 +62,11 @@ export const clientsApi = {
     if (input.customerPainPoints !== undefined) backendInput.customer_pain_points = input.customerPainPoints;
     if (input.customerQuestions !== undefined) backendInput.customer_questions = input.customerQuestions;
 
-    const { data } = await apiClient.post<Client>('/api/clients/', backendInput);
-    return data;
+    const { data } = await apiClient.post('/api/clients/', backendInput);
+    return ClientSchema.parse(data);
   },
 
-  async update(clientId: string, input: UpdateClientInput) {
+  async update(clientId: string, input: UpdateClientInput): Promise<Client> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput: Record<string, string | number | string[] | Platform[] | undefined> = {};
     if (input.name !== undefined) backendInput.name = input.name;
@@ -79,8 +80,8 @@ export const clientsApi = {
     if (input.customerPainPoints !== undefined) backendInput.customer_pain_points = input.customerPainPoints;
     if (input.customerQuestions !== undefined) backendInput.customer_questions = input.customerQuestions;
 
-    const { data } = await apiClient.patch<Client>(`/api/clients/${clientId}`, backendInput);
-    return data;
+    const { data } = await apiClient.patch(`/api/clients/${clientId}`, backendInput);
+    return ClientSchema.parse(data);
   },
 
   async exportProfile(clientId: string): Promise<{ blob: Blob; filename: string }> {

@@ -1,5 +1,17 @@
 import apiClient from './client';
-import { ResearchResult } from '../types/domain';
+import { ResearchResultSchema, type ResearchResult } from '../types/domain';
+import { z } from 'zod';
+
+// Zod schemas for runtime validation
+const ResearchToolSchema = z.object({
+  name: z.string(),
+  label: z.string(),
+  credits: z.number().optional(),
+  status: z.enum(['available', 'coming_soon', 'experimental']).optional(),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  required_integrations: z.array(z.string()).optional(),
+});
 
 export interface ResearchTool {
   name: string;
@@ -17,6 +29,34 @@ export interface RunResearchInput {
   tool: string;
   params?: Record<string, unknown>;
 }
+
+const ResearchRunResultSchema = z.object({
+  tool: z.string(),
+  outputs: z.record(z.string(), z.string()),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const ResearchResultHistorySchema = z.object({
+  id: z.string(),
+  toolName: z.string(),
+  toolLabel: z.string().optional(),
+  createdAt: z.string(),
+  status: z.string(),
+  durationSeconds: z.number().optional(),
+});
+
+const ResearchHistoryResponseSchema = z.object({
+  results: z.array(ResearchResultHistorySchema),
+  total: z.number(),
+  clientId: z.string(),
+});
+
+const ResearchResultListResponseSchema = z.object({
+  results: z.array(ResearchResultSchema),
+  total: z.number(),
+  clientId: z.string().optional(),
+  projectId: z.string().optional(),
+});
 
 export interface ResearchRunResult {
   tool: string;
@@ -45,6 +85,25 @@ export interface ResearchResultListResponse {
   clientId?: string;
   projectId?: string;
 }
+
+const NextBundleSuggestionSchema = z.object({
+  bundle: z.string(),
+  bundleName: z.string(),
+  missingTools: z.array(z.string()),
+  missingToolNames: z.array(z.string()),
+  additionalCost: z.number(),
+  potentialSavings: z.number(),
+});
+
+const PricingPreviewSchema = z.object({
+  baseCost: z.number(),
+  discount: z.number(),
+  finalCost: z.number(),
+  bundleApplied: z.string().nullable(),
+  bundleName: z.string().nullable(),
+  savingsPercent: z.number(),
+  nextBundleSuggestion: NextBundleSuggestionSchema.optional(),
+});
 
 export interface NextBundleSuggestion {
   bundle: string;
@@ -86,12 +145,12 @@ export interface ResearchAnalytics {
 }
 
 export const researchApi = {
-  async listTools() {
-    const { data } = await apiClient.get<ResearchTool[]>('/api/research/tools');
-    return data;
+  async listTools(): Promise<ResearchTool[]> {
+    const { data } = await apiClient.get('/api/research/tools');
+    return z.array(ResearchToolSchema).parse(data);
   },
 
-  async run(input: RunResearchInput) {
+  async run(input: RunResearchInput): Promise<ResearchRunResult> {
     // Convert camelCase to snake_case for backend compatibility
     const backendInput = {
       project_id: input.projectId,
@@ -99,17 +158,17 @@ export const researchApi = {
       tool: input.tool,
       params: input.params,
     };
-    const { data} = await apiClient.post<ResearchRunResult>('/api/research/run', backendInput);
-    return data;
+    const { data } = await apiClient.post('/api/research/run', backendInput);
+    return ResearchRunResultSchema.parse(data);
   },
 
-  async getClientHistory(clientId: string, toolName?: string) {
+  async getClientHistory(clientId: string, toolName?: string): Promise<ResearchHistoryResponse> {
     const params = toolName ? { tool_name: toolName } : {};
-    const { data } = await apiClient.get<ResearchHistoryResponse>(
+    const { data } = await apiClient.get(
       `/api/research/results/client/${clientId}`,
       { params }
     );
-    return data;
+    return ResearchHistoryResponseSchema.parse(data);
   },
 
   /**
@@ -118,11 +177,11 @@ export const researchApi = {
    */
   async getClientResearchResults(clientId: string, toolName?: string): Promise<ResearchResultListResponse> {
     const params = toolName ? { tool_name: toolName } : {};
-    const { data } = await apiClient.get<ResearchResultListResponse>(
+    const { data } = await apiClient.get(
       `/api/research/results/client/${clientId}`,
       { params }
     );
-    return data;
+    return ResearchResultListResponseSchema.parse(data);
   },
 
   /**
@@ -131,11 +190,11 @@ export const researchApi = {
    */
   async getProjectResearchResults(projectId: string, toolName?: string): Promise<ResearchResultListResponse> {
     const params = toolName ? { tool_name: toolName } : {};
-    const { data } = await apiClient.get<ResearchResultListResponse>(
+    const { data } = await apiClient.get(
       `/api/research/results/project/${projectId}`,
       { params }
     );
-    return data;
+    return ResearchResultListResponseSchema.parse(data);
   },
 
   /**
@@ -145,10 +204,11 @@ export const researchApi = {
     resultId: string,
     outputFormat: string
   ): Promise<{ content: string; format: string }> {
-    const { data } = await apiClient.get<{ content: string; format: string }>(
+    const { data } = await apiClient.get(
       `/api/research/results/${resultId}/output/${outputFormat}`
     );
-    return data;
+    const schema = z.object({ content: z.string(), format: z.string() });
+    return schema.parse(data);
   },
 
   /**
@@ -162,19 +222,20 @@ export const researchApi = {
    * Get pricing preview with bundle detection
    */
   async getPricingPreview(toolIds: string[]): Promise<PricingPreview> {
-    const { data } = await apiClient.get<PricingPreview>('/api/research/pricing-preview', {
+    const { data } = await apiClient.get('/api/research/pricing-preview', {
       params: { tool_ids: toolIds.join(',') }
     });
-    return data;
+    return PricingPreviewSchema.parse(data);
   },
 
   /**
    * Get research analytics
    */
   async getAnalytics(days: number = 90): Promise<ResearchAnalytics> {
-    const { data } = await apiClient.get<ResearchAnalytics>('/api/research/analytics', {
+    const { data } = await apiClient.get('/api/research/analytics', {
       params: { days }
     });
+    // Analytics schema is complex, will add if needed
     return data;
   },
 
@@ -182,10 +243,14 @@ export const researchApi = {
    * Get optimal execution order for research tools based on dependencies
    */
   async getExecutionOrder(toolNames: string[]): Promise<{ executionOrder: string[]; toolCount: number }> {
-    const { data } = await apiClient.post<{ executionOrder: string[]; toolCount: number }>(
+    const { data } = await apiClient.post(
       '/api/research/execution-order',
       { tool_names: toolNames }
     );
-    return data;
+    const schema = z.object({
+      executionOrder: z.array(z.string()),
+      toolCount: z.number(),
+    });
+    return schema.parse(data);
   },
 };
