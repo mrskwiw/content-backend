@@ -62,6 +62,43 @@ export default function Integrations() {
       const updated = await settingsApi.updateWebSearchConfig(update);
       setConfig(updated);
 
+      // Test connection for newly added keys
+      const keysToTest: Array<{ provider: 'brave' | 'tavily' | 'serpapi'; key: string }> = [];
+      if (braveApiKey) keysToTest.push({ provider: 'brave', key: braveApiKey });
+      if (tavilyApiKey) keysToTest.push({ provider: 'tavily', key: tavilyApiKey });
+      if (serpapiApiKey) keysToTest.push({ provider: 'serpapi', key: serpapiApiKey });
+
+      // Test each newly configured key
+      let allTestsPassed = true;
+      for (const { provider: testProvider, key } of keysToTest) {
+        try {
+          const result = await settingsApi.testConnection({
+            provider: testProvider,
+            api_key: key,
+          });
+
+          if (!result.success) {
+            allTestsPassed = false;
+            setTestResult({
+              provider: testProvider,
+              success: false,
+              message: result.message,
+            });
+            alert(`${testProvider.charAt(0).toUpperCase() + testProvider.slice(1)} connection test failed: ${result.message}`);
+            break;
+          }
+        } catch (error) {
+          allTestsPassed = false;
+          setTestResult({
+            provider: testProvider,
+            success: false,
+            message: `Connection test failed: ${(error as Error).message}`,
+          });
+          alert(`${testProvider.charAt(0).toUpperCase() + testProvider.slice(1)} connection test failed: ${(error as Error).message}`);
+          break;
+        }
+      }
+
       // Clear form after save
       setBraveApiKey('');
       setTavilyApiKey('');
@@ -71,7 +108,11 @@ export default function Integrations() {
       queryClient.invalidateQueries({ queryKey: ['settings', 'web-search'] });
       queryClient.invalidateQueries({ queryKey: ['integrations'] });
 
-      alert('Settings saved successfully!');
+      if (allTestsPassed && keysToTest.length > 0) {
+        alert('Settings saved and connection verified successfully!');
+      } else if (keysToTest.length === 0) {
+        alert('Settings saved successfully!');
+      }
     } catch (error) {
       console.error('Failed to save:', error);
       alert('Failed to save settings. Please try again.');
