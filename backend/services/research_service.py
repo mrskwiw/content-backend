@@ -850,6 +850,18 @@ class ResearchService:
                 or "General business"
             )
 
+        elif tool_name == "audience_research":
+            # Audience research needs business name and industry
+            inputs["business_name"] = (
+                params.get("business_name") or client.name or "Client Business"
+            )
+            inputs["industry"] = (
+                params.get("industry")
+                or client.industry
+                or client.business_description
+                or "General"
+            )
+
         return inputs
 
 
