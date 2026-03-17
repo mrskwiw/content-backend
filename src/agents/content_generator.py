@@ -1205,6 +1205,21 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
         context["requires_story"] = template.requires_story
         context["requires_data"] = template.requires_data
 
+        # FIX (Bug #42): Add measurable_results for data-driven templates
+        # Template 2 (Statistic), 7 (Myth-busting), 13 (Future-thinking)
+        # Note: measurable_results already in base context from to_context_dict() as "results"
+        # This is just adding a reminder for data-driven templates
+        if template.requires_data and context.get("results"):
+            context["use_measurable_results"] = (
+                "YES - incorporate the results listed above into your content"
+            )
+
+        # FIX (Bug #42): Add competitors for comparison template (Template 10)
+        if template.template_id == 10 and context.get("competitors"):
+            context["comparison_guidance"] = (
+                "Use the competitors list above to create a detailed comparison"
+            )
+
         return context
 
     def _build_system_prompt(
@@ -1410,7 +1425,8 @@ If your draft is under 1500 words after Section 4, you MUST:
 
         # Add client-specific voice guidance
         if client_brief.brand_personality:
-            personalities = ", ".join([p.value for p in client_brief.brand_personality])
+            # brand_personality is List[str], not List[Enum]
+            personalities = ", ".join(client_brief.brand_personality)
             prompt += f"\n\nCLIENT VOICE: This client is {personalities}."
 
         if client_brief.key_phrases:
@@ -1420,6 +1436,31 @@ If your draft is under 1500 words after Section 4, you MUST:
         if client_brief.misconceptions:
             avoid = ", ".join(client_brief.misconceptions)
             prompt += f"\n\nCOMMON MISCONCEPTIONS TO ADDRESS: {avoid}"
+
+        # FIX (Bug #42): Add tone_preference usage - previously only used for template selection
+        if client_brief.tone_preference:
+            tone_guidance = {
+                "professional": "polished, credible, authoritative",
+                "conversational": "friendly, approachable, relatable",
+                "authoritative": "confident, expert, commanding",
+                "friendly": "warm, personable, welcoming",
+                "innovative": "forward-thinking, creative, bold",
+                "educational": "clear, informative, instructive",
+            }
+            tone_key = client_brief.tone_preference.value
+            if tone_key in tone_guidance:
+                prompt += f"\n\nTONE: Write in a {tone_key} tone ({tone_guidance[tone_key]})."
+
+        # FIX (Bug #42): Add data_preference usage - previously added to context but never used
+        if client_brief.data_usage:
+            if client_brief.data_usage.value == "heavy":
+                prompt += "\n\nDATA USAGE: Include statistics, data points, and metrics throughout the post to support claims."
+            elif client_brief.data_usage.value == "minimal":
+                prompt += "\n\nDATA USAGE: Minimize statistics - focus on stories, examples, and narrative. Use data sparingly."
+
+        # FIX (Bug #42): Add industry context - previously collected but not added to context
+        if client_brief.industry:
+            prompt += f"\n\nINDUSTRY CONTEXT: {client_brief.industry}"
 
         # NEW: Add client memory insights for repeat clients
         if client_memory and client_memory.is_repeat_client:

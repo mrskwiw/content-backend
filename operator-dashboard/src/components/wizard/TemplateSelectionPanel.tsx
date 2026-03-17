@@ -1,6 +1,7 @@
-import { useState, memo } from 'react';
-import { CheckCircle2, Circle, FileText, ArrowRight, Link2 } from 'lucide-react';
+import { useState, memo, useEffect } from 'react';
+import { CheckCircle2, Circle, FileText, ArrowRight, Link2, Loader2 } from 'lucide-react';
 import { PlatformSelector } from './PlatformSelector';
+import apiClient from '@/api/client';
 
 interface Template {
   id: number;
@@ -8,20 +9,13 @@ interface Template {
   description: string;
   bestFor: string;
   difficulty: 'fast' | 'medium' | 'slow';
-  requiredTools?: string[];
-  recommendedTools?: string[];
+  required?: string[];  // P0 - Critical
+  recommended?: string[];  // P1 - Recommended
+  optional?: string[];  // P2 - Optional (Bug #41 fix)
 }
 
-const TEMPLATES: Template[] = [
-  {
-    id: 1,
-    name: 'Problem Recognition',
-    description: 'Hook problem → Validate feeling → Hint at solution',
-    bestFor: 'Building awareness, getting engagement',
-    difficulty: 'fast',
-    requiredTools: [],
-    recommendedTools: ['audience_research', 'seo_keyword_research'],
-  },
+// REMOVED: Hardcoded templates (Bug #41 fix - now fetched from API)
+// Templates are now loaded from /api/generator/templates with updated P0/P1/P2 prerequisites
   {
     id: 2,
     name: 'Statistic + Insight',
@@ -182,6 +176,29 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
 }: Props) {
   const [selected, setSelected] = useState<Set<number>>(new Set(initialSelection));
 
+  // FIX (Bug #41): Fetch templates from API with updated prerequisites
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get('/api/generator/templates');
+        setTemplates(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch templates:', err);
+        setError('Failed to load templates. Please refresh the page.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
+
   const toggleTemplate = (id: number) => {
     const newSelected = new Set(selected);
     if (newSelected.has(id)) {
@@ -276,8 +293,25 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
         {selected.size > 0 && ` → ${selected.size * 2} posts (2 per template)`}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {TEMPLATES.map((template) => {
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-sm text-neutral-600 dark:text-neutral-400">Loading templates...</span>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className="rounded-md bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-200">
+          {error}
+        </div>
+      )}
+
+      {/* Template grid */}
+      {!isLoading && !error && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {templates.map((template) => {
           const isSelected = selected.has(template.id);
           return (
             <button
@@ -305,15 +339,17 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
                 </div>
               </div>
 
-              {/* Prerequisites */}
-              {((template.requiredTools && template.requiredTools.length > 0) ||
-                (template.recommendedTools && template.recommendedTools.length > 0)) && (
+              {/* Prerequisites - FIX (Bug #41): Show P0/P1/P2 from API */}
+              {((template.required && template.required.length > 0) ||
+                (template.recommended && template.recommended.length > 0) ||
+                (template.optional && template.optional.length > 0)) && (
                 <div className="ml-7 mt-3 space-y-2">
-                  {template.requiredTools && template.requiredTools.length > 0 && (
+                  {/* P0 - Critical (Required) */}
+                  {template.required && template.required.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <Link2 className="h-3 w-3 text-red-600 dark:text-red-400" />
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">Required:</span>
-                      {template.requiredTools.map((toolId) => (
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400">P0 Critical:</span>
+                      {template.required.map((toolId) => (
                         <span
                           key={toolId}
                           className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400"
@@ -323,14 +359,30 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
                       ))}
                     </div>
                   )}
-                  {template.recommendedTools && template.recommendedTools.length > 0 && (
+                  {/* P1 - Recommended */}
+                  {template.recommended && template.recommended.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <Link2 className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Recommended:</span>
-                      {template.recommendedTools.map((toolId) => (
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">P1 Recommended:</span>
+                      {template.recommended.map((toolId) => (
                         <span
                           key={toolId}
                           className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400"
+                        >
+                          {TOOL_LABELS[toolId] || toolId}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* P2 - Optional (NEW - Bug #41) */}
+                  {template.optional && template.optional.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Link2 className="h-3 w-3 text-neutral-500 dark:text-neutral-400" />
+                      <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">P2 Optional:</span>
+                      {template.optional.map((toolId) => (
+                        <span
+                          key={toolId}
+                          className="inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-medium text-neutral-700 dark:text-neutral-300"
                         >
                           {TOOL_LABELS[toolId] || toolId}
                         </span>
@@ -353,7 +405,8 @@ export const TemplateSelectionPanel = memo(function TemplateSelectionPanel({
             </button>
           );
         })}
-      </div>
+        </div>
+      )}
 
       <div className="mt-6 flex items-center justify-between border-t border-neutral-200 dark:border-neutral-700 pt-4">
         <div className="text-sm text-neutral-600 dark:text-neutral-400">

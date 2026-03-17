@@ -13,8 +13,9 @@
 **Best for:** Building awareness, getting engagement
 **Format:** Hook problem → Validate feeling → Hint at solution
 **Research Tools:**
-- **Required:** Audience Research (identifies customer pain points and frustrations)
-- **Recommended:** ICP Workshop (ideal customer profile), SEO Keywords (problem-related search terms)
+- **P0 (Critical):** None - brief provides customer_pain_points field
+- **P1 (Recommended):** Audience Research (validates customer pain points and frustrations)
+- **P2 (Optional):** SEO Keywords (problem-related search terms), Voice Analysis (hook and CTA patterns)
 
 ```
 [HOOK - Label the problem in a way they haven't heard it]:
@@ -50,8 +51,9 @@ Does this ring true? Reply with: "How do you vet right now?" — I'm reading eve
 **Best for:** Credibility, thought leadership
 **Format:** Stat → What it means → Unexpected angle
 **Research Tools:**
-- **Required:** Market Trends (industry statistics and data points)
-- **Recommended:** Story Mining (case examples to illustrate), SEO Keywords (trending topics)
+- **P0 (Critical):** Market Trends Research (REQUIRED - brief has NO statistics field, need credible data)
+- **P1 (Recommended):** None
+- **P2 (Optional):** Story Mining (case examples), Competitive Analysis (supporting context)
 
 ```
 [STAT - Start with a surprising number]:
@@ -95,8 +97,9 @@ Have you noticed this pattern?
 **Best for:** Differentiation, starting conversations
 **Format:** Challenge conventional wisdom → Show why → Give nuance
 **Research Tools:**
-- **Required:** SEO Keywords (common advice/beliefs to challenge)
-- **Recommended:** Competitive Analysis (conventional wisdom), Market Trends (industry norms)
+- **P0 (Critical):** None
+- **P1 (Recommended):** Competitive Analysis (shows conventional wisdom), Market Trends Research (reveals norms to challenge)
+- **P2 (Optional):** SEO Keywords (search optimization)
 
 ```
 [CONTRARIAN HEADLINE]:
@@ -138,12 +141,13 @@ The key is recognizing that consistency in process beats consistency in people.
 
 ---
 
-## TEMPLATE 4: The "Here's What Changed" Post
+## TEMPLATE 4: The "Here's What Changed" Post (Evolution Post)
 **Best for:** Authority, sharing lessons
 **Format:** Old way → What changed → New results
 **Research Tools:**
-- **Required:** Story Mining (transformation stories, before/after experiences)
-- **Recommended:** Brand Archetype (authentic storytelling tone)
+- **P0 (Critical):** Story Mining (REQUIRED - transformation stories with before/after arc, brief often lacks structured stories)
+- **P1 (Recommended):** None
+- **P2 (Optional):** Brand Archetype (guides narrative tone)
 
 ```
 [CONTEXT - What we used to do]:
@@ -190,8 +194,9 @@ Are you still sending PDFs and hoping? Reply with "intake form" if you want to s
 **Best for:** Driving comments, visibility
 **Format:** Open-ended question → Why it matters → Bonus insight
 **Research Tools:**
-- **Required:** Audience Research (what questions/debates resonate with target audience)
-- **Recommended:** SEO Keywords (trending questions), Brand Archetype (conversational tone)
+- **P0 (Critical):** None - brief provides customer_questions field
+- **P1 (Recommended):** Audience Research (validates which questions resonate)
+- **P2 (Optional):** SEO Keywords (trending questions), Brand Archetype (conversational tone guidance)
 
 ```
 [QUESTION]:
@@ -233,8 +238,9 @@ The most thoughtful response gets a personalized hiring template from us.
 **Best for:** Connection, vulnerability, being human
 **Format:** Setup → Crisis/realization → Lesson → Application
 **Research Tools:**
-- **Required:** Story Mining (personal/client experiences and lessons learned)
-- **Recommended:** Brand Archetype (authentic, vulnerable storytelling voice)
+- **P0 (Critical):** Story Mining (REQUIRED - personal narratives with emotional arc, brief stories often insufficient)
+- **P1 (Recommended):** Brand Archetype (guides vulnerable, authentic tone)
+- **P2 (Optional):** Voice Analysis (narrative patterns)
 
 ```
 [SETUP - Relatable scenario]:
@@ -280,8 +286,9 @@ The fix is: Replace "credential checking" with a 15-min conversation about their
 **Best for:** Authority, correctness, education
 **Format:** Common belief → Why it's wrong → Truth → Evidence
 **Research Tools:**
-- **Required:** Market Trends (common industry misconceptions)
-- **Recommended:** Competitive Analysis (what others are saying), SEO Keywords (common beliefs)
+- **P0 (Critical):** None - brief provides misconceptions field
+- **P1 (Recommended):** Market Trends Research (reveals prevalent myths)
+- **P2 (Optional):** Competitive Analysis (common beliefs), SEO Keywords (search optimization)
 
 ```
 [MYTH]:
@@ -320,11 +327,13 @@ Instead of filtering by years alone, try using a skill-specific project to evalu
 
 ---
 
-## TEMPLATE 8: The "Things I Got Wrong" Post
+## TEMPLATE 8: The "Things I Got Wrong" Post (Vulnerability Post)
 **Best for:** Credibility, anti-hype, vulnerability
 **Format:** Belief → Why I was wrong → What I learned
 **Research Tools:**
-- **Recommended:** Story Mining (learning experiences), Brand Archetype (vulnerable, honest tone)
+- **P0 (Critical):** None - brief can provide vulnerability stories
+- **P1 (Recommended):** Story Mining (learning/failure experiences), Brand Archetype (guides vulnerable, honest tone)
+- **P2 (Optional):** Voice Analysis (authentic patterns)
 
 ```
 [BELIEF I HELD]:
@@ -367,8 +376,9 @@ If you believe longer relationships = better work, the shift is: Evaluate each p
 **Best for:** Value, shareability, bookmarking
 **Format:** Problem → 3-4 quick steps → Result
 **Research Tools:**
-- **Required:** SEO Keywords (what people search for/want to learn)
-- **Recommended:** Content Gap Analysis (what's missing in existing content), Audience Research (pain points)
+- **P0 (Critical):** None - how-to is process-based
+- **P1 (Recommended):** SEO Keywords (what people search/want to learn), Content Gap Analysis (missing topics)
+- **P2 (Optional):** Audience Research (skill level, pain points)
 
 ```
 [PROBLEM]:
@@ -420,8 +430,9 @@ Which step are you going to try first?
 **Best for:** Differentiation, decision-making
 **Format:** Two options → Trade-offs → Guidance
 **Research Tools:**
-- **Required:** Competitive Analysis (understand alternatives and competitors)
-- **Recommended:** Market Trends (industry preferences), SEO Keywords (comparison searches)
+- **P0 (Critical):** Competitive Analysis (REQUIRED - detailed alternatives analysis, brief competitors field insufficient)
+- **P1 (Recommended):** None
+- **P2 (Optional):** Market Trends (industry preferences), SEO Keywords (comparison searches)
 
 ```
 [SETUP]:
@@ -474,12 +485,13 @@ Which camp are you in?
 
 ---
 
-## TEMPLATE 11: The "What I Learned From..." Post
+## TEMPLATE 11: The "What I Learned From..." Post (Learning Post)
 **Best for:** Connecting to culture/events, showing learning
 **Format:** Trigger → Key insight → Application
 **Research Tools:**
-- **Required:** Story Mining (learning experiences, client lessons)
-- **Recommended:** Brand Archetype (reflective, insightful tone)
+- **P0 (Critical):** None - learning can come from brief
+- **P1 (Recommended):** Story Mining (learning journey stories)
+- **P2 (Optional):** Brand Archetype (reflective tone), Voice Analysis (patterns)
 
 ```
 [TRIGGER]:
@@ -517,12 +529,13 @@ What's a belief you used to hold that you've completely flipped on?
 
 ---
 
-## TEMPLATE 12: The "Inside Look" Post
+## TEMPLATE 12: The "Inside Look" Post (Behind-the-Scenes)
 **Best for:** Transparency, behind-the-scenes, trust
 **Format:** Peek behind the curtain → Why we do it → Result
 **Research Tools:**
-- **Required:** Story Mining (behind-the-scenes processes and stories)
-- **Recommended:** Brand Archetype (authentic, transparent tone), Audience Research (what they want to see)
+- **P0 (Critical):** None - behind-the-scenes stories from brief
+- **P1 (Recommended):** Story Mining (process stories, day-in-life narratives)
+- **P2 (Optional):** Brand Archetype (transparency tone), Voice Analysis (authenticity)
 
 ```
 [TEASER]:
@@ -564,12 +577,13 @@ If you're scaling hiring, the thing to test is: Filter before meeting.
 
 ---
 
-## TEMPLATE 13: The Future-Thinking Post
+## TEMPLATE 13: The Future-Thinking Post (Prediction Post)
 **Best for:** Thought leadership, trend-setting
 **Format:** Observation → Extrapolation → Implication → Action
 **Research Tools:**
-- **Required:** Market Trends (industry direction, emerging patterns)
-- **Recommended:** Competitive Analysis (what others are predicting), SEO Keywords (trending topics)
+- **P0 (Critical):** Market Trends Research (REQUIRED - cannot make credible predictions without trend data)
+- **P1 (Recommended):** None
+- **P2 (Optional):** Competitive Analysis (industry direction)
 
 ```
 [OBSERVATION]:
@@ -610,12 +624,13 @@ I'd expect this to become standard within 18 months.
 
 ---
 
-## TEMPLATE 14: The Reader Question Response Post
+## TEMPLATE 14: The Reader Question Response Post (Q&A Post)
 **Best for:** Community engagement, social proof, value
 **Format:** Question → Direct answer → Broader insight
 **Research Tools:**
-- **Required:** Audience Research (common questions, pain points from target audience)
-- **Recommended:** SEO Keywords (frequently searched questions)
+- **P0 (Critical):** None - brief provides customer_questions field
+- **P1 (Recommended):** Audience Research (validates which questions resonate)
+- **P2 (Optional):** Content Gap Analysis (missing FAQ topics)
 
 ```
 [QUESTION]:
@@ -653,11 +668,13 @@ If you're wrestling with contractor evaluation, hit reply — I'll share a frame
 
 ---
 
-## TEMPLATE 15: The Milestone/Celebration Post
+## TEMPLATE 15: The Milestone/Celebration Post (Achievement Post)
 **Best for:** Community building, relatability, milestone sharing
 **Format:** Milestone → What it took → Lesson → Gratitude
 **Research Tools:**
-- **Recommended:** Story Mining (company milestones, achievements), Brand Archetype (celebratory, grateful tone)
+- **P0 (Critical):** None - milestones from brief
+- **P1 (Recommended):** Story Mining (milestone journey stories)
+- **P2 (Optional):** Brand Archetype (celebratory tone)
 
 ```
 [MILESTONE]:

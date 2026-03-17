@@ -337,7 +337,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
       </div>
 
       <p className="mb-6 text-sm text-neutral-600 dark:text-neutral-400">
-        Specify exact quantities for each template. Pricing is $40/post, with optional $15/post topic research add-on.
+        Specify exact quantities for each template. Pricing is $40/post. Research tools are available in the Research step ($300-$600 each).
       </p>
 
       {/* Pricing Summary Card */}
@@ -374,24 +374,8 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
           </div>
         </div>
 
-        {/* Topic Research Checkbox */}
-        <div className="mt-4 flex items-center gap-2 border-t border-blue-200 dark:border-blue-800 pt-4">
-          <input
-            type="checkbox"
-            id="include-research"
-            checked={includeResearch}
-            onChange={(e) => setIncludeResearch(e.target.checked)}
-            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-          />
-          <label htmlFor="include-research" className="flex-1 cursor-pointer text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-            <span>Include topic research (+$15/post) {includeResearch && `= +$${(totalPosts * RESEARCH_PRICE_PER_POST).toLocaleString()}`}</span>
-            <span title="Topic research identifies trending keywords and content themes for your posts. This is separate from the client research tools in the Research step.">
-              <HelpCircle
-                className="h-4 w-4 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-              />
-            </span>
-          </label>
-        </div>
+        {/* REMOVED (Bug #43): Deprecated $15/post topic research checkbox */}
+        {/* Topic research is now handled by granular research tools in Research step ($300-$600 each) */}
 
         {/* Topic Override Section */}
         <div className="mt-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">

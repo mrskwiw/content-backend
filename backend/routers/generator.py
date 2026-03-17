@@ -255,6 +255,98 @@ async def get_template_dependencies(
         )
 
 
+@router.get("/templates")
+async def list_templates():
+    """
+    Get all templates with their research prerequisites.
+
+    Returns list of templates with updated P0/P1/P2 prerequisites from
+    template_prerequisites.py configuration (Bug #42 fix).
+
+    Returns:
+        List of template objects with:
+        - id: Template number (1-15)
+        - name: Template name
+        - description: Template format/structure
+        - bestFor: What the template is best used for
+        - difficulty: Difficulty level (fast/medium/slow)
+        - required: P0 (Critical) research tools list
+        - recommended: P1 (Recommended) research tools list
+        - optional: P2 (Optional) research tools list
+
+    Raises:
+        HTTPException 404: Template library file not found
+        HTTPException 500: Failed to parse templates
+    """
+    try:
+        # Import here to avoid circular dependency
+        from src.config.template_prerequisites import get_template_prerequisites
+
+        # Parse all templates from library file
+        templates = template_parser.parse_all_templates()
+
+        # Build response with updated prerequisites
+        result = []
+        for template_id, template_data in sorted(templates.items()):
+            # Get updated prerequisites from Bug #42 fix
+            prereqs = get_template_prerequisites(template_id)
+
+            result.append(
+                {
+                    "id": template_id,
+                    "name": template_data["title"],
+                    "description": template_data.get("format", ""),
+                    "bestFor": template_data.get("best_for", ""),
+                    "difficulty": _infer_difficulty(template_data),
+                    "required": prereqs.get("required", []),  # P0 - Critical
+                    "recommended": prereqs.get("recommended", []),  # P1 - Recommended
+                    "optional": prereqs.get("optional", []),  # P2 - Optional
+                }
+            )
+
+        return result
+
+    except FileNotFoundError as e:
+        logger.error(f"Template library file not found: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template library file not found",
+        )
+    except Exception as e:
+        logger.error(f"Failed to list templates: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list templates: {str(e)}",
+        )
+
+
+def _infer_difficulty(template_data: dict) -> str:
+    """Infer template difficulty from template data.
+
+    Fast: Simple structure, no story required, no complex data
+    Medium: Moderate complexity, may require specific data
+    Slow: Complex structure, story required, needs significant thought
+
+    Args:
+        template_data: Template metadata dict
+
+    Returns:
+        Difficulty level: 'fast', 'medium', or 'slow'
+    """
+    name = template_data.get("title", "").lower()
+
+    # Slow templates (require stories, vulnerability, deep thought)
+    if any(word in name for word in ["story", "personal", "vulnerability", "wrong", "changed"]):
+        return "slow"
+
+    # Fast templates (simple structure, quick to write)
+    if any(word in name for word in ["question", "how-to", "problem", "statistic"]):
+        return "fast"
+
+    # Everything else is medium
+    return "medium"
+
+
 @router.post("/generate-all", response_model=RunResponse)
 @strict_limiter.limit("10/hour")  # TR-004: Expensive AI generation (composite key: IP+user)
 async def generate_all(

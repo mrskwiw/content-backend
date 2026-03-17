@@ -5,6 +5,7 @@ import { researchApi, ResearchTool } from '@/api/research';
 import { clientsApi } from '@/api/clients';
 import { settingsApi } from '@/api/settings';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { notifyResearchSuccess, notifyResearchError, extractResearchMetrics } from '@/utils/researchNotifications';
 import { ResearchDataCollectionPanel } from './ResearchDataCollectionPanel';
 
 // Tool prerequisites mapping (from backend research_prerequisites.py)
@@ -179,9 +180,37 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
       }),
     onSuccess: (data, variables) => {
       setResults(new Map(results).set(variables.tool, data));
+
+      // Extract metrics from research outputs
+      const metrics = extractResearchMetrics(data.outputs);
+
+      // Show success notification
+      notifyResearchSuccess({
+        toolName: variables.tool,
+        toolLabel: TOOL_LABELS[variables.tool],
+        summary: metrics.summary,
+        metrics: {
+          count: metrics.count,
+        },
+      });
+
+      // Invalidate history query to refresh the list
+      historyQuery.refetch();
     },
     onError: (error, variables) => {
-      alert(`Failed to run research tool "${variables.tool}": ${getApiErrorMessage(error)}`);
+      const errorMessage = getApiErrorMessage(error);
+
+      // Show error notification
+      notifyResearchError({
+        toolName: variables.tool,
+        toolLabel: TOOL_LABELS[variables.tool],
+        error: errorMessage,
+        actionMessage: 'Please check your input and try again',
+        onRetry: () => {
+          // Re-trigger the same tool with same params
+          runResearchMutation.mutate({ tool: variables.tool, params: variables.params });
+        },
+      });
     },
   });
 

@@ -20,10 +20,10 @@
     "test:all": "npm run test:coverage && npm run test:e2e",
     "deploy": "npm run build && netlify deploy --prod",
     "deploy:preview": "npm run build && netlify deploy",
-    "generate:openapi": "cd .. && python generate_openapi.py > operator-dashboard/openapi.json 2>nul",
-    "generate:types": "openapi-typescript openapi.json -o src/types/api-schema.ts",
-    "generate:api": "npm run generate:openapi && npm run generate:types",
-    "prebuild": "npm run generate:api"
+    "generate:openapi": "cd .. && python generate_openapi.py > operator-dashboard/openapi.json 2>/dev/null || true",
+    "generate:types": "openapi-typescript openapi.json -o src/types/api-schema.ts 2>/dev/null || true",
+    "generate:api": "npm run generate:openapi && npm run generate:types || true",
+    "prebuild": "npm run generate:api || echo 'Skipping API generation (build will use existing types)'"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -39,6 +39,7 @@
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1",
     "react-syntax-highlighter": "^16.1.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.9"
   },

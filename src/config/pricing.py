@@ -2,11 +2,14 @@
 Centralized pricing configuration for the Content Jumpstart system.
 
 This module provides:
-- Global pricing constants ($40/post, $15 research add-on)
-- Research tool catalog with a la carte pricing
+- Global pricing constants ($40/post)
+- Research tool catalog with a la carte pricing ($300-$600 per tool)
 - Bundle discount definitions and auto-detection
 - Price calculation utilities
 - Unlimited revision policy
+
+Note: Legacy per-post research add-on ($15/post) has been deprecated (Bug #43) in favor
+      of the new research tools system which provides higher value and better pricing.
 """
 
 from typing import Dict, List, TypedDict
@@ -18,7 +21,9 @@ class PricingConfig(BaseModel):
 
     # Base pricing
     PRICE_PER_POST: float = 40.0
-    RESEARCH_PRICE_PER_POST: float = 15.0  # Optional add-on per post
+    RESEARCH_PRICE_PER_POST: float = (
+        0.0  # DEPRECATED (Bug #43): Topic research replaced by research tools ($300-$600 each)
+    )
 
     # Minimum and maximum order sizes
     MIN_POSTS: int = 1
@@ -32,7 +37,7 @@ def calculate_price(
     num_posts: int,
     research_per_post: bool = False,
     price_per_post: float = 40.0,
-    research_price: float = 15.0,
+    research_price: float = 0.0,  # DEPRECATED (Bug #43): Set to 0.0, was 15.0
 ) -> float:
     """
     Calculate total price with optional research add-on.
@@ -244,7 +249,7 @@ def calculate_full_project_price(
     research_per_post: bool = False,
     selected_tools: List[str] | None = None,
     price_per_post: float = 40.0,
-    research_price: float = 15.0,
+    research_price: float = 0.0,  # DEPRECATED (Bug #43): Set to 0.0, was 15.0
 ) -> FullPriceBreakdown:
     """
     Calculate complete project price breakdown including posts, research add-on, and tools.
@@ -284,7 +289,7 @@ def calculate_price_from_quantities(
     template_quantities: Dict[int, int],
     research_per_post: bool = False,
     price_per_post: float = 40.0,
-    research_price: float = 15.0,
+    research_price: float = 0.0,  # DEPRECATED (Bug #43): Set to 0.0, was 15.0
 ) -> float:
     """
     Calculate price from template quantities.

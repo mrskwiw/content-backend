@@ -162,7 +162,12 @@ class ClientBrief(BaseModel):
         return missing
 
     def to_context_dict(self) -> dict:
-        """Convert to dictionary suitable for template rendering"""
+        """Convert to dictionary suitable for template rendering
+
+        NOTE: All fields collected in brief should be available in context
+        for potential use in generation prompts. Previously industry, location,
+        and competitors were collected but NOT added to context dict.
+        """
         return {
             "company_name": self.company_name,
             "ideal_customer": self.ideal_customer,
@@ -176,4 +181,9 @@ class ClientBrief(BaseModel):
             "misconceptions": self.misconceptions,
             "customer_questions": self.customer_questions,
             "results": self.measurable_results,
+            # FIX: Add previously unused fields (Bug #42)
+            "industry": self.industry,
+            "location": self.location,
+            "competitors": self.competitors,
+            # NOTE: tone_preference is in brief but should be handled in prompts directly
         }

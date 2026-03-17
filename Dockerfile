@@ -11,12 +11,13 @@ COPY operator-dashboard/package.json operator-dashboard/package-lock.json ./
 # Install dependencies
 RUN npm ci --production=false
 
-# Copy frontend source code
+# Copy frontend source code (includes pre-generated openapi.json and types)
 COPY operator-dashboard/ ./
 
 # Build frontend for production with environment variables
 # VITE_API_URL="" uses relative URLs (same origin as backend)
 # This eliminates CORS issues in single-service deployment
+# Note: prebuild script will skip OpenAPI generation if Python not available
 ENV VITE_API_URL="" \
     VITE_USE_MOCKS=false \
     VITE_DEBUG_MODE=false
@@ -73,7 +74,6 @@ COPY --chown=appuser:appuser . .
 COPY --chown=appuser:appuser 02_POST_TEMPLATE_LIBRARY.md /app/../02_POST_TEMPLATE_LIBRARY.md
 
 # Copy built frontend from frontend-builder stage
-# This is the key step that was missing!
 COPY --from=frontend-builder --chown=appuser:appuser /frontend/dist /app/operator-dashboard/dist
 
 # Create directories for data, logs, and outputs

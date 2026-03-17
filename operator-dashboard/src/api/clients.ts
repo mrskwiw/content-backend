@@ -61,6 +61,10 @@ export const clientsApi = {
     if (input.platforms !== undefined) backendInput.platforms = input.platforms;
     if (input.customerPainPoints !== undefined) backendInput.customer_pain_points = input.customerPainPoints;
     if (input.customerQuestions !== undefined) backendInput.customer_questions = input.customerQuestions;
+    // FIX (Bug #45): Add missing fields that were collected but not sent to backend
+    if (input.keywords !== undefined) backendInput.keywords = input.keywords;
+    if (input.competitors !== undefined) backendInput.competitors = input.competitors;
+    if (input.location !== undefined) backendInput.location = input.location;
 
     const { data } = await apiClient.post('/api/clients/', backendInput);
     return ClientSchema.parse(data);
@@ -79,6 +83,10 @@ export const clientsApi = {
     if (input.platforms !== undefined) backendInput.platforms = input.platforms;
     if (input.customerPainPoints !== undefined) backendInput.customer_pain_points = input.customerPainPoints;
     if (input.customerQuestions !== undefined) backendInput.customer_questions = input.customerQuestions;
+    // FIX (Bug #45): Add missing fields that were collected but not sent to backend
+    if (input.keywords !== undefined) backendInput.keywords = input.keywords;
+    if (input.competitors !== undefined) backendInput.competitors = input.competitors;
+    if (input.location !== undefined) backendInput.location = input.location;
 
     const { data } = await apiClient.patch(`/api/clients/${clientId}`, backendInput);
     return ClientSchema.parse(data);
