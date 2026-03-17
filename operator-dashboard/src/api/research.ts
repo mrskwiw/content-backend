@@ -248,9 +248,13 @@ export const researchApi = {
       { tool_names: toolNames }
     );
     const schema = z.object({
-      executionOrder: z.array(z.string()),
-      toolCount: z.number(),
+      execution_order: z.array(z.string()),
+      tool_count: z.number(),
     });
-    return schema.parse(data);
+    const parsed = schema.parse(data);
+    return {
+      executionOrder: parsed.execution_order,
+      toolCount: parsed.tool_count,
+    };
   },
 };
