@@ -25,7 +25,9 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Credit system fields
-    credit_balance = Column(Integer, default=0, nullable=False)
+    credit_balance = Column(
+        Integer, default=1000, nullable=False
+    )  # Task #50: 1000 free welcome credits
     total_credits_purchased = Column(Integer, default=0, nullable=False)
     total_credits_used = Column(Integer, default=0, nullable=False)
 
