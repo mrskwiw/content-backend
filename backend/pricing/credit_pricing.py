@@ -23,7 +23,7 @@ RESEARCH_TOOL_COSTS = {
     # Light research (50 credits ~ $100-125)
     "platform_strategy": 50,  # Platform-specific recommendations (3-4 hours)
     "content_calendar": 50,  # 30-day content calendar generation (3-4 hours)
-    "market_trends": 50,  # Industry trends and insights (3-4 hours)
+    "market_trends_research": 50,  # Industry trends and insights (3-4 hours)
     "business_report": 50,  # Business perception analysis with web+Maps data (3-4 hours)
     # Medium research (75 credits ~ $150-187.50)
     "brand_archetype": 75,  # Brand personality analysis (4-6 hours)
@@ -32,11 +32,11 @@ RESEARCH_TOOL_COSTS = {
     # Heavy research (100 credits ~ $200-250)
     "voice_analysis": 100,  # Brand voice documentation (6-8 hours)
     "competitive_analysis": 100,  # Competitor content strategy (6-8 hours)
-    "content_gap": 100,  # Gap analysis and opportunities (6-8 hours)
+    "content_gap_analysis": 100,  # Gap analysis and opportunities (6-8 hours)
     "story_mining": 100,  # Anecdote extraction and categorization (6-8 hours)
     "determine_competitors": 100,  # AI-powered competitor discovery (6-8 hours)
     # Very heavy research (150 credits ~ $300-375)
-    "seo_keywords": 150,  # Comprehensive SEO keyword research (8-12 hours)
+    "seo_keyword_research": 150,  # Comprehensive SEO keyword research (8-12 hours)
     "icp_workshop": 150,  # Ideal Customer Profile workshop (8-12 hours)
 }
 
