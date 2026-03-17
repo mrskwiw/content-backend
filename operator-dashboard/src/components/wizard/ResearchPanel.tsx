@@ -93,7 +93,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
   // Fetch completed tools for current project (for prerequisite checking)
   const { data: completedToolsData } = useQuery({
     queryKey: ['research', 'completed', projectId],
-    queryFn: () => projectId ? researchApi.getClientHistory(projectId) : Promise.resolve(null),
+    queryFn: () => projectId ? researchApi.getProjectResearchResults(projectId) : Promise.resolve(null),
     enabled: !!projectId,
     staleTime: 60 * 1000, // 1 minute
   });
