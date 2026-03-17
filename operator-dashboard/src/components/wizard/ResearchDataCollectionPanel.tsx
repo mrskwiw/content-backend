@@ -233,15 +233,22 @@ export function ResearchDataCollectionPanel({
   const [collectedData, setCollectedData] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Pre-populate industry field from client data
+  // Pre-populate industry and location fields from client data
   useEffect(() => {
+    const updates: Record<string, string> = {};
+
     if (clientData?.industry && !collectedData.industry) {
-      setCollectedData(prev => ({
-        ...prev,
-        industry: clientData.industry || ''
-      }));
+      updates.industry = clientData.industry;
     }
-  }, [clientData, collectedData.industry]);
+
+    if (clientData?.location && !collectedData.location) {
+      updates.location = clientData.location;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setCollectedData(prev => ({ ...prev, ...updates }));
+    }
+  }, [clientData, collectedData.industry, collectedData.location]);
 
   // Get all required fields for selected tools
   const requiredFields = selectedTools.flatMap(tool =>
