@@ -478,18 +478,13 @@ async def spa_routing_middleware(request: Request, call_next):
 
 
 # Health check endpoint
-@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
-async def health_check(request: Request):
+@app.get("/health", tags=["Health"], operation_id="health_check_get")
+async def health_check_get(request: Request):
     """
-    Health check endpoint.
+    Health check endpoint (GET).
 
-    Supports both GET and HEAD requests for health checks.
     Returns API status and rate limit statistics.
     """
-    # HEAD requests should just return 200 OK (for Render health checks)
-    if request.method == "HEAD":
-        return Response(status_code=200)
-
     usage_stats = rate_limiter.get_usage_stats()
     return {
         "status": "healthy",
@@ -511,6 +506,12 @@ async def health_check(request: Request):
             "queue_length": usage_stats["queue_length"],
         },
     }
+
+
+@app.head("/health", tags=["Health"], operation_id="health_check_head", include_in_schema=False)
+async def health_check_head():
+    """Health check endpoint (HEAD) for monitoring tools."""
+    return Response(status_code=200)
 
 
 # Root endpoint - COMMENTED OUT to allow frontend serving at /
@@ -553,25 +554,25 @@ if FRONTEND_BUILD_DIR.exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_BUILD_DIR / "assets"), name="assets")
 
     # Root route: serve React app with no-cache headers
-    @app.api_route("/", methods=["GET", "HEAD"])
-    async def serve_root(request: Request):
+    @app.get("/", operation_id="serve_root_get")
+    async def serve_root_get():
         """
         Serve React app at root URL with cache prevention.
 
-        Supports both GET and HEAD requests for health checks.
         Critical: HTML file must not be cached to ensure users get
         the latest version and correct chunk references after deployments.
         """
-        # HEAD requests should just return 200 OK (for Render health checks)
-        if request.method == "HEAD":
-            return Response(status_code=200)
-
         response = FileResponse(FRONTEND_BUILD_DIR / "index.html")
         # Prevent HTML caching to avoid chunk loading errors
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
         return response
+
+    @app.head("/", operation_id="serve_root_head", include_in_schema=False)
+    async def serve_root_head():
+        """HEAD request for Render health checks."""
+        return Response(status_code=200)
 
     # Favicon route: serve vite.svg as favicon
     @app.get("/favicon.ico")

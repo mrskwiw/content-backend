@@ -101,6 +101,7 @@ operator-dashboard/node_modules/
 operator-dashboard/dist/
 operator-dashboard/.env
 operator-dashboard/.env.local
+operator-dashboard/openapi.json  # Auto-generated from backend schema
 
 # Database files (backups, temp, test DBs)
 *.db
