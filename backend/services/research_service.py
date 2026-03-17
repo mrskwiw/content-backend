@@ -862,6 +862,22 @@ class ResearchService:
                 or "General"
             )
 
+        elif tool_name == "platform_strategy":
+            # Platform strategy needs current platforms - fallback to client.platforms
+            # BUG FIX #38: Add data injection and type normalization
+            current_platforms = params.get("current_platforms")
+
+            # Type normalization: handle string, None, or list
+            if isinstance(current_platforms, str):
+                # Convert comma-separated string to list
+                current_platforms = [p.strip() for p in current_platforms.split(",") if p.strip()]
+            elif current_platforms is None or current_platforms == "":
+                # Fallback to client platforms
+                current_platforms = client.platforms or []
+
+            inputs["current_platforms"] = current_platforms if current_platforms else []
+            inputs["content_goals"] = params.get("content_goals", "")
+
         return inputs
 
 

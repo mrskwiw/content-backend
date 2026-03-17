@@ -360,11 +360,17 @@ export function ResearchDataCollectionPanel({
       const processedData = { ...collectedData };
       requiredFields.forEach(field => {
         const value = processedData[field.key];
-        if (field.type === 'text-list' && typeof value === 'string') {
-          processedData[field.key] = value
-            .split(',')
-            .map((item: string) => item.trim())
-            .filter((item: string) => item.length > 0);
+        if (field.type === 'text-list') {
+          if (typeof value === 'string') {
+            // Convert comma-separated string to array (Bug #38 fix)
+            processedData[field.key] = value
+              .split(',')
+              .map((item: string) => item.trim())
+              .filter((item: string) => item.length > 0);
+          } else if (!value || value === '') {
+            // Convert null/undefined/empty to empty array (Bug #38 fix)
+            processedData[field.key] = [];
+          }
         }
       });
       onContinue(processedData);

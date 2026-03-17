@@ -95,20 +95,36 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
             )
 
         # SECURITY: Validate optional current platforms list
-        if "current_platforms" in inputs and inputs["current_platforms"]:
-            inputs["current_platforms"] = self.validator.validate_list(
-                inputs.get("current_platforms"),
-                field_name="current_platforms",
-                max_items=10,
-                item_validator=lambda x: self.validator.validate_text(
-                    x,
-                    field_name="platform_name",
-                    min_length=2,
-                    max_length=100,
-                    required=False,
-                    sanitize=True,
-                ),
-            )
+        # BUG FIX #38: Add type normalization before validation
+        if "current_platforms" in inputs:
+            current_platforms = inputs["current_platforms"]
+
+            # Type normalization: handle various input formats
+            if isinstance(current_platforms, str):
+                # Convert comma-separated string to list
+                current_platforms = [p.strip() for p in current_platforms.split(",") if p.strip()]
+            elif not isinstance(current_platforms, list):
+                # Invalid type - default to empty list
+                current_platforms = []
+
+            # Only validate if non-empty
+            if current_platforms:
+                inputs["current_platforms"] = self.validator.validate_list(
+                    current_platforms,
+                    field_name="current_platforms",
+                    max_items=10,
+                    required=False,  # Make it truly optional
+                    item_validator=lambda x: self.validator.validate_text(
+                        x,
+                        field_name="platform_name",
+                        min_length=2,
+                        max_length=100,
+                        required=False,
+                        sanitize=True,
+                    ),
+                )
+            else:
+                inputs["current_platforms"] = []
 
         return True
 
