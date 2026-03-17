@@ -16,10 +16,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
+from backend.config import settings
 from backend.database import get_db
 from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
-from backend.schemas.auth import AdminUserCreate, PasswordResetRequest, UserResponse, UserStatsResponse
+from backend.schemas.auth import (
+    AdminUserCreate,
+    PasswordResetRequest,
+    UserResponse,
+    UserStatsResponse,
+)
+from backend.schemas.credit_schemas import GrantCreditsRequest, GrantCreditsResponse
 from backend.services import crud
 from backend.utils.auth import get_password_hash
 from backend.utils.logger import logger
@@ -45,6 +52,41 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
+    return current_user
+
+
+def require_super_admin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Dependency to verify user is a super admin (original system administrator).
+
+    Super admins are defined in SUPER_ADMIN_EMAILS environment variable.
+    Only these users can perform privileged operations like granting free credits.
+
+    Raises:
+        HTTPException 403: User is not a super admin
+
+    Returns:
+        User instance if super admin
+    """
+    if not current_user.is_superuser:
+        logger.warning(f"Super admin access denied: User {current_user.email} " f"is not an admin")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin privileges required",
+        )
+
+    # Check if user email is in super admin list
+    super_admin_emails = settings.super_admin_emails_list
+    if current_user.email.lower() not in super_admin_emails:
+        logger.warning(
+            f"Super admin access denied: User {current_user.email} "
+            f"is admin but not in SUPER_ADMIN_EMAILS list"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin privileges required. Only original system administrators can perform this action.",
+        )
+
     return current_user
 
 
@@ -483,4 +525,69 @@ async def create_user(
         is_superuser=new_user.is_superuser,
         created_at=new_user.created_at,
         updated_at=new_user.updated_at,
+    )
+
+
+@router.post("/credits/grant", response_model=GrantCreditsResponse)
+async def grant_credits(
+    request: GrantCreditsRequest,
+    db: Session = Depends(get_db),
+    super_admin: User = Depends(require_super_admin),
+):
+    """
+    Super admin endpoint to grant free credits to a user (Task #51).
+
+    Only original system administrators (defined in SUPER_ADMIN_EMAILS env var)
+    can grant free credits. This prevents abuse and ensures accountability.
+
+    Use cases:
+    - Reward beta testers or early adopters
+    - Compensate users for service issues
+    - Promotional campaigns
+    - Customer support resolutions
+
+    Args:
+        request: Grant credits request (user_id, credits, reason)
+        super_admin: Current super admin user (verified by require_super_admin dependency)
+
+    Returns:
+        Grant credits response with updated balance
+
+    Raises:
+        403: Not a super admin
+        404: User not found
+        400: Invalid credit amount
+    """
+    logger.info(
+        f"Super admin {super_admin.email} granting {request.credits} credits "
+        f"to user {request.user_id}. Reason: {request.reason}"
+    )
+
+    # Find the target user
+    user = crud.get_user(db, request.user_id)
+    if not user:
+        logger.warning(f"Grant credits failed: User {request.user_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found: {request.user_id}",
+        )
+
+    # Update user credit balance
+    old_balance = user.credit_balance
+    user.credit_balance += request.credits
+    db.commit()
+    db.refresh(user)
+
+    logger.info(
+        f"Granted {request.credits} credits to {user.email} "
+        f"(balance: {old_balance} → {user.credit_balance}). "
+        f"Granted by: {super_admin.email}"
+    )
+
+    return GrantCreditsResponse(
+        user_email=user.email,
+        credits_granted=request.credits,
+        new_balance=user.credit_balance,
+        reason=request.reason,
+        granted_by=super_admin.email,
     )

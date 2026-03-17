@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import UsersTab from '@/components/settings/UsersTab';
 import { creditsApi } from '@/api/credits';
 import { settingsApi } from '@/api/settings';
+import { adminApi } from '@/api/admin';
+import type { User as AdminUser } from '@/api/admin';
 import {
   Settings as SettingsIcon,
   Server,
@@ -37,6 +39,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Search,
+  UserPlus,
+  Gift,
 } from 'lucide-react';
 
 // Interfaces
@@ -192,6 +196,19 @@ export default function Settings() {
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [showConfigureModal, setShowConfigureModal] = useState<Integration | null>(null);
 
+  // Grant credits state (super admin only)
+  const [showGrantCreditsModal, setShowGrantCreditsModal] = useState(false);
+  const [grantCreditsForm, setGrantCreditsForm] = useState({
+    user_id: '',
+    credits: 1000,
+    reason: '',
+  });
+  const [grantCreditsError, setGrantCreditsError] = useState<string | null>(null);
+
+  // Check if current user is a super admin (from SUPER_ADMIN_EMAILS env var)
+  // This will be validated on the backend
+  const isSuperAdmin = isAdmin; // Backend will enforce SUPER_ADMIN_EMAILS check
+
   // Mock queries
   const { data: apiKeys = mockApiKeys } = useQuery({
     queryKey: ['api-keys'],
@@ -293,7 +310,29 @@ export default function Settings() {
     enabled: activeTab === 'credits',
   });
 
+  // Admin queries (super admin only)
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminApi.listUsers({ limit: 100 }),
+    enabled: activeTab === 'credits' && isSuperAdmin && showGrantCreditsModal,
+  });
+
   // Mutations
+  const grantCreditsMutation = useMutation({
+    mutationFn: adminApi.grantCredits,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['credits', 'transactions'] });
+      setShowGrantCreditsModal(false);
+      setGrantCreditsForm({ user_id: '', credits: 1000, reason: '' });
+      setGrantCreditsError(null);
+      alert(`Successfully granted ${data.credits_granted} credits to ${data.user_email}`);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || error.message || 'Failed to grant credits';
+      setGrantCreditsError(message);
+    },
+  });
   const createApiKeyMutation = useMutation({
     mutationFn: async (name: string) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -965,6 +1004,22 @@ export default function Settings() {
             ) : (
               <div className="text-sm text-neutral-600 dark:text-neutral-400">Loading balance...</div>
             )}
+
+            {/* Grant Credits Button (Super Admin Only) */}
+            {isSuperAdmin && (
+              <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                <button
+                  onClick={() => setShowGrantCreditsModal(true)}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors"
+                >
+                  <Gift className="h-4 w-4" />
+                  Grant Free Credits to User
+                </button>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-2">
+                  🔒 Super Admin Only - Visible only to original system administrators
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Credit Packages */}
@@ -1294,6 +1349,23 @@ export default function Settings() {
           isSubmitting={createApiKeyMutation.isPending}
         />
       )}
+
+      {/* Grant Credits Modal (Super Admin Only) */}
+      <GrantCreditsModal
+        isOpen={showGrantCreditsModal}
+        onClose={() => {
+          setShowGrantCreditsModal(false);
+          setGrantCreditsError(null);
+        }}
+        users={allUsers}
+        form={grantCreditsForm}
+        onFormChange={(field, value) =>
+          setGrantCreditsForm((prev) => ({ ...prev, [field]: value }))
+        }
+        onSubmit={() => grantCreditsMutation.mutate(grantCreditsForm)}
+        isSubmitting={grantCreditsMutation.isPending}
+        error={grantCreditsError}
+      />
     </div>
   );
 }
@@ -1362,6 +1434,176 @@ function NewApiKeyModal({
           >
             <Key className="h-4 w-4" />
             {isSubmitting ? 'Creating...' : 'Create Key'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Grant Credits Modal Component (Super Admin Only)
+function GrantCreditsModal({
+  isOpen,
+  onClose,
+  users,
+  form,
+  onFormChange,
+  onSubmit,
+  isSubmitting,
+  error,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  users: AdminUser[];
+  form: { user_id: string; credits: number; reason: string };
+  onFormChange: (field: string, value: any) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  error: string | null;
+}) {
+  if (!isOpen) return null;
+
+  const selectedUser = users.find((u) => u.id === form.user_id);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 dark:bg-black/60 px-4">
+      <div className="w-full max-w-md rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+              <Gift className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              Grant Free Credits
+            </h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+              🔒 Super Admin Only - Logged for audit
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-lg p-2 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-600 dark:hover:text-neutral-300 disabled:opacity-50"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3">
+            <div className="flex gap-2">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* User Selector */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Select User *
+            </label>
+            <select
+              value={form.user_id}
+              onChange={(e) => onFormChange('user_id', e.target.value)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:border-primary-500 dark:focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20 disabled:opacity-50"
+            >
+              <option value="">-- Select a user --</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.email} - {user.full_name}
+                </option>
+              ))}
+            </select>
+            {selectedUser && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Active: {selectedUser.is_active ? '✅ Yes' : '❌ No'} •
+                Admin: {selectedUser.is_superuser ? '👑 Yes' : 'No'}
+              </p>
+            )}
+          </div>
+
+          {/* Credits Amount */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Credits to Grant * (1-10,000)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="10000"
+              value={form.credits}
+              onChange={(e) => onFormChange('credits', parseInt(e.target.value) || 0)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:border-primary-500 dark:focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20 disabled:opacity-50"
+              placeholder="1000"
+            />
+          </div>
+
+          {/* Reason */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Reason * (Required for audit trail)
+            </label>
+            <textarea
+              value={form.reason}
+              onChange={(e) => onFormChange('reason', e.target.value)}
+              disabled={isSubmitting}
+              rows={3}
+              maxLength={500}
+              className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:border-primary-500 dark:focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20 disabled:opacity-50 resize-none"
+              placeholder="e.g., Beta tester reward, compensation for downtime, promotional campaign"
+            />
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              {form.reason.length}/500 characters
+            </p>
+          </div>
+
+          {/* Example Use Cases */}
+          <div className="rounded-lg border border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 p-3">
+            <p className="text-xs font-medium text-primary-900 dark:text-primary-100 mb-1">
+              Common Use Cases:
+            </p>
+            <ul className="text-xs text-primary-700 dark:text-primary-300 space-y-1">
+              <li>• Beta testing participant reward</li>
+              <li>• Service downtime compensation</li>
+              <li>• Marketing promotion / early adopter bonus</li>
+              <li>• Customer support case resolution</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={
+              !form.user_id ||
+              !form.credits ||
+              form.credits < 1 ||
+              form.credits > 10000 ||
+              !form.reason.trim() ||
+              isSubmitting
+            }
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 dark:hover:bg-primary-600 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Granting...
+              </>
+            ) : (
+              <>
+                <Gift className="h-4 w-4" />
+                Grant {form.credits} Credits
+              </>
+            )}
           </button>
         </div>
       </div>

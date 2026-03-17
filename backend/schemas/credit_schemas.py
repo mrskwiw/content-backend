@@ -198,6 +198,30 @@ class AdminCreditAdjustmentResponse(BaseModel):
     new_balance: int
 
 
+# Grant Credits Schemas (Super Admin Only)
+class GrantCreditsRequest(BaseModel):
+    """Request schema for granting free credits (super admin only)."""
+
+    user_id: str = Field(..., description="ID of user to grant credits to")
+    credits: int = Field(..., gt=0, le=10000, description="Number of credits to grant (1-10000)")
+    reason: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Reason for granting credits (for audit trail)",
+    )
+
+
+class GrantCreditsResponse(BaseModel):
+    """Response schema for granting free credits."""
+
+    user_email: str
+    credits_granted: int
+    new_balance: int
+    reason: str
+    granted_by: str
+
+
 # Transaction Filter Schemas
 class TransactionFilterParams(BaseModel):
     """Query parameters for filtering transactions."""

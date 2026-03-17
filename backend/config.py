@@ -65,6 +65,19 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Super Admin Configuration
+    # Comma-separated list of email addresses for super admins (original system administrators)
+    # Only these users can grant free credits, even if other users are promoted to admin
+    # Example: "admin@example.com,owner@example.com"
+    SUPER_ADMIN_EMAILS: str = ""
+
+    @property
+    def super_admin_emails_list(self) -> List[str]:
+        """Parse super admin emails from comma-separated string"""
+        if not self.SUPER_ADMIN_EMAILS:
+            return []
+        return [email.strip().lower() for email in self.SUPER_ADMIN_EMAILS.split(",")]
+
     @field_validator("SECRET_KEY")
     @classmethod
     def validate_secret_key(cls, v: str) -> str:
