@@ -216,6 +216,9 @@ export default function Wizard() {
             platforms: brief.platforms,
             customerPainPoints: brief.customerPainPoints,
             customerQuestions: brief.customerQuestions,
+            keywords: brief.keywords,
+            competitors: brief.competitors,
+            location: brief.location,
           });
           finalClientId = client.id;
         } catch (error: unknown) {
@@ -247,6 +250,9 @@ export default function Wizard() {
             platforms: brief.platforms,
             customerPainPoints: brief.customerPainPoints,
             customerQuestions: brief.customerQuestions,
+            keywords: brief.keywords,
+            competitors: brief.competitors,
+            location: brief.location,
           });
           finalClientId = clientId;
         } catch (error: unknown) {
