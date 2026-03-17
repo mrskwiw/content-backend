@@ -33,6 +33,34 @@ class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
         super().__init__(project_id, config)
         self.validator = ResearchInputValidator(strict_mode=False)
 
+    @staticmethod
+    def _safe_join(items: List[Any], separator: str = ", ") -> str:
+        """
+        Safely join a list of items (strings or dicts) into a comma-separated string.
+
+        Handles both string items and dict items (extracts 'name' or 'title' field).
+        This fixes Bug #36 - handles dicts passed instead of strings.
+
+        Args:
+            items: List of strings or dicts
+            separator: String to use between items
+
+        Returns:
+            Comma-separated string
+        """
+        if not items:
+            return ""
+
+        str_items = []
+        for item in items:
+            if isinstance(item, dict):
+                # Extract name/title from dict, or convert to string
+                str_items.append(item.get("name") or item.get("title") or str(item))
+            else:
+                str_items.append(str(item))
+
+        return separator.join(str_items)
+
     @property
     def tool_name(self) -> str:
         return "content_gap_analysis"
@@ -249,9 +277,9 @@ class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
         """Analyze what content currently exists"""
         client = get_default_client()
 
-        # Convert topics to string if list
+        # Convert topics to string if list (Bug #36 fix - handle dicts)
         if isinstance(current_content_topics, list):
-            topics_str = ", ".join(current_content_topics)
+            topics_str = self._safe_join(current_content_topics)
         else:
             topics_str = str(current_content_topics)
 
@@ -356,8 +384,9 @@ Return as JSON with keys: content_strengths, popular_topics, formats_used, gaps_
         for comp in competitor_analysis:
             competitor_topics.extend(comp.popular_topics)
 
+        # Bug #36 fix - handle dicts in competitor_topics
         competitor_context = (
-            ", ".join(competitor_topics[:15]) if competitor_topics else "Not analyzed"
+            self._safe_join(competitor_topics[:15]) if competitor_topics else "Not analyzed"
         )
 
         prompt = f"""Identify content gaps for this business:
@@ -421,7 +450,10 @@ Return as JSON array of gap objects."""
         client = get_default_client()
 
         current_formats = current_coverage.get("formats", [])
-        current_formats_str = ", ".join(current_formats) if current_formats else "None specified"
+        # Bug #36 fix - handle dicts in formats
+        current_formats_str = (
+            self._safe_join(current_formats) if current_formats else "None specified"
+        )
 
         prompt = f"""Identify content format gaps for this business:
 
@@ -474,7 +506,8 @@ Return as JSON array of format gap objects."""
         client = get_default_client()
 
         current_stages = current_coverage.get("buyer_stages", [])
-        stages_str = ", ".join(current_stages) if current_stages else "Unknown"
+        # Bug #36 fix - handle dicts in buyer_stages
+        stages_str = self._safe_join(current_stages) if current_stages else "Unknown"
 
         prompt = f"""Analyze buyer journey content gaps:
 
