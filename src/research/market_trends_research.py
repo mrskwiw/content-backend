@@ -34,6 +34,34 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
         self.validator = ResearchInputValidator(strict_mode=False)
         self.client = get_default_client()
 
+    @staticmethod
+    def _safe_join(items: List[Any], separator: str = ", ") -> str:
+        """
+        Safely join a list of items (strings or dicts) into a comma-separated string.
+
+        Handles both string items and dict items (extracts 'name' or 'title' field).
+        This fixes Bug #37 - handles dicts passed instead of strings.
+
+        Args:
+            items: List of strings or dicts
+            separator: String to use between items
+
+        Returns:
+            Comma-separated string
+        """
+        if not items:
+            return ""
+
+        str_items = []
+        for item in items:
+            if isinstance(item, dict):
+                # Extract name/title from dict, or convert to string
+                str_items.append(item.get("name") or item.get("title") or str(item))
+            else:
+                str_items.append(str(item))
+
+        return separator.join(str_items)
+
     @property
     def tool_name(self) -> str:
         return "market_trends_research"
@@ -227,8 +255,8 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
 
         # Build prompt based on available data
         if seo_keywords and len(seo_keywords) > 0:
-            # Use SEO keywords to generate more targeted focus areas
-            keywords_text = ", ".join(seo_keywords[:10])  # Use up to 10 keywords
+            # Use SEO keywords to generate more targeted focus areas (Bug #37 fix)
+            keywords_text = self._safe_join(seo_keywords[:10])  # Use up to 10 keywords
             prompt = f"""Based on this business context and SEO keywords, identify 3-5 specific focus areas for market trend research.
 
 Industry: {industry}
@@ -514,7 +542,10 @@ Your focus areas:"""
         industry_insights: str = "",
     ) -> List[TrendCategory]:
         """Research trending topics organized by category"""
-        focus_context = f"Focus particularly on: {', '.join(focus_areas)}" if focus_areas else ""
+        # Bug #37 fix - handle dicts in focus_areas
+        focus_context = (
+            f"Focus particularly on: {self._safe_join(focus_areas, ', ')}" if focus_areas else ""
+        )
 
         # Add customer insights section if available
         insights_section = ""
@@ -870,7 +901,8 @@ topic, timing, description, preparation_timeline"""
         summary += f"Top trends average {avg_popularity:.1f}/10 in popularity, indicating {'strong' if avg_popularity >= 7 else 'moderate'} market interest. "
 
         if key_themes:
-            summary += f"Key themes include: {', '.join(key_themes[:3])}. "
+            # Bug #37 fix - handle dicts in key_themes
+            summary += f"Key themes include: {self._safe_join(key_themes[:3], ', ')}. "
 
         summary += (
             "Strategic content aligned with these trends will maximize relevance and engagement."
@@ -922,7 +954,7 @@ topic, timing, description, preparation_timeline"""
 
 {report.market_summary}
 
-**Key Themes:** {", ".join(report.key_themes)}
+**Key Themes:** {self._safe_join(report.key_themes)}
 
 ---
 
@@ -941,7 +973,7 @@ topic, timing, description, preparation_timeline"""
 - **Relevance:** {trend.relevance.value.upper()}
 - **Urgency:** {trend.urgency}
 
-**Key Drivers:** {", ".join(trend.key_drivers)}
+**Key Drivers:** {self._safe_join(trend.key_drivers)}
 
 **Content Angles:**
 """
@@ -971,7 +1003,7 @@ topic, timing, description, preparation_timeline"""
 - Momentum: {trend.momentum.value.title()}
 - Popularity: {trend.popularity_score}/10
 - Relevance: {trend.relevance.value.title()}
-- Related: {", ".join(trend.related_keywords[:3])}
+- Related: {self._safe_join(trend.related_keywords[:3])}
 
 """
 
@@ -994,7 +1026,7 @@ topic, timing, description, preparation_timeline"""
                     md += f"- {perspective}\n"
 
                 md += f"""
-**Thought Leaders:** {", ".join(conv.thought_leaders)}
+**Thought Leaders:** {self._safe_join(conv.thought_leaders)}
 
 **Content Opportunity:** {conv.content_opportunity}
 
