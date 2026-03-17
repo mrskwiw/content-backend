@@ -34,6 +34,7 @@ RESEARCH_TOOL_COSTS = {
     "competitive_analysis": 100,  # Competitor content strategy (6-8 hours)
     "content_gap": 100,  # Gap analysis and opportunities (6-8 hours)
     "story_mining": 100,  # Anecdote extraction and categorization (6-8 hours)
+    "determine_competitors": 100,  # AI-powered competitor discovery (6-8 hours)
     # Very heavy research (150 credits ~ $300-375)
     "seo_keywords": 150,  # Comprehensive SEO keyword research (8-12 hours)
     "icp_workshop": 150,  # Ideal Customer Profile workshop (8-12 hours)
