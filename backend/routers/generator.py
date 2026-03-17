@@ -408,7 +408,7 @@ async def generate_all(
     target_platform = input.target_platform or project.target_platform or "generic"
 
     # CREDIT DEDUCTION: Calculate and deduct credits before generation
-    credit_cost = num_posts * get_content_cost()
+    credit_cost = num_posts * get_content_cost("blog_post")
     try:
         credit_service.deduct_credits(
             db=db,
