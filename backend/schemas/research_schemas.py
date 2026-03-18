@@ -7,7 +7,7 @@ and security constraints for all research tools.
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, field_serializer, ConfigDict
 
 
 class VoiceAnalysisParams(BaseModel):
@@ -547,6 +547,17 @@ class ResearchResultResponse(BaseModel):
             word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
         ),  # Convert snake_case to camelCase
     )
+
+    @field_serializer("created_at")
+    def serialize_datetime(self, value: Optional[datetime], _info) -> Optional[str]:
+        """Serialize datetime with UTC timezone."""
+        if value is None:
+            return None
+        from datetime import timezone
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
 
 
 class ResearchResultListResponse(BaseModel):

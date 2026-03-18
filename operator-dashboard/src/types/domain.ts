@@ -104,9 +104,9 @@ export const DeliverableSchema = z.object({
   clientId: z.string(),
   format: z.enum(['txt', 'md', 'docx']),
   path: z.string(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string().datetime({ offset: true }),
   status: DeliverableStatusSchema,
-  deliveredAt: z.string().datetime().nullish(),
+  deliveredAt: z.string().datetime({ offset: true }).nullish(),
   proofUrl: z.string().url().nullish(),
   proofNotes: z.string().nullish(),
   runId: z.string().nullish(),
@@ -156,7 +156,7 @@ export const ResearchResultSummarySchema = z.object({
   status: z.string(),
   errorMessage: z.string().nullish().nullable(),
   durationSeconds: z.number().optional().nullable(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string().datetime({ offset: true }),
 });
 export type ResearchResultSummary = z.infer<typeof ResearchResultSummarySchema>;
 
@@ -165,7 +165,7 @@ export const DeliverableDetailsSchema = DeliverableSchema.extend({
   filePreviewTruncated: z.boolean(),
   posts: z.array(PostSummarySchema),
   qaSummary: QASummarySchema.nullish(),
-  fileModifiedAt: z.string().datetime().nullish(),
+  fileModifiedAt: z.string().datetime({ offset: true }).nullish(),
   researchResults: z.array(ResearchResultSummarySchema).optional().default([]),
 });
 export type DeliverableDetails = z.infer<typeof DeliverableDetailsSchema>;
@@ -176,13 +176,13 @@ export const AuditEntrySchema = z.object({
   action: z.string(),
   targetType: z.enum(['project', 'run', 'deliverable', 'post', 'client']),
   targetId: z.string(),
-  timestamp: z.string().datetime(),
+  timestamp: z.string().datetime({ offset: true }),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 export type AuditEntry = z.infer<typeof AuditEntrySchema>;
 
 export const MarkDeliveredSchema = z.object({
-  deliveredAt: z.string().datetime(),
+  deliveredAt: z.string().datetime({ offset: true }),
   proofUrl: z.string().url().optional(),
   proofNotes: z.string().optional(),
 });
@@ -278,6 +278,6 @@ export const ResearchResultSchema = z.object({
   status: z.string(),
   errorMessage: z.string().nullish().nullable(),
   durationSeconds: z.number().optional().nullable(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string().datetime({ offset: true }),
 });
 export type ResearchResult = z.infer<typeof ResearchResultSchema>;

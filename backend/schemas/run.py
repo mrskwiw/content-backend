@@ -5,7 +5,7 @@ Pydantic schemas for Run API.
 from datetime import datetime
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, field_serializer
 
 from backend.utils.logger import logger
 
@@ -104,3 +104,22 @@ class RunResponse(BaseModel):
             return converted
         logger.warning(f"Unexpected logs value type: {type(value)}, returning empty list")
         return []
+
+    @field_serializer("started_at", "completed_at")
+    def serialize_datetime(self, value: Optional[datetime], _info) -> Optional[str]:
+        """Serialize datetime with UTC timezone.
+
+        Ensures all datetime fields include timezone information (Z or +00:00)
+        to match frontend Zod validation requirements.
+        """
+        if value is None:
+            return None
+
+        # If timezone-naive, treat as UTC
+        from datetime import timezone
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+
+        # Serialize to ISO format with timezone
+        return value.isoformat()
