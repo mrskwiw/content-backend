@@ -5,7 +5,7 @@ Pydantic schemas for Post API.
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from src.models.client_brief import Platform
 
@@ -87,3 +87,14 @@ class PostResponse(PostBase):
             word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
         ),  # Convert snake_case to camelCase
     )
+
+    @field_serializer("created_at")
+    def serialize_datetime(self, value, _info):
+        """Serialize datetime with UTC timezone."""
+        if value is None:
+            return None
+        from datetime import timezone
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()

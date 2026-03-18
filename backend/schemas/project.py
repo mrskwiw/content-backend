@@ -5,7 +5,15 @@ Pydantic schemas for Project API.
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+    field_serializer,
+)
 from backend.schemas.enums import Platform
 from backend.utils.input_validators import (
     validate_string_field,
@@ -403,3 +411,14 @@ class ProjectResponse(ProjectBase):
             word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
         ),  # Convert snake_case to camelCase
     )
+
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value, _info):
+        """Serialize datetime with UTC timezone."""
+        if value is None:
+            return None
+        from datetime import timezone
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()

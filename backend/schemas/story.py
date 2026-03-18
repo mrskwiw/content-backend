@@ -5,7 +5,7 @@ Pydantic schemas for Story API.
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import field_serializer, BaseModel, ConfigDict, Field
 
 
 class StoryBase(BaseModel):
@@ -87,6 +87,17 @@ class StoryResponse(StoryBase):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value, _info):
+        """Serialize datetime with UTC timezone."""
+        if value is None:
+            return None
+        from datetime import timezone
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
 
 
 class StoryListResponse(BaseModel):
