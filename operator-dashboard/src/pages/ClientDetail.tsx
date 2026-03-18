@@ -350,15 +350,6 @@ export default function ClientDetail() {
             <div>
               <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{client.name}</h1>
               <div className="mt-2 flex items-center gap-3">
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    client.status === 'active'
-                      ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-300'
-                  }`}
-                >
-                  {client.status || 'active'}
-                </span>
                 <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-300">
                   {packageTier}
                 </span>
@@ -483,7 +474,7 @@ export default function ClientDetail() {
                   <div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">Email</p>
                     <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">
-                      {client.tags?.find(t => t.includes('@')) || 'contact@example.com'}
+                      {client.email || 'No email provided'}
                     </p>
                   </div>
                   <div>

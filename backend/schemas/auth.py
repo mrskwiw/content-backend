@@ -5,7 +5,7 @@ Pydantic schemas for Authentication API.
 from __future__ import annotations  # Enable forward references
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, field_serializer
 from backend.utils.input_validators import validate_string_field
 
 
@@ -140,7 +140,24 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        alias_generator=lambda field_name: "".join(
+            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
+        ),
+    )
+
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value, _info):
+        """Serialize datetime with UTC timezone."""
+        if value is None:
+            return None
+        from datetime import timezone
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
 
 
 class TokenResponse(BaseModel):

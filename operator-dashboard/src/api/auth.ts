@@ -36,15 +36,17 @@ export const authApi = {
 
     // Map backend user model to frontend User type
     const backendUser = data.user;
-    const user: LoginResponse['user'] = {
+    const user = {
+
       id: backendUser.id,
       email: backendUser.email,
-      fullName: backendUser.fullName,
-      isSuperuser: backendUser.isSuperuser,
-      isActive: backendUser.isActive,
-      createdAt: backendUser.createdAt,
-      updatedAt: backendUser.updatedAt,
-    };
+      fullName: (backendUser as any).fullName || (backendUser as any).full_name,
+      isSuperuser: (backendUser as any).isSuperuser || (backendUser as any).is_superuser,
+      isActive: (backendUser as any).isActive || (backendUser as any).is_active,
+      createdAt: (backendUser as any).createdAt || (backendUser as any).created_at,
+      updatedAt: (backendUser as any).updatedAt || (backendUser as any).updated_at,
+
+    } as unknown as LoginResponse['user'];
 
     return {
       access_token: data.access_token,

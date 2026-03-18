@@ -36,7 +36,7 @@ interface PostWithContext {
   projectName?: string;
   clientName?: string;
   platform?: string;
-  templateId?: number;
+  templateId?: string | null;
   wordCount?: number;
   qualityScore?: number;
   status?: string;

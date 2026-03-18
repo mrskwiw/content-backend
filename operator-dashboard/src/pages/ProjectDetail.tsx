@@ -32,7 +32,7 @@ import { deliverablesApi } from '@/api/deliverables';
 import { runsApi } from '@/api/runs';
 import { StatusProgressBar } from '@/components/ui/StatusProgressBar';
 import { ProjectCostSummary, RunCostBreakdown } from '@/components/costs';
-import type { PostDraft, Project, Run } from '@/types/domain';
+import type { PostDraft, Project, Run, ProjectStatus } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
@@ -109,7 +109,7 @@ export default function ProjectDetail() {
     let filtered = projectPosts as PostWithMeta[];
 
     if (platformFilter !== 'all') {
-      filtered = filtered.filter(p => p.platform === platformFilter);
+      filtered = filtered.filter(p => p.targetPlatform === platformFilter);
     }
 
     if (templateFilter !== 'all') {
@@ -130,8 +130,8 @@ export default function ProjectDetail() {
   const mockTimeline = {
     created: project.createdAt,
     started: project.createdAt,
-    completed: project.lastRunAt,
-    delivered: project.status === 'delivered' ? project.lastRunAt : null,
+    completed: project.updatedAt,
+    delivered: project.status === 'delivered' ? project.updatedAt : null,
   };
 
   const mockRevisions = [
@@ -142,8 +142,8 @@ export default function ProjectDetail() {
   const mockActivityLog = [
     { id: '1', action: 'Project created', user: 'Sarah Martinez', timestamp: project.createdAt, details: '' },
     { id: '2', action: 'Content generated', user: 'System', timestamp: project.createdAt, details: '30 posts created' },
-    { id: '3', action: 'QA completed', user: 'System', timestamp: project.lastRunAt || project.createdAt, details: 'Quality score: 87%' },
-    { id: '4', action: 'Deliverable created', user: 'System', timestamp: project.lastRunAt || project.createdAt, details: 'TXT format' },
+    { id: '3', action: 'QA completed', user: 'System', timestamp: project.updatedAt || project.createdAt, details: 'Quality score: 87%' },
+    { id: '4', action: 'Deliverable created', user: 'System', timestamp: project.updatedAt || project.createdAt, details: 'TXT format' },
   ];
 
   const mockDeliverableFiles = [
@@ -334,7 +334,7 @@ export default function ProjectDetail() {
                   <div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">Last Updated</p>
                     <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">
-                      {project.lastRunAt ? formatDistanceToNow(new Date(project.lastRunAt), { addSuffix: true }) : 'Never'}
+                      {project.updatedAt ? formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true }) : 'Never'}
                     </p>
                   </div>
                   <div>
@@ -357,7 +357,7 @@ export default function ProjectDetail() {
                   <div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">Project Progress</p>
                     <div className="mt-2">
-                      <StatusProgressBar status={project.status} size="md" showLabels />
+                      <StatusProgressBar status={project.status as ProjectStatus} size="md" showLabels />
                     </div>
                   </div>
                 </div>
@@ -585,7 +585,7 @@ export default function ProjectDetail() {
                       <div className="mb-3 flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-300">
-                            {post.platform || 'LinkedIn'}
+                            {post.targetPlatform || 'LinkedIn'}
                           </span>
                           {post.templateId && (
                             <span className="inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-medium text-neutral-800 dark:text-neutral-300">
@@ -656,7 +656,7 @@ export default function ProjectDetail() {
                           </td>
                           <td className="whitespace-nowrap px-6 py-4">
                             <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/20 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-300">
-                              {post.platform || 'LinkedIn'}
+                              {post.targetPlatform || 'LinkedIn'}
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-900 dark:text-neutral-100">

@@ -108,10 +108,6 @@ export function ResultDetailModal({ resultId, onClose }: ResultDetailModalProps)
                     label="Actual API Cost"
                     value={result?.actualCostUsd ? `$${result.actualCostUsd.toFixed(4)}` : '—'}
                   />
-                  <MetadataRow
-                    label="Cached Result"
-                    value={result?.isCachedResult ? 'Yes' : 'No'}
-                  />
                 </div>
               )}
             </>

@@ -35,11 +35,6 @@ export function ResultCard({ result, onView, onDownload }: ResultCardProps) {
               <CheckCircle2 className="h-3 w-3" />
               Completed
             </span>
-            {result.isCachedResult && (
-              <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded">
-                Cached
-              </span>
-            )}
           </div>
 
           {/* Metadata */}

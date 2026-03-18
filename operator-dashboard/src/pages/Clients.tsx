@@ -75,25 +75,16 @@ export default function Clients() {
         .filter(p => p.status === 'delivered' || p.status === 'exported')
         .reduce((sum, p) => sum + (p.totalPrice ?? 0), 0);
 
-      // Last activity from most recent project update
-      const lastActivity = clientProjects
-        .filter(p => p.lastRunAt)
-        .sort((a, b) => new Date(b.lastRunAt!).getTime() - new Date(a.lastRunAt!).getTime())[0]
-        ?.lastRunAt
-        ? new Date(clientProjects[0].lastRunAt!)
-        : undefined;
+
 
       return {
         id: client.id,
         name: client.name,
-        email: client.tags?.find(t => t.includes('@')) || undefined,
-        status: client.status || 'active',
-        tags: client.tags,
-        totalProjects: clientProjects.length,
+        email: client.email || undefined,
+                        totalProjects: clientProjects.length,
         activeProjects,
         completedProjects,
-        totalRevenue,
-        lastActivity,
+        totalRevenue
       };
     });
   }, [clients, projects]);

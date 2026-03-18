@@ -153,10 +153,10 @@ export default function Overview() {
   // NEW: Content in review count (projects in QA status)
   const contentInReview = projects.filter(p => p.status === 'qa').length;
   const oldestReviewItem = projects
-    .filter(p => p.status === 'qa' && p.lastRunAt)
-    .sort((a, b) => new Date(a.lastRunAt!).getTime() - new Date(b.lastRunAt!).getTime())[0];
+    .filter(p => p.status === 'qa' && p.updatedAt)
+    .sort((a, b) => new Date(a.updatedAt!).getTime() - new Date(b.updatedAt!).getTime())[0];
   const oldestReviewAge = oldestReviewItem
-    ? formatDistanceToNow(new Date(oldestReviewItem.lastRunAt!), { addSuffix: true })
+    ? formatDistanceToNow(new Date(oldestReviewItem.updatedAt!), { addSuffix: true })
     : '';
 
   // NEW: Pending tasks with priorities
@@ -204,13 +204,13 @@ export default function Overview() {
   // Enhanced recent activity with more context
   const recentActivity = [
     ...projects
-      .filter(p => p.lastRunAt)
+      .filter(p => p.updatedAt)
       .map(p => ({
         type: 'project' as const,
         id: p.id,
         name: p.name,
         action: p.status === 'delivered' ? 'delivered' : `moved to ${p.status}`,
-        timestamp: new Date(p.lastRunAt!),
+        timestamp: new Date(p.updatedAt!),
         user: 'System', // Would come from audit log
         target: p.name
       })),
@@ -490,9 +490,9 @@ export default function Overview() {
                         Next: <span className="font-medium text-neutral-900 dark:text-neutral-100">{nextAction}</span>
                       </span>
                     </div>
-                    {project.lastRunAt && (
+                    {project.updatedAt && (
                       <span className="text-neutral-500 dark:text-neutral-400">
-                        Updated {formatDistanceToNow(new Date(project.lastRunAt), { addSuffix: true })}
+                        Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
                       </span>
                     )}
                   </div>

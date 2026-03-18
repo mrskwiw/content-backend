@@ -118,7 +118,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
                       </div>
                       <p className="line-clamp-2 text-xs text-amber-800 dark:text-amber-200">{post.content}</p>
                       <div className="mt-1 flex gap-3 text-xs text-amber-700 dark:text-amber-300">
-                        {post.length && <span>{post.length} words</span>}
+                        {post.wordCount && <span>{post.wordCount} words</span>}
                         {post.readabilityScore !== undefined && (
                           <span>Readability: {(post?.readabilityScore ?? 0).toFixed(1)}</span>
                         )}
@@ -167,7 +167,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
                       </div>
                       <p className="line-clamp-2 text-xs text-neutral-700 dark:text-neutral-300">{post.content}</p>
                       <div className="mt-1 flex gap-3 text-xs text-neutral-500 dark:text-neutral-400">
-                        {post.length && <span>{post.length} words</span>}
+                        {post.wordCount && <span>{post.wordCount} words</span>}
                         {post.readabilityScore !== undefined && (
                           <span>Readability: {(post?.readabilityScore ?? 0).toFixed(1)}</span>
                         )}
@@ -218,7 +218,7 @@ export function QualityGatePanel({ posts, projectId, onRegenerated }: Props) {
             {editingPost && (
               <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 p-3 text-xs text-neutral-600 dark:text-neutral-400">
                 <div className="flex gap-4">
-                  {editingPost.length && <span>Original: {editingPost.length} words</span>}
+                  {editingPost.wordCount && <span>Original: {editingPost.wordCount} words</span>}
                   {editingPost.readabilityScore !== undefined && (
                     <span>Readability: {(editingPost?.readabilityScore ?? 0).toFixed(1)}</span>
                   )}

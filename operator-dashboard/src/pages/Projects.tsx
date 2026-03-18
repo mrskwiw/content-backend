@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/api/projects';
 import { generatorApi } from '@/api/generator';
-import { Project } from '@/types/domain';
+import { Project, ProjectStatus } from '@/types/domain';
 import { format } from 'date-fns';
 import { RefreshCw, Filter, Play, Sparkles, FileText, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -18,7 +18,7 @@ export default function Projects() {
   const clientId = searchParams.get('clientId') || undefined;
 
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<Project['status'] | ''>('');
+  const [status, setStatus] = useState<ProjectStatus | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -194,7 +194,7 @@ export default function Projects() {
                 <select
                   className="bg-transparent text-sm text-neutral-800 dark:text-neutral-200 outline-none"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as Project['status'] | '')}
+                  onChange={(e) => setStatus(e.target.value as ProjectStatus | '')}
                 >
                   <option value="">All statuses</option>
                   {['draft', 'ready', 'generating', 'qa', 'exported', 'delivered', 'error'].map((s) => (
@@ -257,11 +257,11 @@ export default function Projects() {
                 <TableHead>Templates</TableHead>
                 <TableHead>
                   <button
-                    onClick={() => handleSort('lastRunAt')}
+                    onClick={() => handleSort('updatedAt')}
                     className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
                   >
                     Last Run
-                    {sortField === 'lastRunAt' ? (
+                    {sortField === 'updatedAt' ? (
                       sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                     ) : (
                       <ArrowUpDown className="h-3 w-3 opacity-30" />
@@ -317,7 +317,7 @@ export default function Projects() {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <StatusProgressBar status={project.status} size="sm" />
+                    <StatusProgressBar status={project.status as ProjectStatus} size="sm" />
                   </TableCell>
                   <TableCell>
                     <div className="text-xs text-neutral-600 dark:text-neutral-400">
@@ -327,7 +327,7 @@ export default function Projects() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {project.lastRunAt ? format(new Date(project.lastRunAt), 'PP p') : '—'}
+                      {project.updatedAt ? format(new Date(project.updatedAt), 'PP p') : '—'}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

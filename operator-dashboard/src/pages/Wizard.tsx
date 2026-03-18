@@ -13,7 +13,7 @@ import { postsApi } from '@/api/posts';
 import { runsApi } from '@/api/runs';
 import { projectsApi } from '@/api/projects';
 import { clientsApi, type CreateClientInput, type UpdateClientInput } from '@/api/clients';
-import type { ClientBrief, PostDraft } from '@/types/domain';
+import type { ClientBrief, PostDraft, Platform } from '@/types/domain';
 import type { CreateProjectInput } from '@/api/projects';
 import type { PaginatedResponse } from '@/types/pagination';
 import { Button, Card, CardContent, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
@@ -163,7 +163,7 @@ export default function Wizard() {
           idealCustomer: selectedClient.idealCustomer || '',
           mainProblemSolved: selectedClient.mainProblemSolved || '',
           tonePreference: selectedClient.tonePreference || 'professional',
-          platforms: selectedClient.platforms || [],
+          platforms: (selectedClient.platforms || []) as Platform[],
           customerPainPoints: selectedClient.customerPainPoints || [],
           customerQuestions: selectedClient.customerQuestions || [],
         });
@@ -213,7 +213,7 @@ export default function Wizard() {
             idealCustomer: brief.idealCustomer,
             mainProblemSolved: brief.mainProblemSolved,
             tonePreference: brief.tonePreference,
-            platforms: brief.platforms,
+            platforms: brief.platforms as Platform[],
             customerPainPoints: brief.customerPainPoints,
             customerQuestions: brief.customerQuestions,
             keywords: brief.keywords,
@@ -247,7 +247,7 @@ export default function Wizard() {
             idealCustomer: brief.idealCustomer,
             mainProblemSolved: brief.mainProblemSolved,
             tonePreference: brief.tonePreference,
-            platforms: brief.platforms,
+            platforms: brief.platforms as Platform[],
             customerPainPoints: brief.customerPainPoints,
             customerQuestions: brief.customerQuestions,
             keywords: brief.keywords,
@@ -404,7 +404,7 @@ export default function Wizard() {
                       const projectInput: CreateProjectInput = {
                         name: `${selectedClient?.name || 'Client'} - Content Project`,
                         clientId: clientId,
-                        platforms: [],
+                        platforms: [] as Platform[],
                         templates: [], // Legacy field
                         templateQuantities: {}, // Will be set in template selection step
                         pricePerPost: 40.0,

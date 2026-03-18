@@ -105,6 +105,23 @@ export const PostDraftSchema = z.object({
   cacheReadTokens: z.number().int().nullish(),
   costUsd: z.number().nullish(),
 });
+export type PostDraft = z.infer<typeof PostDraftSchema>;
+
+export const DeliverableSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  clientId: z.string(),
+  format: z.enum(['txt', 'md', 'docx']),
+  path: z.string(),
+  createdAt: z.string().datetime({ offset: true }),
+  status: DeliverableStatusSchema,
+  deliveredAt: z.string().datetime({ offset: true }).nullish(),
+  proofUrl: z.string().url().nullish(),
+  proofNotes: z.string().nullish(),
+  runId: z.string().nullish(),
+  checksum: z.string().nullish(),
+  fileSizeBytes: z.number().nullish(),
+});
 export type Deliverable = z.infer<typeof DeliverableSchema>;
 
 export const PostSummarySchema = z.object({
