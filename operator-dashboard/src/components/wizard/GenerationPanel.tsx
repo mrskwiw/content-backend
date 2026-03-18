@@ -165,12 +165,12 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
           </div>
           {runStatus && (runStatus.totalInputTokens || runStatus.totalOutputTokens) && (
             <TokenUsageDisplay
-              inputTokens={runStatus.totalInputTokens}
-              outputTokens={runStatus.totalOutputTokens}
-              cacheCreationTokens={runStatus.totalCacheCreationTokens}
-              cacheReadTokens={runStatus.totalCacheReadTokens}
-              costUsd={runStatus.totalCostUsd}
-              estimatedCostUsd={runStatus.estimatedCostUsd}
+              inputTokens={runStatus.totalInputTokens ?? undefined}
+              outputTokens={runStatus.totalOutputTokens ?? undefined}
+              cacheCreationTokens={runStatus.totalCacheCreationTokens ?? undefined}
+              cacheReadTokens={runStatus.totalCacheReadTokens ?? undefined}
+              costUsd={runStatus.totalCostUsd ?? undefined}
+              estimatedCostUsd={runStatus.estimatedCostUsd ?? undefined}
               variant="compact"
             />
           )}
