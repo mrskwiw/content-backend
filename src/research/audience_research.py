@@ -27,6 +27,7 @@ from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
+from ..utils.web_search import get_search_client
 
 
 class AudienceResearcher(ResearchTool, CommonValidationMixin):
@@ -81,6 +82,15 @@ class AudienceResearcher(ResearchTool, CommonValidationMixin):
         industry = inputs.get("industry", "General")
 
         # Multi-step analysis
+
+        # Step 0: Fetch current audience behavior data via web search (Bug #47 Fix)
+        logger.info(f"Fetching current audience behavior data for {industry}")
+        search_client = get_search_client()
+        web_audience_data = self._fetch_web_audience_data(
+            search_client, industry, target_audience, business_desc
+        )
+        logger.info(f"Retrieved {len(web_audience_data)} web search results for audience analysis")
+
         print("[Step 1/4] Analyzing demographics and psychographics...")
         demographics_psycho = self._analyze_demographics_psychographics(
             business_desc, target_audience, industry
@@ -111,6 +121,69 @@ class AudienceResearcher(ResearchTool, CommonValidationMixin):
             segments=segments,
             strategy=strategy,
         )
+
+    def _fetch_web_audience_data(
+        self, search_client, industry: str, target_audience: str, business_description: str
+    ) -> List[Dict[str, str]]:
+        """
+        Fetch current audience behavior and demographic data via web search.
+
+        Uses web search to find recent articles, studies, and data about
+        the target audience's behaviors, preferences, and demographics.
+
+        NOTE (Bug #47): Census API integration pending (Task #46 in TODO.md)
+        Future enhancement will add U.S. Census Bureau demographic data.
+
+        Args:
+            search_client: Web search client
+            industry: Industry to research
+            target_audience: Target audience description
+            business_description: Business description for context
+
+        Returns:
+            List of search results with titles, URLs, and snippets
+        """
+        web_results = []
+
+        try:
+            # Search 1: Audience demographics and behaviors
+            audience_query = f"{target_audience} demographics behavior {industry}"
+            logger.info(f"Searching: {audience_query}")
+            audience_results = search_client.search(audience_query, max_results=5)
+            for result in audience_results.results:
+                web_results.append(
+                    {
+                        "category": "Audience Demographics",
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                        "source": result.source or "Web",
+                    }
+                )
+
+            # Search 2: Industry audience trends
+            trends_query = f"{industry} audience trends 2026"
+            logger.info(f"Searching: {trends_query}")
+            trends_results = search_client.search(trends_query, max_results=5)
+            for result in trends_results.results:
+                web_results.append(
+                    {
+                        "category": "Industry Audience Trends",
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                        "source": result.source or "Web",
+                    }
+                )
+
+            logger.info(f"Fetched {len(web_results)} web audience results")
+
+        except Exception as e:
+            logger.error(f"Web search failed: {str(e)}")
+            logger.warning("Continuing with AI-only audience analysis (may be less current)")
+            # Return empty list - analysis will continue with AI-only data
+
+        return web_results
 
     def _analyze_demographics_psychographics(
         self, business_desc: str, target_audience: str, industry: str

@@ -745,6 +745,27 @@ def update_run(db: Session, run_id: str, **kwargs):
     return db_run
 
 
+def delete_run(db: Session, run_id: str) -> bool:
+    """
+    Delete run by ID.
+
+    Args:
+        db: Database session
+        run_id: Run ID to delete
+
+    Returns:
+        True if deleted, False if not found
+    """
+
+    db_run = get_run(db, run_id)
+    if not db_run:
+        return False
+
+    db.delete(db_run)
+    db.commit()
+    return True
+
+
 # ==================== Users ====================
 
 

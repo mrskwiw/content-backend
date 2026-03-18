@@ -21,6 +21,7 @@ from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from ..utils.anthropic_client import get_default_client
 from ..utils.google_maps_search import get_google_maps_client
+from ..utils.web_search import get_search_client
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 
@@ -181,9 +182,28 @@ class MarketTrendsResearcher(ResearchTool, CommonValidationMixin):
                 industry, location, focus_areas
             )
 
+        # Fetch current web trends data
+        search_client = get_search_client()
+        web_trends_data = []
+        if search_client:
+            logger.info(f"Fetching current web trends for {industry}")
+            web_trends_data = self._fetch_web_trends(
+                search_client, industry, focus_areas, business_desc
+            )
+            logger.info(f"Fetched {len(web_trends_data)} web trend results")
+        else:
+            logger.warning(
+                "Web search client not available - proceeding without current trend data"
+            )
+
         # Step 1: Identify trending topics by category
         trend_categories = self._research_trending_topics(
-            business_desc, industry, target_audience, focus_areas, industry_insights
+            business_desc,
+            industry,
+            target_audience,
+            focus_areas,
+            industry_insights,
+            web_trends_data,
         )
 
         # Step 2: Identify emerging conversations
@@ -418,6 +438,68 @@ Your focus areas:"""
 
         return unique_areas[:5]
 
+    def _fetch_web_trends(
+        self, search_client, industry: str, focus_areas: List[str], business_description: str
+    ) -> List[Dict[str, str]]:
+        """
+        Fetch current web trends for industry and focus areas.
+
+        Uses web search to find recent articles, trends, and discussions
+        about the industry and specific focus areas. This provides CURRENT
+        data that AI cannot know from training data.
+
+        Args:
+            search_client: Web search client
+            industry: Industry to research
+            focus_areas: List of focus areas to search
+            business_description: Business description for context
+
+        Returns:
+            List of search results with titles, URLs, and snippets
+        """
+        web_results = []
+
+        try:
+            # Search 1: General industry trends
+            industry_query = f"{industry} trends 2026"
+            logger.info(f"Searching: {industry_query}")
+            industry_results = search_client.search(industry_query, max_results=5)
+            for result in industry_results.results:
+                web_results.append(
+                    {
+                        "category": "Industry Trends",
+                        "title": result.title,
+                        "url": result.url,
+                        "snippet": result.snippet,
+                        "source": result.source or "Web",
+                    }
+                )
+
+            # Search 2-4: Focus area specific trends
+            for focus_area in focus_areas[:3]:  # Limit to top 3 focus areas
+                focus_query = f"{focus_area} {industry} trends"
+                logger.info(f"Searching: {focus_query}")
+                focus_results = search_client.search(focus_query, max_results=3)
+                for result in focus_results.results:
+                    web_results.append(
+                        {
+                            "category": f"Focus: {focus_area}",
+                            "title": result.title,
+                            "url": result.url,
+                            "snippet": result.snippet,
+                            "source": result.source or "Web",
+                        }
+                    )
+
+            logger.info(f"Fetched {len(web_results)} web trend results")
+
+        except Exception as e:
+            logger.error(f"Web search failed: {str(e)}")
+            logger.warning("Continuing with AI-only trend analysis (may be less current)")
+            # Return empty list - analysis will continue with AI-only data
+
+        return web_results
+
     def _extract_industry_insights_from_reviews(
         self,
         industry: str,
@@ -540,6 +622,7 @@ Your focus areas:"""
         target_audience: str,
         focus_areas: List[str],
         industry_insights: str = "",
+        web_trends_data: List[Dict[str, str]] = None,
     ) -> List[TrendCategory]:
         """Research trending topics organized by category"""
         # Bug #37 fix - handle dicts in focus_areas
@@ -561,6 +644,39 @@ Use these customer insights to:
 - Spot gaps between what customers want vs. what's available
 """
 
+        # Add web trends section if available (BUG #46 FIX)
+        web_trends_section = ""
+        if web_trends_data:
+            # Format web search results
+            trend_items = []
+            for result in web_trends_data:
+                cat = result.get("category", "")
+                title = result.get("title", "")
+                source = result.get("source", "")
+                snippet = result.get("snippet", "")
+                trend_items.append(f"- [{cat}] {title} ({source})")
+                trend_items.append(f"  {snippet}")
+
+            trends_text = chr(92) + "n".join(trend_items)
+
+            web_trends_section = (
+                f"{chr(92)}n{chr(92)}nCURRENT WEB TRENDS DATA (March 2026):{chr(92)}n"
+                + f"{trends_text}{chr(92)}n{chr(92)}n"
+                + "Use these CURRENT web search results to:"
+                + chr(92)
+                + "n"
+                + "- Identify what's trending RIGHT NOW (live search results)"
+                + chr(92)
+                + "n"
+                + "- Validate trend momentum with recent articles"
+                + chr(92)
+                + "n"
+                + "- Ground analysis in current market reality"
+                + chr(92)
+                + "n"
+                + "- Cite specific sources from search results"
+            )
+
         prompt = f"""Research current market trends and organize them into 4-5 categories.
 
 Industry: {industry}
@@ -569,7 +685,7 @@ Business: {business_desc}
 
 Target Audience: {target_audience}
 
-{focus_context}{insights_section}
+{focus_context}{insights_section}{web_trends_section}
 
 For each category:
 1. Category name and description

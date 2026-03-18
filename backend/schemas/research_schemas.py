@@ -540,7 +540,13 @@ class ResearchResultResponse(BaseModel):
     cache_read_tokens: Optional[int] = None
     actual_cost_usd: Optional[float] = None  # Actual API cost (may differ from tool_price)
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,  # Allow both snake_case and camelCase
+        alias_generator=lambda field_name: "".join(
+            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
+        ),  # Convert snake_case to camelCase
+    )
 
 
 class ResearchResultListResponse(BaseModel):
@@ -550,3 +556,11 @@ class ResearchResultListResponse(BaseModel):
     total: int
     project_id: Optional[str]
     client_id: Optional[str]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,  # Allow both snake_case and camelCase
+        alias_generator=lambda field_name: "".join(
+            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
+        ),  # Convert snake_case to camelCase
+    )

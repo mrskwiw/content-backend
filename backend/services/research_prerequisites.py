@@ -65,6 +65,11 @@ TOOL_DEPENDENCIES: Dict[str, ToolDependencies] = {
         used_by=["market_trends_research", "content_gap_analysis", "content_calendar"],
         description="Primary keywords, secondary keywords, keyword clusters",
     ),
+    # NOTE (Bug #47 - Partially Complete): audience_research requires:
+    # 1. Web search integration (Brave/Tavily/SerpAPI) - IMPLEMENTED ✓
+    # 2. Census API integration - PENDING (Task #46 in TODO.md)
+    # Web search provides current audience behavior data
+    # Census API will add official demographic data (income, education, population)
     "audience_research": ToolDependencies(
         tool_id="audience_research",
         tier=1,
@@ -105,6 +110,9 @@ TOOL_DEPENDENCIES: Dict[str, ToolDependencies] = {
         used_by=["platform_strategy", "content_calendar"],
         description="Missing content opportunities, topic gaps",
     ),
+    # NOTE (Bug #46): market_trends_research REQUIRES web search integration (Brave/Tavily/SerpAPI)
+    # Web search is not a research TOOL but an infrastructure requirement
+    # Users must configure web search in settings for current trend data
     "market_trends_research": ToolDependencies(
         tool_id="market_trends_research",
         tier=2,
