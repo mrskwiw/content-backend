@@ -39,9 +39,9 @@ export const usersApi = {
   async create(input: CreateUserRequest): Promise<SystemUser> {
     const { data } = await apiClient.post<SystemUser>('/api/admin/users', {
       email: input.email,
-      full_name: input.full_name,
+      fullName: input.fullName,
       password: input.password,
-      is_superuser: input.is_superuser ?? false,
+      isSuperuser: input.isSuperuser ?? false,
     });
     return data;
   },

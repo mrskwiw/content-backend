@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
+from backend.schemas.enums import Platform
 from backend.utils.input_validators import (
     validate_string_field,
     validate_id_field,
@@ -79,8 +80,8 @@ class ProjectBase(BaseModel):
     )
 
     # Configuration - None defaults so actual DB values are not overridden
-    platforms: Optional[List[str]] = None
-    target_platform: Optional[str] = Field(
+    platforms: Optional[List[Platform]] = None
+    target_platform: Optional[Platform] = Field(
         default="generic",
         validation_alias=AliasChoices("targetPlatform", "target_platform"),
         description="Single target platform for generation optimization",
@@ -289,8 +290,8 @@ class ProjectUpdate(BaseModel):
     )
 
     # Configuration
-    platforms: Optional[List[str]] = None
-    target_platform: Optional[str] = Field(
+    platforms: Optional[List[Platform]] = None
+    target_platform: Optional[Platform] = Field(
         default=None, validation_alias=AliasChoices("targetPlatform", "target_platform")
     )
     tone: Optional[str] = None

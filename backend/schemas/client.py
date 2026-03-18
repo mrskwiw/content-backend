@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict, EmailStr
+from backend.schemas.enums import Platform
 
 
 class ClientBase(BaseModel):
@@ -17,7 +18,7 @@ class ClientBase(BaseModel):
     ideal_customer: Optional[str] = None
     main_problem_solved: Optional[str] = None
     tone_preference: Optional[str] = None
-    platforms: Optional[List[str]] = None
+    platforms: Optional[List[Platform]] = None
     customer_pain_points: Optional[List[str]] = None
     customer_questions: Optional[List[str]] = None
     industry: Optional[str] = None
@@ -55,7 +56,7 @@ class ClientUpdate(BaseModel):
     ideal_customer: Optional[str] = None
     main_problem_solved: Optional[str] = None
     tone_preference: Optional[str] = None
-    platforms: Optional[List[str]] = None
+    platforms: Optional[List[Platform]] = None
     customer_pain_points: Optional[List[str]] = None
     customer_questions: Optional[List[str]] = None
     industry: Optional[str] = None

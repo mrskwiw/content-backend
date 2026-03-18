@@ -67,9 +67,9 @@ function AddUserModal({
 }) {
   const [formData, setFormData] = useState({
     email: '',
-    full_name: '',
+    fullName: '',
     password: '',
-    is_superuser: false,
+    isSuperuser: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -78,8 +78,8 @@ function AddUserModal({
 
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
-    if (!formData.full_name) newErrors.full_name = 'Name is required';
-    else if (formData.full_name.length < 2) newErrors.full_name = 'Name too short';
+    if (!formData.fullName) newErrors.fullName = 'Name is required';
+    else if (formData.fullName.length < 2) newErrors.fullName = 'Name too short';
     // pragma: allowlist nextline secret
     if (!formData.password) newErrors.password = 'Password is required';  // pragma: allowlist secret
     else if (formData.password.length < 8) newErrors.password = 'Min 8 characters';  // pragma: allowlist secret
@@ -136,16 +136,16 @@ function AddUserModal({
             </label>
             <input
               type="text"
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               placeholder="John Doe"
               className={`w-full px-3 py-2 rounded-md border ${
-                errors.full_name
+                errors.fullName
                   ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                   : 'border-neutral-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-primary-500'
               } bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100`}
             />
-            {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
+            {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
           </div>
 
           <div>
@@ -169,12 +169,12 @@ function AddUserModal({
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="is_superuser"
-              checked={formData.is_superuser}
-              onChange={(e) => setFormData({ ...formData, is_superuser: e.target.checked })}
+              id="isSuperuser"
+              checked={formData.isSuperuser}
+              onChange={(e) => setFormData({ ...formData, isSuperuser: e.target.checked })}
               className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
             />
-            <label htmlFor="is_superuser" className="text-sm text-neutral-700 dark:text-neutral-300">
+            <label htmlFor="isSuperuser" className="text-sm text-neutral-700 dark:text-neutral-300">
               Grant admin privileges
             </label>
           </div>
@@ -237,7 +237,7 @@ function UserActionsMenu({
 
           <div className="absolute right-0 mt-1 w-48 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-lg z-20">
             {/* Activate/Deactivate */}
-            {user.is_active ? (
+            {user.isActive ? (
               <button
                 className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 onClick={() => {
@@ -265,7 +265,7 @@ function UserActionsMenu({
             <div className="border-t border-neutral-200 dark:border-neutral-700" />
 
             {/* Promote/Demote */}
-            {user.is_superuser ? (
+            {user.isSuperuser ? (
               <button
                 className="w-full px-4 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 onClick={() => {
@@ -396,21 +396,21 @@ export default function UsersTab() {
       filtered = filtered.filter(
         (u) =>
           u.email.toLowerCase().includes(query) ||
-          u.full_name?.toLowerCase().includes(query)
+          u.fullName?.toLowerCase().includes(query)
       );
     }
 
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter((u) =>
-        statusFilter === 'active' ? u.is_active : !u.is_active
+        statusFilter === 'active' ? u.isActive : !u.isActive
       );
     }
 
     // Role filter
     if (roleFilter !== 'all') {
       filtered = filtered.filter((u) =>
-        roleFilter === 'admin' ? u.is_superuser : !u.is_superuser
+        roleFilter === 'admin' ? u.isSuperuser : !u.isSuperuser
       );
     }
 
@@ -562,7 +562,7 @@ export default function UsersTab() {
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
                           <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                            {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                            {user.fullName?.charAt(0) || user.email.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
@@ -578,10 +578,10 @@ export default function UsersTab() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-neutral-700 dark:text-neutral-300">
-                      {user.full_name || '—'}
+                      {user.fullName || '—'}
                     </td>
                     <td className="px-4 py-3">
-                      {user.is_superuser ? (
+                      {user.isSuperuser ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
                           <Shield className="h-3 w-3" />
                           Admin
@@ -593,7 +593,7 @@ export default function UsersTab() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {user.is_active ? (
+                      {user.isActive ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400">
                           <CheckCircle className="h-3 w-3" />
                           Active

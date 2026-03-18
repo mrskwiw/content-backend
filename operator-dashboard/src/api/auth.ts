@@ -39,11 +39,11 @@ export const authApi = {
     const user: LoginResponse['user'] = {
       id: backendUser.id,
       email: backendUser.email,
-      full_name: backendUser.full_name,
-      is_superuser: backendUser.is_superuser,
-      is_active: backendUser.is_active,
-      created_at: backendUser.created_at,
-      updated_at: backendUser.updated_at,
+      fullName: backendUser.fullName,
+      isSuperuser: backendUser.isSuperuser,
+      isActive: backendUser.isActive,
+      createdAt: backendUser.createdAt,
+      updatedAt: backendUser.updatedAt,
     };
 
     return {
