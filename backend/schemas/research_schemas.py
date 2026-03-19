@@ -15,15 +15,19 @@ class VoiceAnalysisParams(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    content_samples: List[str] = Field(
-        ...,
-        description="5-30 samples of client's existing writing (minimum 50 characters each)",
+    content_samples: Optional[List[str]] = Field(
+        None,
+        description="5-30 samples of client's existing writing (minimum 50 characters each). Auto-generates from business description if not provided.",
     )
 
     @field_validator("content_samples")
     @classmethod
-    def validate_samples(cls, v: List[str]) -> List[str]:
+    def validate_samples(cls, v: Optional[List[str]]) -> Optional[List[str]]:
         """Validate each sample meets minimum length and size limits."""
+        # Allow None - will auto-generate from business description
+        if v is None or len(v) == 0:
+            return None
+
         if not 5 <= len(v) <= 30:
             raise ValueError("Must provide between 5-30 content samples")
 
@@ -184,15 +188,19 @@ class ContentAuditParams(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    content_inventory: List[ContentPiece] = Field(
-        ...,
-        description="1-100 content pieces to audit",
+    content_inventory: Optional[List[ContentPiece]] = Field(
+        None,
+        description="1-100 content pieces to audit. Auto-generates placeholder from business description if not provided.",
     )
 
     @field_validator("content_inventory")
     @classmethod
-    def validate_inventory(cls, v: List[ContentPiece]) -> List[ContentPiece]:
+    def validate_inventory(cls, v: Optional[List[ContentPiece]]) -> Optional[List[ContentPiece]]:
         """Validate content inventory."""
+        # Allow None - will auto-generate placeholder
+        if v is None or len(v) == 0:
+            return None
+
         if not 1 <= len(v) <= 100:
             raise ValueError("Must provide between 1-100 content pieces")
 
@@ -451,16 +459,16 @@ class BusinessReportInput(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    company_name: str = Field(
-        ...,
+    company_name: Optional[str] = Field(
+        None,
         max_length=200,
-        description="Name of the company to analyze",
+        description="Name of the company to analyze. Auto-populates from client name if not provided.",
     )
 
-    location: str = Field(
-        ...,
+    location: Optional[str] = Field(
+        None,
         max_length=200,
-        description="Location of the company (city, state or city, country)",
+        description="Location of the company (city, state or city, country). Auto-populates from client location if not provided.",
     )
 
     max_web_results: Optional[int] = Field(
@@ -479,12 +487,16 @@ class BusinessReportInput(BaseModel):
 
     @field_validator("company_name")
     @classmethod
-    def validate_company_name(cls, v: str) -> str:
+    def validate_company_name(cls, v: Optional[str]) -> Optional[str]:
         """Validate company name field."""
+        # Allow None - will auto-populate from client name
+        if v is None:
+            return None
+
         v = v.strip()
 
         if len(v) == 0:
-            raise ValueError("Company name cannot be empty")
+            return None  # Empty string becomes None for auto-population
 
         if len(v) < 2:
             raise ValueError("Company name is too short (minimum 2 characters)")
@@ -496,12 +508,16 @@ class BusinessReportInput(BaseModel):
 
     @field_validator("location")
     @classmethod
-    def validate_location_field(cls, v: str) -> str:
+    def validate_location_field(cls, v: Optional[str]) -> Optional[str]:
         """Validate location field."""
+        # Allow None - will auto-populate from client location
+        if v is None:
+            return None
+
         v = v.strip()
 
         if len(v) == 0:
-            raise ValueError("Location cannot be empty")
+            return None  # Empty string becomes None for auto-population
 
         if len(v) < 2:
             raise ValueError("Location is too short (minimum 2 characters)")

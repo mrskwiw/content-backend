@@ -815,7 +815,31 @@ class ResearchService:
         # Tool-specific input preparation
         if tool_name == "voice_analysis":
             # Voice analysis needs sample content
-            inputs["content_samples"] = params.get("content_samples", [])
+            content_samples = params.get("content_samples")
+            if not content_samples:
+                # Auto-generate from business description
+                business_desc = client.business_description or ""
+                if len(business_desc) >= 50:
+                    # Split into 5 samples of roughly equal length
+                    words = business_desc.split()
+                    chunk_size = max(len(words) // 5, 10)
+                    content_samples = [
+                        " ".join(words[i : i + chunk_size])
+                        for i in range(0, len(words), chunk_size)
+                    ][:5]
+                else:
+                    # Use placeholder samples
+                    content_samples = [
+                        f"{client.name} provides {business_desc or 'professional services'}",
+                        f"Our target audience is {client.ideal_customer or 'business professionals'}",
+                        f"We specialize in {client.industry or 'delivering value'}",
+                        f"Our unique approach helps clients {client.main_problem_solved or 'achieve their goals'}",
+                        f"We work with {client.ideal_customer or 'forward-thinking organizations'}",
+                    ]
+                logger.info(
+                    f"Auto-generated {len(content_samples)} content samples from business profile"
+                )
+            inputs["content_samples"] = content_samples
 
         elif tool_name == "brand_archetype":
             # Brand archetype needs tone and values
@@ -883,6 +907,38 @@ class ResearchService:
 
             inputs["current_platforms"] = current_platforms if current_platforms else []
             inputs["content_goals"] = params.get("content_goals", "")
+
+        elif tool_name == "content_audit":
+            # Content audit needs content inventory
+            content_inventory = params.get("content_inventory")
+            if not content_inventory:
+                # Auto-generate placeholder content piece
+                from backend.schemas.research_schemas import ContentPiece
+
+                placeholder = ContentPiece(
+                    title=f"{client.name} - Content Portfolio",
+                    url=None,
+                    type="portfolio",
+                    publish_date=None,
+                    performance_metrics="Placeholder for client content analysis",
+                )
+                content_inventory = [placeholder]
+                logger.info("Auto-generated placeholder content inventory")
+            inputs["content_inventory"] = content_inventory
+
+        elif tool_name == "business_report":
+            # Business report needs company name and location
+            company_name = params.get("company_name")
+            if not company_name:
+                company_name = client.name or "Client Business"
+                logger.info(f"Auto-populated company_name from client: {company_name}")
+            inputs["company_name"] = company_name
+
+            location = params.get("location")
+            if not location:
+                location = client.location or "United States"
+                logger.info(f"Auto-populated location from client: {location}")
+            inputs["location"] = location
 
         # Log data sources for transparency
         backend_injected = set(inputs.keys()) - frontend_provided
