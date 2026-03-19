@@ -133,16 +133,12 @@ class KeywordRefinementAgent:
             console.print(f"  - {kw.keyword} [dim]({kw.intent.value}, {kw.difficulty.value})[/dim]")
 
         console.print("\n[bold]Secondary Keywords:[/bold]")
-        for kw in strategy.secondary_keywords[:5]:  # Show first 5
+        for kw in strategy.secondary_keywords:  # Show first 5
             console.print(f"  - {kw.keyword} [dim]({kw.intent.value})[/dim]")
-        if len(strategy.secondary_keywords) > 5:
-            console.print(f"  [dim]... and {len(strategy.secondary_keywords) - 5} more[/dim]")
 
         console.print("\n[bold]Long-tail Keywords:[/bold]")
-        for kw in strategy.longtail_keywords[:5]:  # Show first 5
+        for kw in strategy.longtail_keywords:  # Show first 5
             console.print(f"  - {kw.keyword}")
-        if len(strategy.longtail_keywords) > 5:
-            console.print(f"  [dim]... and {len(strategy.longtail_keywords) - 5} more[/dim]")
 
     def _refine_with_ai(self, strategy: KeywordStrategy, feedback: str) -> KeywordStrategy:
         """

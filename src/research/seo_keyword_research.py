@@ -1151,11 +1151,8 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
 
 """
 
-        for i, kw in enumerate(strategy.secondary_keywords[:10], 1):
+        for i, kw in enumerate(strategy.secondary_keywords, 1):
             md += f"{i}. **{kw.keyword}** ({kw.difficulty.value}, {kw.search_intent.value})\n"
-
-        if len(strategy.secondary_keywords) > 10:
-            md += f"\n*... and {len(strategy.secondary_keywords) - 10} more*\n"
 
         md += """
 ---
@@ -1170,7 +1167,7 @@ estimated_keywords (list), gaps (list), overlaps (list)"""
 
 **Primary Keyword:** {cluster.primary_keyword}
 
-**Secondary Keywords:** {", ".join(cluster.secondary_keywords[:5])}
+**Secondary Keywords:** {", ".join(cluster.secondary_keywords)}
 
 **Content Ideas:**
 """

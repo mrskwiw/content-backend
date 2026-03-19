@@ -1039,13 +1039,10 @@ def _format_seo_keywords(data: dict) -> List[str]:
         lines.append("")
 
         # Show first 10
-        for i, kw in enumerate(secondary_keywords[:10], 1):
+        for i, kw in enumerate(secondary_keywords, 1):
             keyword_name = kw.get("keyword", "N/A")
             difficulty = kw.get("difficulty", "N/A")
             lines.append(f"{i}. {keyword_name} ({difficulty})")
-
-        if len(secondary_keywords) > 10:
-            lines.append(f"\n_... and {len(secondary_keywords) - 10} more_")
 
         lines.append("")
 
