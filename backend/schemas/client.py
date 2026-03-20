@@ -5,26 +5,68 @@ Pydantic schemas for Client API.
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_serializer
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, AliasChoices, field_serializer
 from backend.schemas.enums import Platform
 
 
 class ClientBase(BaseModel):
-    """Base client schema"""
+    """Base client schema with camelCase/snake_case bidirectional support"""
 
-    name: str
-    email: Optional[EmailStr] = None
-    business_description: Optional[str] = None
-    ideal_customer: Optional[str] = None
-    main_problem_solved: Optional[str] = None
-    tone_preference: Optional[str] = None
-    platforms: Optional[List[Platform]] = None
-    customer_pain_points: Optional[List[str]] = None
-    customer_questions: Optional[List[str]] = None
-    industry: Optional[str] = None
-    keywords: Optional[List[str]] = None
-    competitors: Optional[List[str]] = None
-    location: Optional[str] = None
+    name: str = Field(
+        ..., validation_alias=AliasChoices("name", "companyName"), description="Client company name"
+    )
+    email: Optional[EmailStr] = Field(
+        default=None,
+        validation_alias=AliasChoices("email"),
+    )
+    business_description: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("business_description", "businessDescription"),
+    )
+    ideal_customer: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("ideal_customer", "idealCustomer", "targetAudience"),
+    )
+    main_problem_solved: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("main_problem_solved", "mainProblemSolved"),
+    )
+    tone_preference: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("tone_preference", "tonePreference"),
+    )
+    platforms: Optional[List[Platform]] = Field(
+        default=None,
+        validation_alias=AliasChoices("platforms"),
+    )
+    customer_pain_points: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("customer_pain_points", "customerPainPoints"),
+    )
+    customer_questions: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("customer_questions", "customerQuestions"),
+    )
+    industry: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("industry"),
+    )
+    keywords: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("keywords"),
+    )
+    competitors: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("competitors"),
+    )
+    location: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("location"),
+    )
+
+    model_config = ConfigDict(
+        populate_by_name=True,  # Accept both snake_case and camelCase
+    )
 
 
 class ClientCreate(ClientBase):
@@ -50,24 +92,66 @@ class ClientUpdate(BaseModel):
     - Protected fields (never updatable): id, user_id, created_at
     """
 
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    business_description: Optional[str] = None
-    ideal_customer: Optional[str] = None
-    main_problem_solved: Optional[str] = None
-    tone_preference: Optional[str] = None
-    platforms: Optional[List[Platform]] = None
-    customer_pain_points: Optional[List[str]] = None
-    customer_questions: Optional[List[str]] = None
-    industry: Optional[str] = None
-    keywords: Optional[List[str]] = None
-    competitors: Optional[List[str]] = None
-    location: Optional[str] = None
+    name: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("name", "companyName"),
+    )
+    email: Optional[EmailStr] = Field(
+        default=None,
+        validation_alias=AliasChoices("email"),
+    )
+    business_description: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("business_description", "businessDescription"),
+    )
+    ideal_customer: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("ideal_customer", "idealCustomer", "targetAudience"),
+    )
+    main_problem_solved: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("main_problem_solved", "mainProblemSolved"),
+    )
+    tone_preference: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("tone_preference", "tonePreference"),
+    )
+    platforms: Optional[List[Platform]] = Field(
+        default=None,
+        validation_alias=AliasChoices("platforms"),
+    )
+    customer_pain_points: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("customer_pain_points", "customerPainPoints"),
+    )
+    customer_questions: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("customer_questions", "customerQuestions"),
+    )
+    industry: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("industry"),
+    )
+    keywords: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("keywords"),
+    )
+    competitors: Optional[List[str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("competitors"),
+    )
+    location: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("location"),
+    )
 
-    model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields like user_id
+    model_config = ConfigDict(
+        populate_by_name=True,  # Accept both snake_case and camelCase
+        extra="forbid",  # TR-022: Reject unknown fields like user_id
+    )
 
 
-class ClientResponse(ClientBase):
+class ClientResponse(BaseModel):
     """
     Schema for client response.
 
@@ -75,14 +159,32 @@ class ClientResponse(ClientBase):
     """
 
     id: str
-    created_at: datetime
+    name: str = Field(..., serialization_alias="companyName")
+    email: Optional[EmailStr] = None
+    business_description: Optional[str] = Field(
+        default=None, serialization_alias="businessDescription"
+    )
+    ideal_customer: Optional[str] = Field(default=None, serialization_alias="idealCustomer")
+    main_problem_solved: Optional[str] = Field(
+        default=None, serialization_alias="mainProblemSolved"
+    )
+    tone_preference: Optional[str] = Field(default=None, serialization_alias="tonePreference")
+    platforms: Optional[List[Platform]] = None
+    customer_pain_points: Optional[List[str]] = Field(
+        default=None, serialization_alias="customerPainPoints"
+    )
+    customer_questions: Optional[List[str]] = Field(
+        default=None, serialization_alias="customerQuestions"
+    )
+    industry: Optional[str] = None
+    keywords: Optional[List[str]] = None
+    competitors: Optional[List[str]] = None
+    location: Optional[str] = None
+    created_at: datetime = Field(..., serialization_alias="createdAt")
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )
 
     @field_serializer("created_at")
