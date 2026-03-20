@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Bot, User } from 'lucide-react';
 
 export interface ConversationMessageProps {
@@ -10,7 +11,7 @@ export interface ConversationMessageProps {
  * Individual message component for AI discovery conversation
  * Renders message bubbles with role-based styling and avatars
  */
-export function ConversationMessage({ role, content, timestamp }: ConversationMessageProps) {
+export const ConversationMessage = memo(function ConversationMessage({ role, content, timestamp }: ConversationMessageProps) {
   const isAssistant = role === 'assistant';
 
   return (
@@ -46,4 +47,4 @@ export function ConversationMessage({ role, content, timestamp }: ConversationMe
       )}
     </div>
   );
-}
+});

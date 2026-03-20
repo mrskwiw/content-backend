@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { CheckCircle2, Sparkles, TrendingDown, Coins } from 'lucide-react';
 import { PricingPreview } from '../../api/research';
 
@@ -7,7 +7,7 @@ interface PricingSummaryCardProps {
   selectedCount: number;
 }
 
-export function PricingSummaryCard({ pricing, selectedCount }: PricingSummaryCardProps) {
+export const PricingSummaryCard = memo(function PricingSummaryCard({ pricing, selectedCount }: PricingSummaryCardProps) {
   return (
     <div className="rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
       {/* Metrics Grid */}
@@ -36,7 +36,7 @@ export function PricingSummaryCard({ pricing, selectedCount }: PricingSummaryCar
       )}
     </div>
   );
-}
+});
 
 interface PriceMetricProps {
   label: string;
@@ -46,7 +46,7 @@ interface PriceMetricProps {
   icon?: React.ReactNode;
 }
 
-function PriceMetric({ label, value, color = 'gray', emphasized = false, icon }: PriceMetricProps) {
+const PriceMetric = memo(function PriceMetric({ label, value, color = 'gray', emphasized = false, icon }: PriceMetricProps) {
   const colorClasses = {
     emerald: 'text-emerald-600 dark:text-emerald-400',
     blue: 'text-blue-600 dark:text-blue-400',
@@ -62,4 +62,4 @@ function PriceMetric({ label, value, color = 'gray', emphasized = false, icon }:
       <div className={`text-lg font-bold ${colorClasses[color]}`}>{value}</div>
     </div>
   );
-}
+});

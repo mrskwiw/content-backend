@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { memo } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { clsx } from 'clsx';
 
@@ -65,7 +66,7 @@ export interface BadgeProps
   onRemove?: () => void;
 }
 
-const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+const Badge = memo(React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant, size, removable, onRemove, children, ...props }, ref) => {
     const hasRemove = removable || !!onRemove;
 
@@ -98,7 +99,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       </span>
     );
   }
-);
+));
 
 Badge.displayName = 'Badge';
 
