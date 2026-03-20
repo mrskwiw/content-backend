@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
@@ -10,7 +9,7 @@ interface CopyButtonProps {
   label?: string;
 }
 
-export const CopyButton = memo(function CopyButton({
+export function CopyButton({
   text,
   className = '',
   size = 'md',
@@ -76,4 +75,4 @@ export const CopyButton = memo(function CopyButton({
       )}
     </button>
   );
-});
+}

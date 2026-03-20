@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { CheckCircle2, Clock, AlertCircle, Coins, Link2, Settings } from 'lucide-react';
 import { ResearchTool } from '../../api/research';
 
@@ -20,7 +20,7 @@ interface ToolCardProps {
   missingIntegrations?: string[];
 }
 
-export const ToolCard = memo(function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequisites, toolLabels, disabled, missingIntegrations }: ToolCardProps) {
+export function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequisites, toolLabels, disabled, missingIntegrations }: ToolCardProps) {
   const categoryColors = {
     foundation: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
     seo: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -149,4 +149,4 @@ export const ToolCard = memo(function ToolCard({ tool, isSelected, onToggle, exe
       )}
     </div>
   );
-});
+}
