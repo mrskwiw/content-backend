@@ -72,6 +72,7 @@ async def list_projects(
     query = query.options(
         joinedload(Project.client),
         joinedload(Project.brief),
+        joinedload(Project.user),
         # Skip Project.posts for list view - only need count
         joinedload(Project.deliverables),
         joinedload(Project.runs),
