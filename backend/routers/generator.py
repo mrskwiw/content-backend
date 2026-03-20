@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from backend.database import get_db, SessionLocal
@@ -43,6 +43,14 @@ class GenerateAllInput(BaseModel):
     )
     custom_topics: Optional[list[str]] = None  # NEW: topic override for content generation
     target_platform: Optional[str] = "generic"  # NEW: target platform for generation optimization
+
+    @field_validator("num_posts")
+    @classmethod
+    def validate_num_posts(cls, v):
+        """Validate num_posts is positive if provided"""
+        if v is not None and v <= 0:
+            raise ValueError("num_posts must be greater than 0")
+        return v
 
 
 class RegenerateInput(BaseModel):
@@ -173,12 +181,14 @@ async def run_generation_background(
             credit_service.refund_credits(
                 db=db,
                 user_id=user_id,
-                amount=num_posts * get_content_cost(),
+                amount=num_posts * get_content_cost("blog_post"),
                 description=f"Refund for failed generation (run {run_id})",
                 reference_id=run_id,
                 reference_type="run_refund",
             )
-            logger.info(f"Refunded {num_posts * get_content_cost()} credits to user {user_id}")
+            logger.info(
+                f"Refunded {num_posts * get_content_cost('blog_post')} credits to user {user_id}"
+            )
         except Exception as refund_err:
             logger.error(f"Failed to refund credits for run {run_id}: {refund_err}")
 
@@ -490,7 +500,7 @@ async def regenerate(
 
     # CREDIT DEDUCTION: Calculate and deduct credits for regeneration
     num_posts_to_regenerate = len(input.post_ids)
-    credit_cost = num_posts_to_regenerate * get_content_cost()
+    credit_cost = num_posts_to_regenerate * get_content_cost("blog_post")
     try:
         credit_service.deduct_credits(
             db=db,
