@@ -81,6 +81,8 @@ class Project(Base):
         # Cursor pagination index: (created_at DESC, id DESC)
         # Enables O(1) performance for deep pagination
         Index("ix_projects_created_at_id", "created_at", "id", postgresql_using="btree"),
+        # Phase 2.2: Filter by user and status (list projects by status)
+        Index("ix_projects_user_status", "user_id", "status"),
         {"extend_existing": True},
     )
 

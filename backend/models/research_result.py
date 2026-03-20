@@ -9,6 +9,7 @@ TR-021: User must own the parent project/client to access research results.
 
 from sqlalchemy import (
     Column,
+    Index,
     String,
     Float,
     Integer,
@@ -35,6 +36,13 @@ class ResearchResult(Base):
     """
 
     __tablename__ = "research_results"
+
+    __table_args__ = (
+        # Phase 2.2: Sort research results by creation date for project
+        Index("ix_research_project_created", "project_id", "created_at"),
+        # Phase 2.2: Sort research results by client and date
+        Index("ix_research_client_created", "client_id", "created_at"),
+    )
 
     # Primary key
     id = Column(String, primary_key=True)  # "res-{uuid}"

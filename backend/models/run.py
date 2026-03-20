@@ -2,7 +2,7 @@
 Run model for generation executions.
 """
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -13,7 +13,14 @@ class Run(Base):
     """Generation execution run"""
 
     __tablename__ = "runs"
-    __table_args__ = {"extend_existing": True}
+
+    __table_args__ = (
+        # Phase 2.2: Filter runs by project and status
+        Index("ix_runs_project_status", "project_id", "status"),
+        # Phase 2.2: Sort runs by start time
+        Index("ix_runs_started_at", "started_at"),
+        {"extend_existing": True},
+    )
 
     id = Column(String, primary_key=True)
     project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
