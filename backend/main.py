@@ -29,6 +29,7 @@ from backend.utils.http_rate_limiter import (
 from backend.routers import (
     admin_users,
     assistant,
+    metrics,
     cache,
     auth,
     briefs,
@@ -55,6 +56,7 @@ from slowapi.errors import RateLimitExceeded
 import backend.models  # noqa: F401
 from backend.config import settings as app_settings
 from backend.database import init_db
+from backend.middleware.metrics import MetricsMiddleware
 from backend.middleware.csrf_protection import CSRFProtectionMiddleware
 from backend.middleware.request_id import RequestIDMiddleware, get_request_id
 from backend.utils.rate_limiter import rate_limiter
@@ -263,6 +265,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(CSRFProtectionMiddleware)
 # Request ID tracking middleware
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(MetricsMiddleware)
 
 
 # CORS middleware
@@ -621,6 +624,7 @@ app.include_router(assistant.router, prefix="/api/assistant", tags=["AI Assistan
 app.include_router(settings.router, tags=["Settings"])  # Prefix included in router
 app.include_router(database.router, prefix="/api", tags=["Database"])
 app.include_router(cache.router, prefix="/api/cache", tags=["Cache Management"])
+app.include_router(metrics.router, prefix="/api/metrics", tags=["Metrics & Monitoring"])
 
 
 if __name__ == "__main__":
