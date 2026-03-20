@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { CheckCircle2, Clock, Download, Eye, DollarSign } from 'lucide-react';
 import { ResearchResult } from '../../types/domain';
 
@@ -8,7 +8,7 @@ interface ResultCardProps {
   onDownload?: () => void;
 }
 
-export function ResultCard({ result, onView, onDownload }: ResultCardProps) {
+export const ResultCard = memo(function ResultCard({ result, onView, onDownload }: ResultCardProps) {
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '—';
     if (seconds < 60) return `${seconds}s`;
@@ -86,4 +86,4 @@ export function ResultCard({ result, onView, onDownload }: ResultCardProps) {
       </div>
     </div>
   );
-}
+});
