@@ -237,7 +237,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
 
           // Show notification
           const prereqNames = missingRequired.map(p => TOOL_LABELS[p] || p).join(', ');
-          console.log(`Auto-added required prerequisites for ${TOOL_LABELS[toolName]}: ${prereqNames}`);
         }
       }
     }
@@ -328,7 +327,6 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     try {
       const orderResult = await researchApi.getExecutionOrder(Array.from(selected));
       executionOrder = orderResult.executionOrder;
-      console.log(`Executing ${executionOrder.length} tools in optimal order:`, executionOrder);
     } catch (error) {
       console.error('Failed to get execution order, using selection order as fallback', error);
       // Fallback to original selection order if API fails

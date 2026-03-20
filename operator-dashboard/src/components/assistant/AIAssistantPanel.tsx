@@ -21,10 +21,10 @@ export function AIAssistantPanel() {
   };
 
   const quickActions = [
-    { label: 'New Client', icon: '➕', action: () => console.log('Create client') },
-    { label: 'Analytics', icon: '📊', action: () => console.log('Show analytics') },
-    { label: 'Voice Analysis', icon: '🔍', action: () => console.log('Run voice analysis') },
-    { label: 'Generate', icon: '📝', action: () => console.log('Generate content') },
+    { label: 'New Client', icon: '➕', action: () => {} },
+    { label: 'Analytics', icon: '📊', action: () => {} },
+    { label: 'Voice Analysis', icon: '🔍', action: () => {} },
+    { label: 'Generate', icon: '📝', action: () => {} },
   ];
 
   const suggestions = [
@@ -36,7 +36,6 @@ export function AIAssistantPanel() {
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
     // TODO: Send message to backend
-    console.log('Sending message:', inputValue);
     setInputValue('');
   };
 

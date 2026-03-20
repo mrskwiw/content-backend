@@ -25,7 +25,6 @@ export function ResultDetailModal({ resultId, onClose }: ResultDetailModalProps)
 
   const handleDownload = async () => {
     // TODO: Implement download functionality
-    console.log('Download result:', resultId);
   };
 
   return (

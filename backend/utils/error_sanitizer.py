@@ -20,7 +20,7 @@ SENSITIVE_PATTERNS = [
     r"(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN)\s+",
     r"(syntax error|relation|table|column|constraint)",
     # File paths
-    r"(/home/|/var/|/usr/|/app/|C:\\|D:\\)",
+    r"(/home/|/var/|/usr/|/app/|C:\|D:\)",
     r"(\.py|\.pyc|\.pyo):\d+",
     # Stack traces
     r"(Traceback|File \"|line \d+)",
@@ -178,6 +178,7 @@ def sanitize_error_message(
 def create_safe_error_response(
     exc: Exception,
     status_code: int = 500,
+    request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Create a sanitized error response dictionary.
@@ -185,6 +186,7 @@ def create_safe_error_response(
     Args:
         exc: The exception to handle
         status_code: HTTP status code for the response
+        request_id: Optional request ID for tracing
 
     Returns:
         Dictionary suitable for JSONResponse
@@ -200,6 +202,10 @@ def create_safe_error_response(
 
     if error_code:
         response["error"]["code"] = error_code
+
+    # Add request ID for tracing (if available)
+    if request_id:
+        response["error"]["request_id"] = request_id
 
     # In debug mode, include additional info
     if settings.DEBUG_MODE:

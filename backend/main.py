@@ -55,6 +55,7 @@ import backend.models  # noqa: F401
 from backend.config import settings as app_settings
 from backend.database import init_db
 from backend.middleware.csrf_protection import CSRFProtectionMiddleware
+from backend.middleware.request_id import RequestIDMiddleware, get_request_id
 from backend.utils.rate_limiter import rate_limiter
 from backend.utils.http_rate_limiter import limiter
 
@@ -259,6 +260,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # TR-009: CSRF Protection middleware (validates Origin/Referer headers)
 app.add_middleware(CSRFProtectionMiddleware)
+# Request ID tracking middleware
+app.add_middleware(RequestIDMiddleware)
 
 
 # CORS middleware
@@ -538,8 +541,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     """
     from backend.utils.error_sanitizer import create_safe_error_response
 
+    # Get request ID for tracing
+    request_id = get_request_id(request)
+
     # Create sanitized response (handles debug vs production mode internally)
-    error_response = create_safe_error_response(exc, status_code=500)
+    error_response = create_safe_error_response(exc, status_code=500, request_id=request_id)
 
     return JSONResponse(status_code=500, content=error_response)
 
