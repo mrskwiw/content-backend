@@ -12,6 +12,7 @@ from sqlalchemy.exc import OperationalError
 
 from backend.config import settings
 from backend.utils.query_profiler import enable_sqlalchemy_profiling
+from src.config.pricing import PricingConfig
 
 # Create SQLAlchemy engine with optimized connection pooling
 database_url = make_url(settings.DATABASE_URL)
@@ -350,9 +351,11 @@ def init_db():
                                     # Update project
                                     project.template_quantities = template_quantities
                                     project.num_posts = default_total_posts
-                                    project.price_per_post = 40.0
+                                    project.price_per_post = PricingConfig().PRICE_PER_POST
                                     project.research_price_per_post = 0.0
-                                    project.total_price = default_total_posts * 40.0
+                                    project.total_price = (
+                                        default_total_posts * PricingConfig().PRICE_PER_POST
+                                    )
 
                                     migrated_count += 1
 

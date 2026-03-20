@@ -21,7 +21,7 @@ from backend.utils.input_validators import (
     validate_integer_field,
     validate_float_field,
 )
-from src.config.pricing import KNOWN_TOOL_IDS, calculate_tools_cost
+from src.config.pricing import KNOWN_TOOL_IDS, PricingConfig, calculate_tools_cost
 
 
 class ProjectBase(BaseModel):
@@ -45,7 +45,7 @@ class ProjectBase(BaseModel):
 
     # Pricing (NEW: flexible per-post pricing)
     price_per_post: Optional[float] = Field(
-        default=40.0,
+        default=PricingConfig().PRICE_PER_POST,
         validation_alias=AliasChoices("pricePerPost", "price_per_post"),
         description="Base price per post",
     )
@@ -200,7 +200,11 @@ class ProjectBase(BaseModel):
         if self.num_posts is None and self.template_quantities:
             self.num_posts = sum(self.template_quantities.values())
 
-        price_per_post = self.price_per_post if self.price_per_post is not None else 40.0
+        price_per_post = (
+            self.price_per_post
+            if self.price_per_post is not None
+            else PricingConfig().PRICE_PER_POST
+        )
         research_price = (
             self.research_price_per_post if self.research_price_per_post is not None else 0.0
         )
@@ -411,7 +415,9 @@ class ProjectResponse(BaseModel):
     num_posts: Optional[int] = Field(default=None, serialization_alias="numPosts")
 
     # Pricing
-    price_per_post: Optional[float] = Field(default=40.0, serialization_alias="pricePerPost")
+    price_per_post: Optional[float] = Field(
+        default=PricingConfig().PRICE_PER_POST, serialization_alias="pricePerPost"
+    )
     research_price_per_post: Optional[float] = Field(
         default=0.0, serialization_alias="researchPricePerPost"
     )

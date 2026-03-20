@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from backend.database import Base
+from src.config.pricing import PricingConfig
 
 
 class Project(Base):
@@ -32,7 +33,7 @@ class Project(Base):
     num_posts = Column(Integer)  # NEW: Total post count (auto-calculated from template_quantities)
 
     # Pricing (NEW: flexible per-post pricing)
-    price_per_post = Column(Float, default=40.0)  # NEW: Base price per post
+    price_per_post = Column(Float, default=PricingConfig().PRICE_PER_POST)  # Base price per post
     research_price_per_post = Column(Float, default=0.0)  # NEW: Research add-on per post
     total_price = Column(Float)  # NEW: Total project price
 
