@@ -253,7 +253,7 @@ export function StoryDetailsDrawer({ story, open, onClose }: StoryDetailsDrawerP
 interface StorySectionProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 function StorySection({ icon: Icon, title, data }: StorySectionProps) {

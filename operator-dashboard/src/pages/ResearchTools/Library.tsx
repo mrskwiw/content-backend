@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { researchApi, costsApi, ResearchTool, projectsApi, settingsApi } from '@/api';
+import type { Project } from '@/types/api-types';
 import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
 import { Search, Filter, AlertCircle, Link2, Info } from 'lucide-react';
@@ -372,7 +373,7 @@ export default function ResearchToolsLibrary() {
                   No projects found. Create a project first.
                 </p>
               ) : (
-                projects.map((project: any) => (
+                projects.map((project) => (
                   <button
                     key={project.id}
                     onClick={() => handleSelectProject(project.id)}
@@ -381,11 +382,6 @@ export default function ResearchToolsLibrary() {
                     <div className="font-medium text-gray-900 dark:text-gray-100">
                       {project.name}
                     </div>
-                    {project.clientName && (
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Client: {project.clientName}
-                      </div>
-                    )}
                   </button>
                 ))
               )}

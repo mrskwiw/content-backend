@@ -304,7 +304,7 @@ export function ResearchDataCollectionPanel({
     TOOL_DATA_REQUIREMENTS[tool]?.fields || []
   );
 
-  const handleFieldChange = (fieldKey: string, value: any) => {
+  const handleFieldChange = (fieldKey: string, value: unknown) => {
     setCollectedData(prev => ({ ...prev, [fieldKey]: value }));
     setErrors(prev => ({ ...prev, [fieldKey]: '' }));
 

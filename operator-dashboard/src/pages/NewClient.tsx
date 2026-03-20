@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { ClientProfilePanel } from '@/components/wizard/ClientProfilePanel';
 import { clientsApi } from '@/api';
+import type { ApiError } from '@/types/api-types';
 import { type ClientBrief } from '@/types/domain';
 
 export default function NewClient() {
@@ -32,9 +33,9 @@ export default function NewClient() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       navigate(`/dashboard/clients/${client.id}`);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Failed to create client:', error);
-      alert(error?.message || 'Failed to create client. Please try again.');
+      alert((error as Error)?.message || 'Failed to create client. Please try again.');
     },
   });
 

@@ -95,3 +95,16 @@ export type ProjectListResponse = ApiResponse<'/api/projects/', 'get'>;
 export type CreateProjectRequest = ApiRequestBody<'/api/projects/', 'post'>;
 export type GetProjectResponse = ApiResponse<'/api/projects/{project_id}', 'get'>;
 export type GetProjectParams = ApiPathParams<'/api/projects/{project_id}', 'get'>;
+
+/**
+ * API Error response structure
+ */
+export interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+    };
+    status?: number;
+  };
+  message?: string;
+}

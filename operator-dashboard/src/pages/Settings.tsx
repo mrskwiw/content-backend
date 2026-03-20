@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiError } from '@/types/api-types';
 import UsersTab from '@/components/settings/UsersTab';
 import { creditsApi } from '@/api/credits';
-import { settingsApi } from '@/api/settings';
+import { settingsApi, WebSearchConfigUpdate } from '@/api/settings';
 import { adminApi } from '@/api/admin';
 import type { User as AdminUser } from '@/api/admin';
 import {
@@ -328,8 +329,8 @@ export default function Settings() {
       setGrantCreditsError(null);
       alert(`Successfully granted ${data.credits_granted} credits to ${data.user_email}`);
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.detail || error.message || 'Failed to grant credits';
+    onError: (error: unknown) => {
+      const message = (error as ApiError).response?.data?.detail || (error as Error).message || 'Failed to grant credits';
       setGrantCreditsError(message);
     },
   });
@@ -1456,7 +1457,7 @@ function GrantCreditsModal({
   onClose: () => void;
   users: AdminUser[];
   form: { user_id: string; credits: number; reason: string };
-  onFormChange: (field: string, value: any) => void;
+  onFormChange: (field: string, value: string | number) => void;
   onSubmit: () => void;
   isSubmitting: boolean;
   error: string | null;
@@ -1658,10 +1659,10 @@ function ConfigureIntegrationModal({
         api_key: apiKey,
       });
       setTestResult(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setTestResult({
         success: false,
-        message: error.response?.data?.detail || 'Connection test failed',
+        message: (error as ApiError).response?.data?.detail || 'Connection test failed',
       });
     } finally {
       setTesting(false);
@@ -1674,8 +1675,10 @@ function ConfigureIntegrationModal({
       const { settingsApi } = await import('@/api/settings');
 
       if (isWebSearch) {
-        const update: any = { provider: integration.type };
-        update[`${integration.type}_api_key`] = apiKey || null;
+        const update: WebSearchConfigUpdate = {
+          provider: integration.type as WebSearchConfigUpdate["provider"],
+          [`${integration.type}_api_key`]: apiKey || null
+        };
 
         await settingsApi.updateWebSearchConfig(update);
 
@@ -1687,10 +1690,10 @@ function ConfigureIntegrationModal({
           onClose();
         }, 1500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setTestResult({
         success: false,
-        message: error.response?.data?.detail || 'Failed to save API key',
+        message: (error as ApiError).response?.data?.detail || 'Failed to save API key',
       });
     } finally {
       setSaving(false);
