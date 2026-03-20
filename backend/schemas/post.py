@@ -5,19 +5,30 @@ Pydantic schemas for Post API.
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, AliasChoices, field_serializer
 
 from src.models.client_brief import Platform
 
 
 class PostBase(BaseModel):
-    """Base post schema"""
+    """Base post schema with camelCase/snake_case bidirectional support"""
 
-    content: str
-    template_id: Optional[str] = None
-    template_name: Optional[str] = None
-    variant: Optional[int] = None
-    target_platform: Optional[Platform] = Platform.LINKEDIN
+    content: str = Field(..., validation_alias=AliasChoices("content"))
+    template_id: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("template_id", "templateId")
+    )
+    template_name: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("template_name", "templateName")
+    )
+    variant: Optional[int] = Field(default=None, validation_alias=AliasChoices("variant"))
+    target_platform: Optional[Platform] = Field(
+        default=Platform.LINKEDIN,
+        validation_alias=AliasChoices("target_platform", "targetPlatform"),
+    )
+
+    model_config = ConfigDict(
+        populate_by_name=True,  # Accept both snake_case and camelCase
+    )
 
 
 class PostCreate(PostBase):
@@ -30,10 +41,12 @@ class PostCreate(PostBase):
                                        has_cta, status, flags, created_at
     """
 
-    project_id: str  # Required when creating
-    run_id: str  # Required when creating
+    project_id: str = Field(..., validation_alias=AliasChoices("project_id", "projectId"))
+    run_id: str = Field(..., validation_alias=AliasChoices("run_id", "runId"))
 
-    model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields
+    model_config = ConfigDict(
+        populate_by_name=True, extra="forbid"  # TR-022: Reject unknown fields
+    )
 
 
 class PostUpdate(BaseModel):
@@ -48,7 +61,7 @@ class PostUpdate(BaseModel):
     - Note: Quality metrics (word_count, readability_score, has_cta, flags) are calculated fields
     """
 
-    content: str
+    content: str = Field(..., validation_alias=AliasChoices("content"))
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -57,7 +70,7 @@ class PostUpdate(BaseModel):
     )
 
 
-class PostResponse(PostBase):
+class PostResponse(BaseModel):
     """
     Schema for post response.
 
@@ -65,27 +78,31 @@ class PostResponse(PostBase):
     """
 
     id: str
-    project_id: str
-    run_id: str
-    word_count: Optional[int] = None
-    readability_score: Optional[float] = None
-    has_cta: Optional[bool] = None
+    content: str
+    template_id: Optional[str] = Field(default=None, serialization_alias="templateId")
+    template_name: Optional[str] = Field(default=None, serialization_alias="templateName")
+    variant: Optional[int] = None
+    target_platform: Optional[Platform] = Field(
+        default=Platform.LINKEDIN, serialization_alias="targetPlatform"
+    )
+    project_id: str = Field(..., serialization_alias="projectId")
+    run_id: str = Field(..., serialization_alias="runId")
+    word_count: Optional[int] = Field(default=None, serialization_alias="wordCount")
+    readability_score: Optional[float] = Field(default=None, serialization_alias="readabilityScore")
+    has_cta: Optional[bool] = Field(default=None, serialization_alias="hasCta")
     status: str
-    flags: Optional[List[str]] = []
-    created_at: datetime
+    flags: Optional[List[str]] = Field(default_factory=list)
+    created_at: datetime = Field(..., serialization_alias="createdAt")
 
     # Token usage tracking (for individual post generation)
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    cache_read_tokens: Optional[int] = None
-    cost_usd: Optional[float] = None
+    input_tokens: Optional[int] = Field(default=None, serialization_alias="inputTokens")
+    output_tokens: Optional[int] = Field(default=None, serialization_alias="outputTokens")
+    cache_read_tokens: Optional[int] = Field(default=None, serialization_alias="cacheReadTokens")
+    cost_usd: Optional[float] = Field(default=None, serialization_alias="costUsd")
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )
 
     @field_serializer("created_at")

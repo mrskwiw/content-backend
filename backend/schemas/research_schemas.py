@@ -535,33 +535,36 @@ class ResearchResultResponse(BaseModel):
     """Response schema for research result."""
 
     id: str
-    user_id: str
-    client_id: str
-    project_id: Optional[str]
-    tool_name: str
-    tool_label: Optional[str]
-    tool_price: Optional[float]  # Business model price (fixed per tool)
-    params: Optional[Dict[str, Any]]
+    user_id: str = Field(..., serialization_alias="userId")
+    client_id: str = Field(..., serialization_alias="clientId")
+    project_id: Optional[str] = Field(default=None, serialization_alias="projectId")
+    tool_name: str = Field(..., serialization_alias="toolName")
+    tool_label: Optional[str] = Field(default=None, serialization_alias="toolLabel")
+    tool_price: Optional[float] = Field(
+        default=None, serialization_alias="toolPrice"
+    )  # Business model price
+    params: Optional[Dict[str, Any]] = None
     outputs: Dict[str, str]
-    data: Optional[Dict[str, Any]]
+    data: Optional[Dict[str, Any]] = None
     status: str
-    error_message: Optional[str]
-    duration_seconds: Optional[float]
-    created_at: datetime
+    error_message: Optional[str] = Field(default=None, serialization_alias="errorMessage")
+    duration_seconds: Optional[float] = Field(default=None, serialization_alias="durationSeconds")
+    created_at: datetime = Field(..., serialization_alias="createdAt")
 
     # Token usage tracking (actual API consumption)
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    cache_creation_tokens: Optional[int] = None
-    cache_read_tokens: Optional[int] = None
-    actual_cost_usd: Optional[float] = None  # Actual API cost (may differ from tool_price)
+    input_tokens: Optional[int] = Field(default=None, serialization_alias="inputTokens")
+    output_tokens: Optional[int] = Field(default=None, serialization_alias="outputTokens")
+    cache_creation_tokens: Optional[int] = Field(
+        default=None, serialization_alias="cacheCreationTokens"
+    )
+    cache_read_tokens: Optional[int] = Field(default=None, serialization_alias="cacheReadTokens")
+    actual_cost_usd: Optional[float] = Field(
+        default=None, serialization_alias="actualCostUsd"
+    )  # Actual API cost
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )
 
     @field_serializer("created_at")
@@ -581,13 +584,10 @@ class ResearchResultListResponse(BaseModel):
 
     results: List[ResearchResultResponse]
     total: int
-    project_id: Optional[str]
-    client_id: Optional[str]
+    project_id: Optional[str] = Field(default=None, serialization_alias="projectId")
+    client_id: Optional[str] = Field(default=None, serialization_alias="clientId")
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )

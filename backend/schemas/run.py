@@ -5,7 +5,7 @@ Pydantic schemas for Run API.
 from datetime import datetime
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, AliasChoices, field_validator, field_serializer
 
 from backend.utils.logger import logger
 
@@ -26,10 +26,12 @@ class RunCreate(BaseModel):
     - Protected fields set by system: id, started_at, completed_at, status, logs, error_message
     """
 
-    project_id: str
-    is_batch: bool = False
+    project_id: str = Field(..., validation_alias=AliasChoices("project_id", "projectId"))
+    is_batch: bool = Field(default=False, validation_alias=AliasChoices("is_batch", "isBatch"))
 
-    model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields
+    model_config = ConfigDict(
+        populate_by_name=True, extra="forbid"  # TR-022: Reject unknown fields
+    )
 
 
 class RunUpdate(BaseModel):
@@ -43,11 +45,17 @@ class RunUpdate(BaseModel):
     """
 
     status: Optional[str] = None
-    completed_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = Field(
+        default=None, validation_alias=AliasChoices("completed_at", "completedAt")
+    )
     logs: Optional[List[LogEntry]] = None
-    error_message: Optional[str] = None
+    error_message: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("error_message", "errorMessage")
+    )
 
-    model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields
+    model_config = ConfigDict(
+        populate_by_name=True, extra="forbid"  # TR-022: Reject unknown fields
+    )
 
 
 class RunResponse(BaseModel):
@@ -58,28 +66,33 @@ class RunResponse(BaseModel):
     """
 
     id: str
-    project_id: str
-    is_batch: bool
-    started_at: datetime
-    completed_at: Optional[datetime] = None
+    project_id: str = Field(..., serialization_alias="projectId")
+    is_batch: bool = Field(..., serialization_alias="isBatch")
+    started_at: datetime = Field(..., serialization_alias="startedAt")
+    completed_at: Optional[datetime] = Field(default=None, serialization_alias="completedAt")
     status: str  # pending, running, succeeded, failed
     logs: Optional[List[LogEntry]] = None
-    error_message: Optional[str] = None
+    error_message: Optional[str] = Field(default=None, serialization_alias="errorMessage")
 
     # Token usage tracking (cumulative for all posts in this run)
-    total_input_tokens: Optional[int] = None
-    total_output_tokens: Optional[int] = None
-    total_cache_creation_tokens: Optional[int] = None
-    total_cache_read_tokens: Optional[int] = None
-    total_cost_usd: Optional[float] = None
-    estimated_cost_usd: Optional[float] = None
+    total_input_tokens: Optional[int] = Field(default=None, serialization_alias="totalInputTokens")
+    total_output_tokens: Optional[int] = Field(
+        default=None, serialization_alias="totalOutputTokens"
+    )
+    total_cache_creation_tokens: Optional[int] = Field(
+        default=None, serialization_alias="totalCacheCreationTokens"
+    )
+    total_cache_read_tokens: Optional[int] = Field(
+        default=None, serialization_alias="totalCacheReadTokens"
+    )
+    total_cost_usd: Optional[float] = Field(default=None, serialization_alias="totalCostUsd")
+    estimated_cost_usd: Optional[float] = Field(
+        default=None, serialization_alias="estimatedCostUsd"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )
 
     @field_validator("logs", mode="before")

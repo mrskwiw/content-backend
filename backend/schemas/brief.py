@@ -5,7 +5,7 @@ Pydantic schemas for Brief API.
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, AliasChoices, field_serializer
 
 
 class BriefCreate(BaseModel):
@@ -17,10 +17,12 @@ class BriefCreate(BaseModel):
     - Protected fields set by system: id, source, file_path, created_at
     """
 
-    project_id: str
-    content: str
+    project_id: str = Field(..., validation_alias=AliasChoices("project_id", "projectId"))
+    content: str = Field(..., validation_alias=AliasChoices("content"))
 
-    model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields
+    model_config = ConfigDict(
+        populate_by_name=True, extra="forbid"  # TR-022: Reject unknown fields
+    )
 
 
 class BriefUpdate(BaseModel):
@@ -32,9 +34,11 @@ class BriefUpdate(BaseModel):
     - Protected fields (never updatable): id, project_id, source, file_path, created_at
     """
 
-    content: Optional[str] = None
+    content: Optional[str] = Field(default=None, validation_alias=AliasChoices("content"))
 
-    model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields
+    model_config = ConfigDict(
+        populate_by_name=True, extra="forbid"  # TR-022: Reject unknown fields
+    )
 
 
 class BriefResponse(BaseModel):
@@ -45,18 +49,15 @@ class BriefResponse(BaseModel):
     """
 
     id: str
-    project_id: str
+    project_id: str = Field(..., serialization_alias="projectId")
     content: str
     source: str  # "upload" or "paste"
-    file_path: Optional[str] = None
-    created_at: datetime
+    file_path: Optional[str] = Field(default=None, serialization_alias="filePath")
+    created_at: datetime = Field(..., serialization_alias="createdAt")
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )
 
     @field_serializer("created_at")

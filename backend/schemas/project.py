@@ -392,7 +392,7 @@ class ProjectUpdate(BaseModel):
         return v
 
 
-class ProjectResponse(ProjectBase):
+class ProjectResponse(BaseModel):
     """
     Schema for project response.
 
@@ -400,16 +400,47 @@ class ProjectResponse(ProjectBase):
     """
 
     id: str
+    name: str
+    client_id: str = Field(..., serialization_alias="clientId")
+
+    # Template selection
+    templates: Optional[List[str]] = None  # DEPRECATED: Legacy support
+    template_quantities: Optional[Dict[str, int]] = Field(
+        default=None, serialization_alias="templateQuantities"
+    )
+    num_posts: Optional[int] = Field(default=None, serialization_alias="numPosts")
+
+    # Pricing
+    price_per_post: Optional[float] = Field(default=40.0, serialization_alias="pricePerPost")
+    research_price_per_post: Optional[float] = Field(
+        default=0.0, serialization_alias="researchPricePerPost"
+    )
+    total_price: Optional[float] = Field(default=None, serialization_alias="totalPrice")
+
+    # Pricing breakdown
+    posts_cost: Optional[float] = Field(default=None, serialization_alias="postsCost")
+    research_addon_cost: Optional[float] = Field(
+        default=None, serialization_alias="researchAddonCost"
+    )
+    tools_cost: Optional[float] = Field(default=None, serialization_alias="toolsCost")
+    discount_amount: Optional[float] = Field(default=None, serialization_alias="discountAmount")
+    selected_tools: Optional[List[str]] = Field(default=None, serialization_alias="selectedTools")
+
+    # Configuration
+    platforms: Optional[List[Platform]] = None
+    target_platform: Optional[Platform] = Field(
+        default="generic", serialization_alias="targetPlatform"
+    )
+    tone: Optional[str] = None
+
+    # Status and timestamps
     status: str
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: datetime = Field(..., serialization_alias="createdAt")
+    updated_at: Optional[datetime] = Field(default=None, serialization_alias="updatedAt")
 
     model_config = ConfigDict(
         from_attributes=True,
         populate_by_name=True,  # Allow both snake_case and camelCase
-        alias_generator=lambda field_name: "".join(
-            word.capitalize() if i > 0 else word for i, word in enumerate(field_name.split("_"))
-        ),  # Convert snake_case to camelCase
     )
 
     @field_serializer("created_at", "updated_at")
