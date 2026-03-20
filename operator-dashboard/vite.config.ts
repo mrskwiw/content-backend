@@ -18,39 +18,77 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
 
-        manualChunks: {
+        manualChunks: (id) => {
           // Core React libraries
-          'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
 
           // React Router
-          'router': ['react-router-dom'],
+          if (id.includes('node_modules/react-router-dom')) {
+            return 'router';
+          }
 
           // Data fetching and state management
-          'query': ['@tanstack/react-query', 'axios'],
+          if (id.includes('node_modules/@tanstack/react-query') || id.includes('node_modules/axios')) {
+            return 'query';
+          }
 
-          // UI components (if you're using a library like shadcn/ui)
-          // Uncomment if you have large UI dependencies
-          // 'ui': ['@radix-ui/react-dialog', '@radix-ui/react-select', ...],
+          // Radix UI components (large dependency)
+          if (id.includes('node_modules/@radix-ui')) {
+            return 'radix-ui';
+          }
+
+          // Date utilities (date-fns is large)
+          if (id.includes('node_modules/date-fns')) {
+            return 'date-utils';
+          }
+
+          // Lucide icons (large icon library)
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
+
+          // Chart libraries (recharts is heavy)
+          if (id.includes('node_modules/recharts')) {
+            return 'charts';
+          }
+
+          // Zustand (state management)
+          if (id.includes('node_modules/zustand')) {
+            return 'state';
+          }
+
+          // Other node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
       },
     },
     // Enable CSS code splitting
     cssCodeSplit: true,
 
-    // Optimize chunk size warnings
-    chunkSizeWarningLimit: 1000,
+    // Optimize chunk size warnings (500KB uncompressed is reasonable with gzip)
+    chunkSizeWarningLimit: 500,
 
-    // Source maps for production debugging (enable for easier debugging)
-    sourcemap: true,
+    // Disable source maps in production (saves ~1.5MB), enable in dev
+    sourcemap: false,
 
     // Minification
     minify: 'esbuild',
 
     // Target modern browsers for smaller bundles
-    target: 'es2015',
+    target: 'es2020',
 
     // Clear output directory before build to remove stale files
     emptyOutDir: true,
+
+    // Optimize dependencies
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
   },
 
   // Development server optimization
