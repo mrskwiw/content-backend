@@ -9,13 +9,14 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from backend.database import get_db
 from backend.models import Post, ResearchResult, Run
 from backend.models.project import Project
 from backend.models.user import User
 from backend.middleware.auth_dependency import get_current_user
+from backend.services import crud
 from backend.schemas.costs import (
     ProjectCostSummary,
     RunCostBreakdown,
@@ -38,8 +39,8 @@ def get_project_costs(
 
     Returns aggregated token usage and costs across all runs for the project.
     """
-    # Verify project exists and user owns it
-    project = db.query(Project).filter(Project.id == project_id).first()
+    # Verify project exists and user owns it (using CRUD for eager loading)
+    project = crud.get_project(db, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     if project.user_id != current_user.id:
@@ -106,13 +107,13 @@ def get_run_costs(
 
     Returns run-level token usage and per-post cost estimates.
     """
-    # Get run and verify ownership
-    run = db.query(Run).filter(Run.id == run_id).first()
+    # Get run with eager-loaded project to avoid N+1 query
+    run = db.query(Run).options(joinedload(Run.project)).filter(Run.id == run_id).first()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
-    project = db.query(Project).filter(Project.id == run.project_id).first()
-    if not project or project.user_id != current_user.id:
+    # Access the eager-loaded project relationship
+    if not run.project or run.project.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get posts for this run with token data
@@ -135,7 +136,7 @@ def get_run_costs(
 
     return RunCostBreakdown(
         run_id=run_id,
-        project_id=run.project_id,
+        project_id=run.project.id,
         status=run.status,
         started_at=run.started_at,
         completed_at=run.completed_at,
@@ -269,10 +270,8 @@ def get_research_costs(
 
     Shows all research tools executed and their actual API costs vs business pricing.
     """
-    from backend.models.client import Client
-
-    # Verify client exists and user owns it
-    client = db.query(Client).filter(Client.id == client_id).first()
+    # Verify client exists and user owns it (using CRUD for consistency)
+    client = crud.get_client(db, client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     if client.user_id != current_user.id:

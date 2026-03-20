@@ -644,8 +644,8 @@ async def export_package(
                 detail="Access denied: You don't own this project",
             )
 
-        # Get client data
-        client = crud.get_client(db, project.client_id)
+        # Use eager-loaded client (already loaded by crud.get_project)
+        client = project.client
         if not client:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
