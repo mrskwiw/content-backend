@@ -57,6 +57,7 @@ import backend.models  # noqa: F401
 from backend.config import settings as app_settings
 from backend.database import init_db
 from backend.middleware.metrics import MetricsMiddleware
+from backend.middleware.compression import add_compression_middleware
 from backend.middleware.csrf_protection import CSRFProtectionMiddleware
 from backend.middleware.request_id import RequestIDMiddleware, get_request_id
 from backend.utils.rate_limiter import rate_limiter
@@ -266,6 +267,9 @@ app.add_middleware(CSRFProtectionMiddleware)
 # Request ID tracking middleware
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(MetricsMiddleware)
+
+# Add response compression (gzip)
+add_compression_middleware(app)
 
 
 # CORS middleware
