@@ -373,3 +373,41 @@ def generate_quick_actions(page: str, context: dict) -> List[dict]:
     }
 
     return actions_map.get(page, [])
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    request: ChatRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Stream AI assistant responses in real-time.
+
+    Returns Server-Sent Events with response chunks as they're generated.
+    Provides better UX for long responses by showing progress immediately.
+    """
+    from backend.utils.sse import create_sse_response
+
+    async def response_stream():
+        """Stream AI response chunks"""
+        try:
+            # Yield start event
+            yield {
+                "type": "start",
+                "message_id": "temp-id",  # Would be generated
+            }
+
+            # TODO: Integrate with actual streaming Anthropic API
+            # For now, placeholder that demonstrates the pattern
+
+            yield {
+                "type": "complete",
+                "message": "Streaming infrastructure ready",
+            }
+        except Exception as e:
+            yield {
+                "type": "error",
+                "error": str(e),
+            }
+
+    return await create_sse_response(response_stream(), event_type="chat")
