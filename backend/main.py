@@ -58,6 +58,10 @@ from backend.config import settings as app_settings
 from backend.database import init_db
 from backend.middleware.metrics import MetricsMiddleware
 from backend.middleware.compression import add_compression_middleware
+from backend.middleware.security_headers import (
+    add_security_headers_middleware,
+    enforce_https_redirect,
+)
 from backend.middleware.csrf_protection import CSRFProtectionMiddleware
 from backend.middleware.request_id import RequestIDMiddleware, get_request_id
 from backend.utils.rate_limiter import rate_limiter
@@ -270,6 +274,10 @@ app.add_middleware(MetricsMiddleware)
 
 # Add response compression (gzip)
 add_compression_middleware(app)
+
+# TR-011: Security headers (HSTS, X-Frame-Options, etc.)
+add_security_headers_middleware(app)
+enforce_https_redirect(app)
 
 
 # CORS middleware
@@ -519,7 +527,12 @@ async def health_check_get(request: Request):
     }
 
 
-@app.head("/health", tags=["Health"], operation_id="health_check_head", include_in_schema=False)
+@app.head(
+    "/health",
+    tags=["Health"],
+    operation_id="health_check_head",
+    include_in_schema=False,
+)
 async def health_check_head():
     """Health check endpoint (HEAD) for monitoring tools."""
     return Response(status_code=200)
