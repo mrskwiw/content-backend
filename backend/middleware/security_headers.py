@@ -41,7 +41,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Prevent clickjacking attacks
         # Page cannot be embedded in <iframe>, <frame>, etc.
-        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"  # Allow same-origin framing
 
         # Enable browser XSS protection
         # Deprecated in modern browsers but harmless to include
@@ -57,12 +57,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "geolocation=(), camera=(), microphone=(), payment=()"
         )
 
-        # Content Security Policy (CSP) - Basic policy for API
-        # For frontend: Set via meta tag or more complex CSP
+        # Content Security Policy (CSP) - Only for API endpoints
+        # Frontend routes need permissive policy for React app
         if request.url.path.startswith("/api"):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'none'; frame-ancestors 'none'"
             )
+        # Don't set CSP for frontend routes - let React handle it
 
         return response
 
