@@ -5,6 +5,7 @@ Backend configuration settings loaded from environment variables.
 import os
 import tempfile
 from pathlib import Path
+import re
 from typing import List
 
 from pydantic import field_validator
@@ -101,6 +102,26 @@ class Settings(BaseSettings):
                 f"CRITICAL SECURITY ERROR: Detected weak/default SECRET_KEY '{v}'. "
                 'Generate a secure key with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
             )
+
+        # Check for placeholder patterns (TR-001)
+        placeholder_patterns = [
+            r"REPLACE.*WITH",
+            r"YOUR.*SECRET",
+            r"YOUR.*KEY",
+            r"CHANGEME",
+            r"TODO",
+            r"EXAMPLE",
+            r"PLACEHOLDER",
+            r"FIXME",
+        ]
+
+        v_upper = v.upper()
+        for pattern in placeholder_patterns:
+            if re.search(pattern, v_upper):
+                raise ValueError(
+                    f"CRITICAL SECURITY ERROR: SECRET_KEY appears to be a placeholder: '{v}'. "
+                    'Generate a secure key with: python -c "import secrets; print(secrets.token_urlsafe(32))"'
+                )
 
         # Enforce minimum length (32 characters for 256-bit equivalent)
         if len(v) < 32:
