@@ -14,6 +14,7 @@ from backend.services import crud
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
+from backend.utils.password_policy import password_policy
 from backend.utils.auth import (
     create_access_token,
     create_refresh_token,
@@ -147,6 +148,18 @@ async def register_user(request: Request, user_data: UserCreate, db: Session = D
     - Duplicate prevention: Email uniqueness check
     - New users inactive by default: Requires admin activation
     """
+
+    # TR-013: Enforce strong password policy
+    is_valid, password_errors = password_policy.validate_password(user_data.password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "WEAK_PASSWORD",
+                "message": "Password does not meet security requirements",
+                "requirements": password_errors,
+            },
+        )
     # ============================================================
     # TR-023: OPTIONAL ADMIN-ONLY REGISTRATION
     # ============================================================
