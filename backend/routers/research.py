@@ -40,6 +40,7 @@ from backend.services import credit_service
 from backend.services.credit_service import InsufficientCreditsError
 from backend.pricing.credit_pricing import get_research_tool_cost
 from backend.utils.logger import logger
+from backend.utils.research_rate_limiter import research_rate_limiter
 from backend.utils.http_rate_limiter import strict_limiter, lenient_limiter
 from backend.middleware.authorization import _check_ownership  # TR-021: IDOR prevention
 from src.utils.response_cache import ResponseCache
@@ -410,6 +411,13 @@ async def run_research(
 
     All string parameters are sanitized before being passed to LLM prompts.
     """
+    # TR-003: Check per-user rate limits (hourly, daily, monthly)
+    tool_cost = get_research_tool_cost(input.tool_name)
+    usage_stats = research_rate_limiter.check_and_increment(
+        user=current_user, tool_name=input.tool_name, cost_credits=tool_cost
+    )
+    logger.info(f"Research tool rate limit check passed. Usage: {usage_stats}")
+
     # Verify project exists
     project = crud.get_project(db, input.project_id)
     if not project:
@@ -842,7 +850,8 @@ async def get_research_output_content(
     # Check if result has outputs
     if not result.outputs or output_format not in result.outputs:
         raise HTTPException(
-            status_code=404, detail=f"Output format '{output_format}' not found for this result"
+            status_code=404,
+            detail=f"Output format '{output_format}' not found for this result",
         )
 
     # Get file path
@@ -1083,6 +1092,21 @@ async def execute_research_batch(
     Returns:
         Execution order, results for each tool, and summary
     """
+    # TR-003: Check per-user rate limits for batch operations
+    # Batch operations count as multiple tool calls
+    total_tools = len(batch_request.tool_names)
+    logger.info(f"Batch research request: {total_tools} tools")
+
+    # Check limits for first tool (will increment for each tool executed)
+    if total_tools > 0:
+        tool_cost = get_research_tool_cost(batch_request.tool_names[0])
+        usage_stats = research_rate_limiter.check_and_increment(
+            user=current_user,
+            tool_name=f"batch[{total_tools}]",
+            cost_credits=tool_cost * total_tools,
+        )
+        logger.info(f"Batch research rate limit check passed. Usage: {usage_stats}")
+
     # Verify project ownership
     project = crud.get_project(db, batch_request.project_id)
     if not project:
@@ -1227,7 +1251,10 @@ async def get_research_analytics(
     # TR-021: Filter to user's research results only
     results = (
         db.query(ResearchResult)
-        .filter(ResearchResult.user_id == current_user.id, ResearchResult.created_at >= cutoff_date)
+        .filter(
+            ResearchResult.user_id == current_user.id,
+            ResearchResult.created_at >= cutoff_date,
+        )
         .all()
     )
 
