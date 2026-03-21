@@ -16,7 +16,10 @@ from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
 from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import standard_limiter, lenient_limiter
-from src.validators.prompt_injection_defense import sanitize_prompt_input
+from src.validators.prompt_injection_defense import (
+    sanitize_prompt_input,
+    detect_prompt_leakage,
+)
 
 # Will use Claude API directly for assistant conversations
 try:
@@ -244,6 +247,13 @@ async def chat_with_assistant(
             )
 
             assistant_message = response.content[0].text
+
+            # TR-005: Validate LLM output for prompt leakage
+            if detect_prompt_leakage(assistant_message):
+                logger.error(
+                    f"Prompt leakage detected in assistant response for user {current_user.email}"
+                )
+                assistant_message = "I apologize, but I encountered a security issue. Please try rephrasing your question."
 
             # Cache the response for future requests
             if chat_cache:

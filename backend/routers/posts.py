@@ -2,8 +2,10 @@
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from backend.utils.logger import logger
 from backend.middleware.auth_dependency import get_current_user
+from src.validators.prompt_injection_defense import sanitize_prompt_input
 from backend.middleware.authorization import (
     verify_post_ownership,
     filter_user_posts,
@@ -159,7 +161,10 @@ async def list_posts(
     ]
 
     # Prepare response with pagination metadata
-    response_data = {"items": posts_data, "metadata": paginated["metadata"].model_dump(mode="json")}
+    response_data = {
+        "items": posts_data,
+        "metadata": paginated["metadata"].model_dump(mode="json"),
+    }
 
     return JSONResponse(content=response_data)
 
@@ -210,7 +215,28 @@ async def update_post(
     # TR-021: post already verified by dependency
 
     # Update content
-    post.content = post_update.content
+    # TR-005: Sanitize post content to prevent prompt injection
+
+    # Update content
+    try:
+
+        # Update content
+        post.content = sanitize_prompt_input(post_update.content, strict=False)
+
+    # Update content
+    except ValueError as e:
+
+        # Update content
+        logger.warning(f"Prompt injection detected in post update: {e}")
+
+        # Update content
+        raise HTTPException(
+            # Update content
+            status_code=status.HTTP_400_BAD_REQUEST,
+            # Update content
+            detail="Post content contains potentially unsafe patterns. Please rephrase.",
+            # Update content
+        )
 
     # Recalculate word count
     post.word_count = len(post_update.content.split())

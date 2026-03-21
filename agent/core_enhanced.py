@@ -27,6 +27,13 @@ from .suggestions import Suggestion, SuggestionEngine
 from .tools import AgentTools
 from .workflows import WorkflowExecutor
 
+# TR-005: Prompt injection defenses
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from src.validators.prompt_injection_defense import sanitize_prompt_input, detect_prompt_leakage
+
 
 class AgentResponse:
     """Response from the agent"""
@@ -112,7 +119,23 @@ class ContentAgentCoreEnhanced:
             return await self._handle_batch_operations()
 
         # Add user message to history
-        self.messages.append({"role": "user", "content": user_message})
+        # TR-005: Sanitize user input before passing to LLM
+        try:
+            sanitized_message = sanitize_prompt_input(user_message, strict=False)
+        except ValueError as e:
+            # Critical prompt injection detected
+            return AgentResponse(
+                message=f"Security Error: {str(e)}",
+                suggestions=[
+                    Suggestion(
+                        text="Your message was blocked for security reasons. Please rephrase.",
+                        action="help",
+                        priority="high",
+                    )
+                ],
+            )
+
+        self.messages.append({"role": "user", "content": sanitized_message})
 
         # Save user message to database
         self._save_message_to_db("user", user_message)
@@ -156,6 +179,35 @@ class ContentAgentCoreEnhanced:
                     }
                 )
                 assistant_message["content"].append(content_block)
+
+        # TR-005: Validate LLM output for prompt leakage
+
+        assistant_text = ""
+
+        for block in assistant_message["content"]:
+
+            if hasattr(block, "text"):
+
+                assistant_text += block.text
+
+            elif isinstance(block, dict) and "text" in block:
+
+                assistant_text += block["text"]
+
+        if detect_prompt_leakage(assistant_text):
+
+            # System prompt leaked - return safe error message
+
+            return AgentResponse(
+                message="I apologize, but I encountered a security issue processing your request. Please try rephrasing your question.",
+                suggestions=[
+                    Suggestion(
+                        text="Security validation detected potential data leakage",
+                        action="error",
+                        priority="high",
+                    )
+                ],
+            )
 
         self.messages.append(assistant_message)
 
