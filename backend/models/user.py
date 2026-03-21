@@ -35,6 +35,11 @@ class User(Base):
     is_enterprise = Column(Boolean, default=False, nullable=False)
     custom_credit_rate = Column(Float, nullable=True)  # Custom $/credit rate (e.g., 1.50)
     enterprise_notes = Column(Text, nullable=True)  # Admin notes about enterprise agreement
+    # MFA (Two-Factor Authentication) - TR-008
+    mfa_enabled = Column(Boolean, default=False, nullable=False)
+    mfa_secret = Column(String, nullable=True)  # TOTP secret (encrypted)
+    mfa_backup_codes = Column(Text, nullable=True)  # JSON array of hashed backup codes
+    mfa_enforced = Column(Boolean, default=False, nullable=False)  # Admin enforcement flag
 
     # Relationships
     settings = relationship("Setting", back_populates="user", cascade="all, delete-orphan")
