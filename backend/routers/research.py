@@ -993,6 +993,95 @@ async def check_prerequisites(
     )
 
 
+# Client-specific prerequisite checking
+class ClientToolStatus(BaseModel):
+    """Prerequisite status for a tool for a specific client"""
+
+    tool_name: str
+    can_run: bool
+    completed: bool  # Has this tool been run for this client
+    missing_required: List[str]
+    missing_recommended: List[str]
+
+
+class ClientPrerequisiteResponse(BaseModel):
+    """Response from client prerequisite check"""
+
+    client_id: str
+    tools: List[ClientToolStatus]
+    completed_tools: List[str]  # All tools completed for this client
+
+
+@router.get("/prerequisites/client/{client_id}", response_model=ClientPrerequisiteResponse)
+@lenient_limiter.limit("100/hour")
+async def get_client_prerequisites(
+    request: Request,
+    client_id: str,
+    tool_names: Optional[str] = Query(None, description="Comma-separated tool names to check"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get prerequisite status for tools based on a specific client's completed research.
+
+    This endpoint enables client-specific dependency tracking in the Tool Library page.
+    Returns which tools have been completed for this client and what prerequisites
+    are missing for tools that haven't been run yet.
+
+    Args:
+        client_id: Client ID to check research completion status
+        tool_names: Optional comma-separated list of tools to check. If not provided,
+                   checks all available tools.
+
+    Returns:
+        Status for each tool including whether it's been completed for this client
+        and what prerequisites are missing.
+
+    Authorization: TR-021 - User must own the client
+    """
+    # Verify client ownership (TR-021: IDOR prevention)
+    client = crud.get_client(db, client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    _check_ownership(client, current_user, resource_type="client")
+
+    # Determine which tools to check
+    if tool_names:
+        tools_to_check = [t.strip() for t in tool_names.split(",")]
+    else:
+        # Check all available tools
+        tools_to_check = [tool.name for tool in RESEARCH_TOOLS]
+
+    logger.info(f"Checking prerequisites for {len(tools_to_check)} tools for client {client_id}")
+
+    # Get prerequisite status for all tools
+    status_map = research_service.get_client_prerequisite_status(db, client_id, tools_to_check)
+
+    # Build response
+    tool_statuses = []
+    completed_tools = []
+
+    for tool_name, tool_status_data in status_map.items():
+        tool_status = ClientToolStatus(
+            tool_name=tool_name,
+            can_run=tool_status_data["can_run"],
+            completed=tool_status_data["completed"],
+            missing_required=tool_status_data["missing_required"],
+            missing_recommended=tool_status_data["missing_recommended"],
+        )
+        tool_statuses.append(tool_status)
+
+        if tool_status_data["completed"]:
+            completed_tools.append(tool_name)
+
+    return ClientPrerequisiteResponse(
+        client_id=client_id,
+        tools=tool_statuses,
+        completed_tools=completed_tools,
+    )
+
+
 class ExecutionOrderRequest(BaseModel):
     """Request to get execution order for tools"""
 

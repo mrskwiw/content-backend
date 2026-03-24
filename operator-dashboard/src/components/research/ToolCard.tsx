@@ -18,9 +18,10 @@ interface ToolCardProps {
   toolLabels?: Record<string, string>;
   disabled?: boolean;
   missingIntegrations?: string[];
+  completedTools?: string[];
 }
 
-export const ToolCard = memo(function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequisites, toolLabels, disabled, missingIntegrations }: ToolCardProps) {
+export const ToolCard = memo(function ToolCard({ tool, isSelected, onToggle, executionStatus, prerequisites, toolLabels, disabled, missingIntegrations, completedTools }: ToolCardProps) {
   const categoryColors = {
     foundation: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
     seo: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -85,28 +86,44 @@ export const ToolCard = memo(function ToolCard({ tool, isSelected, onToggle, exe
             <div className="flex flex-wrap items-center gap-1">
               <Link2 className="h-3 w-3 text-red-600 dark:text-red-400" />
               <span className="text-xs font-medium text-red-600 dark:text-red-400">Required:</span>
-              {prerequisites.required.map((prereqTool) => (
-                <span
-                  key={prereqTool}
-                  className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400"
-                >
-                  {toolLabels?.[prereqTool] || prereqTool}
-                </span>
-              ))}
+              {prerequisites.required.map((prereqTool) => {
+                const isCompleted = completedTools?.includes(prereqTool);
+                return (
+                  <span
+                    key={prereqTool}
+                    className={"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium " + (
+                      isCompleted
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                        : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                    )}
+                  >
+                    {isCompleted && <CheckCircle2 className="h-3 w-3" />}
+                    {toolLabels?.[prereqTool] || prereqTool}
+                  </span>
+                );
+              })}
             </div>
           )}
           {prerequisites.recommended.length > 0 && (
             <div className="flex flex-wrap items-center gap-1">
               <Link2 className="h-3 w-3 text-blue-600 dark:text-blue-400" />
               <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Recommended:</span>
-              {prerequisites.recommended.map((prereqTool) => (
-                <span
-                  key={prereqTool}
-                  className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400"
-                >
-                  {toolLabels?.[prereqTool] || prereqTool}
-                </span>
-              ))}
+              {prerequisites.recommended.map((prereqTool) => {
+                const isCompleted = completedTools?.includes(prereqTool);
+                return (
+                  <span
+                    key={prereqTool}
+                    className={"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium " + (
+                      isCompleted
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                        : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                    )}
+                  >
+                    {isCompleted && <CheckCircle2 className="h-3 w-3" />}
+                    {toolLabels?.[prereqTool] || prereqTool}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>

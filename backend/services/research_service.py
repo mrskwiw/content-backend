@@ -245,6 +245,81 @@ class ResearchService:
 
         return {tool[0] for tool in completed}
 
+    def _get_completed_tools_for_client(self, db: Session, client_id: str) -> set[str]:
+        """Get set of tool IDs that have been completed for this client across all projects"""
+        from backend.models import ResearchResult
+
+        completed = (
+            db.query(ResearchResult.tool_name)
+            .filter(
+                ResearchResult.client_id == client_id,
+                ResearchResult.status == "completed",
+                ResearchResult.is_deleted.is_(False),  # Exclude soft-deleted results
+            )
+            .distinct()
+            .all()
+        )
+
+        return {tool[0] for tool in completed}
+
+    def check_client_prerequisites(
+        self,
+        db: Session,
+        client_id: str,
+        tool_id: str,
+    ) -> tuple[bool, list[str], list[str]]:
+        """
+        Check if prerequisites are met for a tool based on client's completed research.
+
+        Args:
+            db: Database session
+            client_id: Client ID
+            tool_id: Tool to check
+
+        Returns:
+            Tuple of (can_run, missing_required, missing_recommended)
+        """
+        # Get completed tools for this client
+        completed_tools = self._get_completed_tools_for_client(db, client_id)
+
+        # Check prerequisites
+        return self.prerequisites.check_prerequisites_met(tool_id, completed_tools)
+
+    def get_client_prerequisite_status(
+        self, db: Session, client_id: str, tool_ids: list[str]
+    ) -> dict[str, dict[str, Any]]:
+        """
+        Get prerequisite status for multiple tools for a specific client.
+
+        Args:
+            db: Database session
+            client_id: Client ID
+            tool_ids: List of tool IDs to check
+
+        Returns:
+            Dict mapping tool_id to status dict with keys:
+            - can_run: bool
+            - completed: bool (has this tool been run for this client)
+            - missing_required: list[str]
+            - missing_recommended: list[str]
+        """
+        completed_tools = self._get_completed_tools_for_client(db, client_id)
+        status_map = {}
+
+        for tool_id in tool_ids:
+            can_run, missing_required, missing_recommended = self.check_client_prerequisites(
+                db, client_id, tool_id
+            )
+
+            status_map[tool_id] = {
+                "can_run": can_run,
+                "completed": tool_id in completed_tools,
+                "missing_required": missing_required,
+                "missing_recommended": missing_recommended,
+            }
+
+        return status_map
+
     def check_prerequisites(
         self,
         db: Session,

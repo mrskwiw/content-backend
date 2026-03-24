@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { researchApi, costsApi, ResearchTool, projectsApi, settingsApi } from '@/api';
+import { researchApi, costsApi, ResearchTool, projectsApi, settingsApi, clientsApi } from "@/api";
 import type { Project } from '@/types/api-types';
 import { ToolCard } from '../../components/research/ToolCard';
 import { PricingSummaryCard } from '../../components/research/PricingSummaryCard';
@@ -55,6 +55,8 @@ export default function ResearchToolsLibrary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientPrerequisiteMode, setClientPrerequisiteMode] = useState(false);
 
   // Fetch available tools
   const { data: tools = [], isLoading: toolsLoading } = useQuery({
@@ -75,6 +77,22 @@ export default function ResearchToolsLibrary() {
     queryFn: () => researchApi.getPricingPreview(selectedTools),
     enabled: selectedTools.length > 0
   });
+
+  // Fetch clients for client selector
+  const { data: clients = [] } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => clientsApi.list(),
+  });
+
+  // Fetch client prerequisite status when client is selected
+  const { data: clientPrerequisites } = useQuery({
+    queryKey: ['client-prerequisites', selectedClientId],
+    queryFn: () => researchApi.getClientPrerequisites(selectedClientId as string),
+    enabled: selectedClientId \!== null && clientPrerequisiteMode,
+  });
+
+  // Build completed tools set from client prerequisites
+  const completedToolsForClient = clientPrerequisites?.completedTools || [];
 
   // Fetch projects for project selector
   const { data: projects = [] } = useQuery({
@@ -196,6 +214,53 @@ export default function ResearchToolsLibrary() {
         </div>
       </div>
 
+
+      {/* Client Filter - NEW */}
+      <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="client-prerequisite-mode"
+              checked={clientPrerequisiteMode}
+              onChange={(e) => {
+                setClientPrerequisiteMode(e.target.checked);
+                if (!e.target.checked) {
+                  setSelectedClientId(null);
+                }
+              }}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="client-prerequisite-mode" className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Show client-specific prerequisite status
+            </label>
+          </div>
+
+          {clientPrerequisiteMode && (
+            <div className="flex-1">
+              <select
+                value={selectedClientId || ''}
+                onChange={(e) => setSelectedClientId(e.target.value || null)}
+                className="w-full max-w-md px-4 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select a client...</option>
+                {clients.map((client: any) => (
+                  <option key={client.id} value={client.id}>
+                    {client.companyName || client.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {clientPrerequisiteMode && selectedClientId && (
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="font-medium">{completedToolsForClient.length}</span> tools completed for this client
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Search and Filters */}
       <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-4">
         <div className="flex gap-4">
@@ -294,6 +359,7 @@ export default function ResearchToolsLibrary() {
               toolLabels={TOOL_LABELS}
               disabled={!enabled}
               missingIntegrations={missingIntegrations}
+              completedTools={completedToolsForClient}
             />
           );
         })}

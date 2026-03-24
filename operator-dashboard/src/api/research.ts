@@ -144,6 +144,36 @@ export interface ResearchAnalytics {
   dateRange: number;
 }
 
+
+// Client prerequisite checking
+export interface ClientToolStatus {
+  toolName: string;
+  canRun: boolean;
+  completed: boolean;  // Has this tool been run for this client
+  missingRequired: string[];
+  missingRecommended: string[];
+}
+
+export interface ClientPrerequisiteResponse {
+  clientId: string;
+  tools: ClientToolStatus[];
+  completedTools: string[];  // All tools completed for this client
+}
+
+const ClientToolStatusSchema = z.object({
+  tool_name: z.string(),
+  can_run: z.boolean(),
+  completed: z.boolean(),
+  missing_required: z.array(z.string()),
+  missing_recommended: z.array(z.string()),
+});
+
+const ClientPrerequisiteResponseSchema = z.object({
+  client_id: z.string(),
+  tools: z.array(ClientToolStatusSchema),
+  completed_tools: z.array(z.string()),
+});
+
 export const researchApi = {
   async listTools(): Promise<ResearchTool[]> {
     const { data } = await apiClient.get('/api/research/tools');
@@ -255,6 +285,35 @@ export const researchApi = {
     return {
       executionOrder: parsed.execution_order,
       toolCount: parsed.tool_count,
+    };
+  },
+
+  /**
+   * Get prerequisite status for tools based on a specific client's completed research.
+   * Enables client-specific dependency tracking in the Tool Library page.
+   */
+  async getClientPrerequisites(
+    clientId: string,
+    toolNames?: string[]
+  ): Promise<ClientPrerequisiteResponse> {
+    const params = toolNames ? { tool_names: toolNames.join(',') } : {};
+    const { data } = await apiClient.get(
+      `/api/research/prerequisites/client/${clientId}`,
+      { params }
+    );
+    const parsed = ClientPrerequisiteResponseSchema.parse(data);
+
+    // Convert snake_case to camelCase
+    return {
+      clientId: parsed.client_id,
+      tools: parsed.tools.map(t => ({
+        toolName: t.tool_name,
+        canRun: t.can_run,
+        completed: t.completed,
+        missingRequired: t.missing_required,
+        missingRecommended: t.missing_recommended,
+      })),
+      completedTools: parsed.completed_tools,
     };
   },
 };
