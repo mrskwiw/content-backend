@@ -7,10 +7,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from backend.database import Base
+from backend.models.mixins import SoftDeleteMixin
 from src.config.pricing import PricingConfig
 
 
-class Project(Base):
+class Project(Base, SoftDeleteMixin):
     """Content generation project"""
 
     __tablename__ = "projects"

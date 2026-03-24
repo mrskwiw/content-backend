@@ -23,9 +23,10 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from backend.database import Base
+from backend.models.mixins import SoftDeleteMixin
 
 
-class ResearchResult(Base):
+class ResearchResult(Base, SoftDeleteMixin):
     """
     Research result from tool execution.
 

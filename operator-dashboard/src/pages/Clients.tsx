@@ -17,6 +17,11 @@ import {
   CheckCircle2,
   Clock
 } from 'lucide-react';
+import { DeleteClientDialog } from '@/components/DeleteClientDialog';
+import { deleteClient, exportClientData, downloadClientData } from '@/api/privacyApi';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Button, Badge, Card, CardContent, Table, TableHeader, TableBody, TableHead, TableRow, TableCell, Input, Select } from '@/components/ui';
 import { QuickActionsDropdown } from '@/components/ui/QuickActionsDropdown';
@@ -40,6 +45,34 @@ export default function Clients() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'projects' | 'revenue' | 'activity'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientWithMetrics | null>(null);
+  const queryClient = useQueryClient();
+
+  // Delete client mutation
+  const deleteMutation = useMutation({
+    mutationFn: (clientId: string) => deleteClient(clientId, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Client deleted successfully');
+      setDeleteDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to delete client');
+    },
+  });
+
+  const handleExportClientData = async () => {
+    if (!selectedClient) return;
+    try {
+      const data = await exportClientData(selectedClient.id);
+      downloadClientData(data, selectedClient.name);
+      toast.success('Client data exported successfully');
+    } catch (error) {
+      toast.error('Failed to export client data');
+    }
+  };
+
 
   // Fetch data
   const { data: clients = [] } = useQuery({
@@ -392,7 +425,17 @@ export default function Clients() {
                             },
                           },
                           {
-                            label: 'Archive Client',
+                                                      {
+                            label: 'Delete Client',
+                            icon: 'delete',
+                            onClick: (e) => {
+                              e.stopPropagation();
+                              setSelectedClient(client);
+                              setDeleteDialogOpen(true);
+                            },
+                            variant: 'destructive',
+                          },
+label: 'Archive Client',
                             icon: 'archive',
                             onClick: () => {
                               if (confirm(`Archive client "${client.name}"?`)) {
@@ -418,6 +461,18 @@ export default function Clients() {
         <div className="text-sm text-neutral-600 dark:text-neutral-400 text-center">
           Showing {filteredClients.length} of {clientsWithMetrics.length} client{clientsWithMetrics.length !== 1 ? 's' : ''}
         </div>
+      )}
+
+      {/* Delete Client Dialog */}
+      {selectedClient && (
+        <DeleteClientDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          clientId={selectedClient.id}
+          clientName={selectedClient.name}
+          onConfirmDelete={() => deleteMutation.mutateAsync(selectedClient.id)}
+          onExportData={handleExportClientData}
+        />
       )}
     </div>
   );

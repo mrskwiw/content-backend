@@ -18,9 +18,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from backend.database import Base
+from backend.models.mixins import SoftDeleteMixin
 
 
-class Post(Base):
+class Post(Base, SoftDeleteMixin):
     """Generated social media post"""
 
     __tablename__ = "posts"

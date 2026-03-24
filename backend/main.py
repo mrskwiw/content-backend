@@ -41,6 +41,7 @@ from backend.routers import (
     generator,
     health,
     posts,
+    privacy,
     pricing,
     projects,
     research,
@@ -630,6 +631,7 @@ app.include_router(briefs.router, prefix="/api/briefs", tags=["Briefs"])
 app.include_router(runs.router, prefix="/api/runs", tags=["Runs"])
 app.include_router(deliverables.router, prefix="/api/deliverables", tags=["Deliverables"])
 app.include_router(posts.router, prefix="/api/posts", tags=["Posts"])
+app.include_router(privacy.router, tags=["Privacy & GDPR"])
 app.include_router(stories.router, prefix="/api/stories", tags=["Stories"])
 app.include_router(generator.router, prefix="/api/generator", tags=["Generator"])
 app.include_router(research.router, prefix="/api/research", tags=["Research"])

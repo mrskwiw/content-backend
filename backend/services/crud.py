@@ -294,7 +294,10 @@ def get_client(db: Session, client_id: str) -> Optional[Client]:
     Cache invalidation: On client create
     """
     return (
-        db.query(Client).options(joinedload(Client.projects)).filter(Client.id == client_id).first()
+        db.query(Client)
+        .options(joinedload(Client.projects))
+        .filter(Client.id == client_id, Client.is_deleted.is_(False))
+        .first()
     )
 
 
@@ -309,7 +312,14 @@ def get_clients(db: Session, skip: int = 0, limit: int = 100) -> List[Client]:
     Caching: Medium TTL (10 minutes) - clients change less frequently
     Cache invalidation: On client create
     """
-    return db.query(Client).options(joinedload(Client.projects)).offset(skip).limit(limit).all()
+    return (
+        db.query(Client)
+        .filter(Client.is_deleted.is_(False))
+        .options(joinedload(Client.projects))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_client(db: Session, client: ClientCreate, user_id: str) -> Client:

@@ -650,6 +650,52 @@ def init_db():
                 except Exception as e:
                     print(f">> Seeding credit_packages failed: {e}")
 
+        # Soft delete migration (GDPR/CCPA compliance - TR-XXX)
+        # Add deleted_at and is_deleted columns to tables containing PII
+        soft_delete_tables = ["clients", "projects", "users", "posts", "research_results"]
+
+        for table_name in soft_delete_tables:
+            if table_name in inspector.get_table_names():
+                columns = [col["name"] for col in inspector.get_columns(table_name)]
+
+                soft_delete_columns = [
+                    ("deleted_at", "TIMESTAMP"),
+                    ("is_deleted", "BOOLEAN DEFAULT FALSE"),
+                ]
+
+                for col_name, col_type in soft_delete_columns:
+                    if col_name not in columns:
+                        import re
+
+                        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*dollar", col_name):
+                            print(
+                                f">> ERROR: Invalid column name '{col_name}' (security check failed)"
+                            )
+                            continue
+                        base_type = col_type.split()[0] if " " in col_type else col_type
+                        if base_type not in ALLOWED_TYPES:
+                            print(
+                                f">> ERROR: Invalid column type '{col_type}' (security check failed)"
+                            )
+                            continue
+
+                        print(
+                            f">> Running migration: Adding {col_name} to {table_name} (GDPR compliance)"
+                        )
+                        try:
+                            from sqlalchemy.sql import quoted_name
+
+                            safe_col_name = quoted_name(col_name, quote=True)
+                            safe_col_type = col_type
+                            ddl_stmt = text(
+                                f"ALTER TABLE {table_name} ADD COLUMN {safe_col_name} {safe_col_type}"
+                            )
+                            conn.execute(ddl_stmt)
+                            conn.commit()
+                            print(f">> Migration for {table_name}.{col_name} completed")
+                        except Exception as e:
+                            print(f">> Migration for {table_name}.{col_name} failed: {e}")
+
     # Update schema version to latest after all migrations
     config = load_migration_rules()
     latest_version = config["current_version"]

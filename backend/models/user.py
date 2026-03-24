@@ -7,9 +7,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from backend.database import Base
+from backend.models.mixins import SoftDeleteMixin
 
 
-class User(Base):
+class User(Base, SoftDeleteMixin):
     """User account for operator authentication"""
 
     __tablename__ = "users"
