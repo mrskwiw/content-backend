@@ -411,8 +411,14 @@ async def generate_all(
 
     logger.info(f"Created run {db_run.id} for project {input.project_id}")
 
-    # Determine num_posts: input > project setting > default 30
-    num_posts = input.num_posts or project.num_posts or 30
+    # BUG FIX #54: Calculate num_posts from template_quantities if provided, else use defaults
+    if input.template_quantities and not input.num_posts:
+        num_posts = sum(input.template_quantities.values())
+        logger.info(
+            f"Calculated num_posts={num_posts} from template_quantities: {input.template_quantities}"
+        )
+    else:
+        num_posts = input.num_posts or project.num_posts or 30
 
     # Determine target_platform: input > project setting > default 'generic'
     target_platform = input.target_platform or project.target_platform or "generic"
