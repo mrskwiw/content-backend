@@ -59,7 +59,7 @@ class ContentAgentCoreEnhanced:
     def __init__(
         self,
         api_key: str,
-        model: str = "claude-3-5-sonnet-latest",
+        model: str = "claude-sonnet-4-5-20250929",
         session_id: Optional[str] = None,
     ):
         # Core components (Week 1)

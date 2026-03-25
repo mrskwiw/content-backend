@@ -64,8 +64,15 @@ class ResponseCache:
         if cache_dir is None:
             # On Render/production, use /tmp (writable), otherwise use local .cache
             import os
-            if os.environ.get("RENDER") or not Path(".cache").exists() and not os.access(".", os.W_OK):
-                cache_dir = Path("/tmp/.cache/api_responses")
+
+            if (
+                os.environ.get("RENDER")
+                or not Path(".cache").exists()
+                and not os.access(".", os.W_OK)
+            ):
+                cache_dir = Path(
+                    "/tmp/.cache/api_responses"
+                )  # nosec B108 - safe for cache directory
             else:
                 cache_dir = Path(".cache/api_responses")
 
@@ -78,7 +85,9 @@ class ResponseCache:
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
                 logger.debug(f"Response cache initialized: {self.cache_dir}")
             except (PermissionError, OSError) as e:
-                logger.warning(f"Failed to create cache directory {self.cache_dir}: {e}. Disabling cache.")
+                logger.warning(
+                    f"Failed to create cache directory {self.cache_dir}: {e}. Disabling cache."
+                )
                 self.enabled = False
 
     def _get_cache_key(
@@ -271,6 +280,29 @@ class ResponseCache:
 
         except Exception as e:
             logger.error(f"Failed to cache data: {e}")
+
+    def delete(self, cache_key: str) -> bool:
+        """Delete a specific cached response by key
+
+        Args:
+            cache_key: The cache key to delete
+
+        Returns:
+            True if the cache entry was deleted, False otherwise
+        """
+        if not self.enabled or not self.cache_dir.exists():
+            return False
+
+        cache_file = self.cache_dir / f"{cache_key}.json"
+        if cache_file.exists():
+            try:
+                cache_file.unlink()
+                logger.debug(f"Deleted cache entry: {cache_key[:8]}...")
+                return True
+            except Exception as e:
+                logger.warning(f"Failed to delete cache entry {cache_key[:8]}...: {e}")
+                return False
+        return False
 
     def clear(self) -> None:
         """Clear all cached responses

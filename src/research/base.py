@@ -276,7 +276,7 @@ class ResearchTool(ABC):
             )
 
             response = client.create_message(
-                model="claude-3-5-sonnet-latest",
+                model="claude-sonnet-4-5-20250929",
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system=prompt,

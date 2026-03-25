@@ -41,7 +41,7 @@ MODEL_PRICING = {
         "cache_write": 3.75,  # $3.75 per million cache write tokens
         "cache_read": 0.3,  # $0.30 per million cache read tokens
     },
-    "claude-3-5-sonnet-latest": {
+    "claude-sonnet-4-5-20250929": {
         "input": 3.0,
         "output": 15.0,
         "cache_write": 3.75,

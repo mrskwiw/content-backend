@@ -484,7 +484,12 @@ class ResearchService:
                 # Try to use SEO keywords from prerequisite data
                 seo_keywords = inputs.get("seo_keywords", [])
                 if seo_keywords:
-                    current_topics = ", ".join(seo_keywords[:10])
+                    # Extract keyword strings (handle both dict and string formats)
+                    keyword_strings = [
+                        kw["keyword"] if isinstance(kw, dict) else str(kw)
+                        for kw in seo_keywords[:10]
+                    ]
+                    current_topics = ", ".join(keyword_strings)
                     logger.info(
                         f"Auto-generated current_content_topics from {len(seo_keywords[:10])} SEO keywords"
                     )

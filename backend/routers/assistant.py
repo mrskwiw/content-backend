@@ -239,7 +239,7 @@ async def chat_with_assistant(
             # Call Claude API
             client = get_default_client()
             response = client.create_message(
-                model="claude-3-5-sonnet-latest",
+                model="claude-sonnet-4-5-20250929",
                 max_tokens=1024,
                 temperature=0.7,
                 system=system_prompt,

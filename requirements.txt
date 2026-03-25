@@ -23,6 +23,7 @@ icalendar==5.0.11       # iCal posting schedule export
 
 # Google Trends Integration
 pytrends>=4.9.2         # Unofficial Google Trends API (latest stable version)
+urllib3<2.0         # Pin for pytrends compatibility (uses deprecated method_whitelist)
 pandas>=1.5.0           # Required by pytrends for dataframes
 
 # Testing
