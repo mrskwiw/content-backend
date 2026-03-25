@@ -134,7 +134,7 @@ class Settings(BaseSettings):
 
     # Anthropic API
     ANTHROPIC_API_KEY: str
-    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-5-20250929"  # Claude Sonnet 4.5
 
     # Rate Limiting (70% of Anthropic limits)
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 2800

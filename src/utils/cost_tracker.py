@@ -13,7 +13,7 @@ Usage:
     tracker.track_api_call(
         project_id="Client_20250101_120000",
         operation="post_generation",
-        model="claude-3-5-sonnet-20241022",
+        model="claude-sonnet-4-5-20250929",
         input_tokens=1500,
         output_tokens=800
     )

@@ -10,6 +10,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 from ..utils.logger import logger
 from ..utils.anthropic_client import get_default_client
+from ..config.settings import Settings
+
+settings = Settings()
 
 
 @dataclass
@@ -276,7 +279,7 @@ class ResearchTool(ABC):
             )
 
             response = client.create_message(
-                model="claude-sonnet-4-5-20250929",
+                model=settings.ANTHROPIC_MODEL,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system=prompt,

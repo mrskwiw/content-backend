@@ -16,6 +16,7 @@ from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
 from backend.utils.logger import logger
 from backend.utils.http_rate_limiter import standard_limiter, lenient_limiter
+from backend.config import settings
 from src.validators.prompt_injection_defense import (
     sanitize_prompt_input,
     detect_prompt_leakage,
@@ -239,7 +240,7 @@ async def chat_with_assistant(
             # Call Claude API
             client = get_default_client()
             response = client.create_message(
-                model="claude-sonnet-4-5-20250929",
+                model=settings.ANTHROPIC_MODEL,
                 max_tokens=1024,
                 temperature=0.7,
                 system=system_prompt,
