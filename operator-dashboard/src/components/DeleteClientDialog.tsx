@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/Button';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { AlertTriangle, Download } from 'lucide-react';
 
 interface DeleteClientDialogProps {
@@ -52,7 +52,7 @@ export function DeleteClientDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle>
             <AlertTriangle className="h-5 w-5 text-red-500" />
             Delete Client - GDPR/CCPA Compliance
           </DialogTitle>
@@ -62,7 +62,7 @@ export function DeleteClientDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <Alert variant="destructive">
+          <Alert variant="danger">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <strong>Nuclear Purge Warning:</strong> Due to database limitations,
@@ -111,7 +111,7 @@ export function DeleteClientDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -120,7 +120,7 @@ export function DeleteClientDialog({
             Cancel
           </Button>
           <Button
-            variant="destructive"
+            variant="danger"
             onClick={handleDelete}
             disabled={isDeleting}
           >

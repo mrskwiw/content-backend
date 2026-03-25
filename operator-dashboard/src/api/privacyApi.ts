@@ -1,7 +1,7 @@
 /**
  * Privacy API Client - GDPR/CCPA Compliance
  */
-import api from './config';
+import apiClient from './client';
 
 export interface DeleteClientResponse {
   status: string;
@@ -42,9 +42,7 @@ export async function deleteClient(
   clientId: string,
   cascade: boolean = true
 ): Promise<DeleteClientResponse> {
-  const response = await api.delete(
-
-  );
+  const response = await apiClient.delete(`/api/clients/${clientId}/privacy/delete?cascade=${cascade}`);
   return response.data;
 }
 
@@ -54,9 +52,7 @@ export async function deleteClient(
 export async function anonymizeClient(
   clientId: string
 ): Promise<AnonymizeClientResponse> {
-  const response = await api.post(
-
-  );
+  const response = await apiClient.post(`/api/clients/${clientId}/privacy/anonymize`);
   return response.data;
 }
 
@@ -66,9 +62,7 @@ export async function anonymizeClient(
 export async function exportClientData(
   clientId: string
 ): Promise<ExportClientDataResponse> {
-  const response = await api.get(
-
-  );
+  const response = await apiClient.get(`/api/clients/${clientId}/privacy/export`);
   return response.data;
 }
 
@@ -78,9 +72,7 @@ export async function exportClientData(
 export async function restoreClient(
   clientId: string
 ): Promise<{ status: string; client_id: string }> {
-  const response = await api.post(
-
-  );
+  const response = await apiClient.post(`/api/clients/${clientId}/privacy/restore`);
   return response.data;
 }
 
@@ -94,7 +86,7 @@ export function downloadClientData(data: ExportClientDataResponse, clientName: s
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = ;
+  link.download = `${clientName}_data_export.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

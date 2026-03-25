@@ -88,7 +88,7 @@ export default function ResearchToolsLibrary() {
   const { data: clientPrerequisites } = useQuery({
     queryKey: ['client-prerequisites', selectedClientId],
     queryFn: () => researchApi.getClientPrerequisites(selectedClientId as string),
-    enabled: selectedClientId \!== null && clientPrerequisiteMode,
+    enabled: selectedClientId !== null && clientPrerequisiteMode,
   });
 
   // Build completed tools set from client prerequisites

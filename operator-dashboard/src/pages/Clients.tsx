@@ -425,17 +425,16 @@ export default function Clients() {
                             },
                           },
                           {
-                                                      {
-                            label: 'Delete Client',
-                            icon: 'delete',
-                            onClick: (e) => {
-                              e.stopPropagation();
+                            label: "Delete Client",
+                            icon: "delete",
+                            onClick: () => {
                               setSelectedClient(client);
                               setDeleteDialogOpen(true);
                             },
-                            variant: 'destructive',
+                            variant: "danger",
                           },
-label: 'Archive Client',
+                          {
+                            label: "Archive Client",
                             icon: 'archive',
                             onClick: () => {
                               if (confirm(`Archive client "${client.name}"?`)) {
@@ -470,7 +469,7 @@ label: 'Archive Client',
           onOpenChange={setDeleteDialogOpen}
           clientId={selectedClient.id}
           clientName={selectedClient.name}
-          onConfirmDelete={() => deleteMutation.mutateAsync(selectedClient.id)}
+          onConfirmDelete={async () => { await deleteMutation.mutateAsync(selectedClient.id); }}
           onExportData={handleExportClientData}
         />
       )}
