@@ -1002,6 +1002,7 @@ class ClientToolStatus(BaseModel):
     completed: bool  # Has this tool been run for this client
     missing_required: List[str]
     missing_recommended: List[str]
+    last_run_at: Optional[str] = None  # ISO 8601 timestamp of last run
 
 
 class ClientPrerequisiteResponse(BaseModel):
@@ -1069,6 +1070,7 @@ async def get_client_prerequisites(
             completed=tool_status_data["completed"],
             missing_required=tool_status_data["missing_required"],
             missing_recommended=tool_status_data["missing_recommended"],
+            last_run_at=tool_status_data.get("last_run_at"),
         )
         tool_statuses.append(tool_status)
 

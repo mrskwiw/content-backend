@@ -152,6 +152,7 @@ export interface ClientToolStatus {
   completed: boolean;  // Has this tool been run for this client
   missingRequired: string[];
   missingRecommended: string[];
+  lastRunAt?: string;  // ISO 8601 timestamp of last run
 }
 
 export interface ClientPrerequisiteResponse {
@@ -166,6 +167,7 @@ const ClientToolStatusSchema = z.object({
   completed: z.boolean(),
   missing_required: z.array(z.string()),
   missing_recommended: z.array(z.string()),
+  last_run_at: z.string().nullable().optional(),
 });
 
 const ClientPrerequisiteResponseSchema = z.object({
@@ -312,6 +314,7 @@ export const researchApi = {
         completed: t.completed,
         missingRequired: t.missing_required,
         missingRecommended: t.missing_recommended,
+        lastRunAt: t.last_run_at || undefined,
       })),
       completedTools: parsed.completed_tools,
     };

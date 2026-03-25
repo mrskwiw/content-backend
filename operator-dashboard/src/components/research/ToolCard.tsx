@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { CheckCircle2, Clock, AlertCircle, Coins, Link2, Settings } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { ResearchTool } from '../../api/research';
 
 interface ToolCardProps {
@@ -153,7 +154,7 @@ export const ToolCard = memo(function ToolCard({ tool, isSelected, onToggle, exe
       {executionStatus?.executed && executionStatus.lastRun && (
         <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
           <Clock className="h-3 w-3" />
-          <span>Last run: {new Date(executionStatus.lastRun).toLocaleDateString()}</span>
+          <span>Last run: {formatDistanceToNow(new Date(executionStatus.lastRun), { addSuffix: true })}</span>
         </div>
       )}
 

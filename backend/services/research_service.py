@@ -316,9 +316,46 @@ class ResearchService:
                 "completed": tool_id in completed_tools,
                 "missing_required": missing_required,
                 "missing_recommended": missing_recommended,
+                "last_run_at": self._get_last_run_time(db, client_id, tool_id),
             }
 
         return status_map
+
+    def _get_last_run_time(self, db: Session, client_id: str, tool_id: str) -> Optional[str]:
+        """
+        Get the last run time for a specific tool for a client.
+
+        Args:
+            db: Database session
+            client_id: Client ID
+            tool_id: Tool ID
+
+        Returns:
+            ISO 8601 timestamp of last run, or None if never run
+        """
+        from backend.models import ResearchResult
+
+        last_result = (
+            db.query(ResearchResult.created_at)
+            .filter(
+                ResearchResult.client_id == client_id,
+                ResearchResult.tool_name == tool_id,
+                ResearchResult.status == "completed",
+                ResearchResult.is_deleted.is_(False),
+            )
+            .order_by(ResearchResult.created_at.desc())
+            .first()
+        )
+
+        if last_result and last_result[0]:
+            from datetime import timezone
+
+            dt = last_result[0]
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.isoformat()
+
+        return None
 
     def check_prerequisites(
         self,

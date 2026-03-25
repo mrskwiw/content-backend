@@ -349,6 +349,14 @@ export default function ResearchToolsLibrary() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredTools.map((tool: ResearchTool) => {
           const { enabled, missingIntegrations } = isToolEnabled(tool);
+          // Get execution status for this tool
+          const toolStatus = clientPrerequisites?.tools.find(t => t.toolName === tool.name);
+          const executionStatus = toolStatus ? {
+            executed: toolStatus.completed,
+            executionCount: toolStatus.completed ? 1 : 0,
+            lastRun: toolStatus.lastRunAt,
+          } : undefined;
+
           return (
             <ToolCard
               key={tool.name}
@@ -360,6 +368,7 @@ export default function ResearchToolsLibrary() {
               disabled={!enabled}
               missingIntegrations={missingIntegrations}
               completedTools={completedToolsForClient}
+              executionStatus={executionStatus}
             />
           );
         })}
