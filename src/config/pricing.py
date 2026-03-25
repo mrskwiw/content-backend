@@ -1,3 +1,14 @@
+# DEPRECATED - DO NOT USE THIS FILE
+# This file uses the OLD dollar-based pricing system.
+# It has been superseded by the credit-based pricing system.
+#
+# For current pricing, use:
+#   - backend/pricing/credit_pricing.py (SOURCE OF TRUTH)
+#   - Documentation: unified_credit_pricing_schedule.md
+#
+# This file is kept for historical reference only.
+# Migration completed: March 25, 2026
+
 """
 Centralized pricing configuration for the Content Jumpstart system.
 
