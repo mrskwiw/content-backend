@@ -19,48 +19,20 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash].[ext]',
 
         manualChunks: (id) => {
-          // Core React libraries
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-            return 'react-vendor';
-          }
-
-          // React Router
-          if (id.includes('node_modules/react-router-dom')) {
-            return 'router';
-          }
-
-          // Data fetching and state management
-          if (id.includes('node_modules/@tanstack/react-query') || id.includes('node_modules/axios')) {
-            return 'query';
-          }
-
-          // Radix UI components (large dependency)
-          if (id.includes('node_modules/@radix-ui')) {
-            return 'radix-ui';
-          }
-
-          // Date utilities (date-fns is large)
-          if (id.includes('node_modules/date-fns')) {
-            return 'date-utils';
-          }
-
-          // Lucide icons (large icon library)
-          if (id.includes('node_modules/lucide-react')) {
-            return 'icons';
-          }
-
-          // Chart libraries (recharts is heavy)
-          if (id.includes('node_modules/recharts')) {
-            return 'charts';
-          }
-
-          // Zustand (state management)
-          if (id.includes('node_modules/zustand')) {
-            return 'state';
-          }
-
-          // Other node_modules
+          // Don't split React separately - it must load with components that depend on it
+          // Combine React + React-dependent libraries into single vendor chunk
           if (id.includes('node_modules')) {
+            // Keep large libraries in separate chunks for better caching
+            if (id.includes('node_modules/date-fns')) {
+              return 'date-utils';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'icons';
+            }
+            if (id.includes('node_modules/recharts')) {
+              return 'charts';
+            }
+            // Everything else (including React) goes in vendor for proper loading order
             return 'vendor';
           }
         },
