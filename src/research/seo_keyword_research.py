@@ -531,6 +531,8 @@ Your topics:"""
         """
         prompt = f"""Analyze this business and recommend 5-10 PRIMARY target keywords for SEO.
 
+CRITICAL: Extract ALL fields for EVERY keyword. Do not leave any fields empty or use placeholder values.
+
 Business: {business_desc}
 
 Target Audience: {target_audience}
@@ -541,25 +543,84 @@ Main Topics: {', '.join(main_topics)}
 
 **SEARCH STRATEGY (Iteration {iteration}):** Focus on {focus}
 
-For each keyword, provide:
-1. The keyword phrase
-2. Search intent (informational/navigational/commercial/transactional)
-3. Difficulty estimate (low/medium/high)
-4. Monthly volume estimate (range like "1K-10K" or "100-1K")
-5. Relevance score (1-10)
-6. Whether it's long-tail (3+ words)
-7. Whether it's question-based
-8. Related topics it supports
+EXAMPLE INPUT/OUTPUT:
 
-IMPORTANT QUALITY CRITERIA:
-- Highly relevant to the business (8+ relevance score)
-- Mix of informational and commercial intent
-- Realistic to rank for (prefer medium difficulty over high)
-- Specific enough to attract qualified traffic (avoid generic terms like "marketing", "software")
-- Include actual search volume potential (not just "Unknown")
+Input: "AI-powered project management tool for software teams"
+Output:
+[
+  {{
+    "keyword": "ai project management software",
+    "search_intent": "commercial",
+    "difficulty": "medium",
+    "monthly_volume_estimate": "5K-10K",
+    "relevance_score": 9.5,
+    "long_tail": true,
+    "question_based": false,
+    "related_topics": ["agile project management", "team collaboration", "sprint planning"]
+  }},
+  {{
+    "keyword": "how to manage software projects with ai",
+    "search_intent": "informational",
+    "difficulty": "low",
+    "monthly_volume_estimate": "1K-5K",
+    "relevance_score": 8.5,
+    "long_tail": true,
+    "question_based": true,
+    "related_topics": ["project automation", "ai productivity tools"]
+  }}
+]
 
-Return as JSON array of objects with keys:
-keyword, search_intent, difficulty, monthly_volume_estimate, relevance_score, long_tail, question_based, related_topics"""
+EXTRACTION RULES (FILL ALL FIELDS):
+
+1. **keyword**: The exact keyword phrase (2-5 words typically)
+   - Make it specific to the business and industry
+   - Avoid overly generic terms ("marketing", "software")
+   - Include variations based on search strategy focus
+
+2. **search_intent**: MUST be one of: "informational", "navigational", "commercial", "transactional"
+   - informational: How-to, guides, explanations
+   - navigational: Brand/product searches
+   - commercial: Comparison, reviews, "best X"
+   - transactional: Buy, pricing, signup
+
+3. **difficulty**: MUST be "low", "medium", or "high"
+   - low: New sites can rank (long-tail, niche)
+   - medium: Established sites needed (moderate competition)
+   - high: Very competitive (major brands dominate)
+
+4. **monthly_volume_estimate**: Realistic search volume range
+   - Examples: "100-1K", "1K-5K", "5K-10K", "10K-50K"
+   - Base on keyword specificity (long-tail = lower volume)
+   - NEVER use "Unknown" - estimate based on context
+
+5. **relevance_score**: Number from 1-10 (decimals allowed)
+   - 9-10: Perfect match for business
+   - 7-8: Highly relevant
+   - 5-6: Moderately relevant
+   - Below 5: Not recommended (don't include)
+
+6. **long_tail**: true if 3+ words, false otherwise
+
+7. **question_based**: true if starts with how/what/why/when/where/who
+
+8. **related_topics**: Array of 2-5 related topic strings
+   - Topics that this keyword connects to
+   - Other relevant searches users might make
+
+QUALITY CRITERIA:
+- Relevance score MUST be 8+ (highly relevant to business)
+- Mix search intents (not all informational)
+- Prefer medium difficulty over high (realistic to rank)
+- Estimate realistic search volumes (consider specificity)
+- Include variety: some question-based, some long-tail, some short
+
+IMPORTANT:
+- Return 5-10 keywords minimum
+- Fill ALL 8 fields for EVERY keyword
+- Return ONLY valid JSON array (no markdown, no code blocks)
+- Ensure variety in search intent and difficulty
+
+Your JSON array:"""
 
         return prompt
 
@@ -575,6 +636,8 @@ keyword, search_intent, difficulty, monthly_volume_estimate, relevance_score, lo
 
         prompt = f"""Generate 20-30 SECONDARY/LONG-TAIL keywords based on these primary keywords.
 
+CRITICAL: Generate 20-30 keywords minimum. Fill ALL 8 fields for EVERY keyword.
+
 Business: {business_desc}
 
 Target Audience: {target_audience}
@@ -583,15 +646,84 @@ Primary Keywords: {', '.join(primary_kw_list)}
 
 Main Topics: {', '.join(main_topics)}
 
-For secondary keywords:
-- Create long-tail variations (3+ words)
-- Include question-based keywords (how to, what is, etc.)
-- Focus on lower difficulty (low/medium)
-- Mix of informational and commercial intent
-- Support the primary keywords
+EXAMPLE SECONDARY KEYWORDS:
 
-Return as JSON array with same structure as before:
-keyword, search_intent, difficulty, monthly_volume_estimate, relevance_score, long_tail, question_based, related_topics"""
+For primary: "ai project management software"
+Secondary keywords:
+[
+  {{
+    "keyword": "best ai project management tools for developers",
+    "search_intent": "commercial",
+    "difficulty": "low",
+    "monthly_volume_estimate": "500-1K",
+    "relevance_score": 8.5,
+    "long_tail": true,
+    "question_based": false,
+    "related_topics": ["developer tools", "agile software", "team collaboration"]
+  }},
+  {{
+    "keyword": "how does ai improve project management efficiency",
+    "search_intent": "informational",
+    "difficulty": "low",
+    "monthly_volume_estimate": "100-500",
+    "relevance_score": 7.5,
+    "long_tail": true,
+    "question_based": true,
+    "related_topics": ["project automation", "ai productivity", "workflow optimization"]
+  }},
+  {{
+    "keyword": "ai project tracking software for remote teams",
+    "search_intent": "commercial",
+    "difficulty": "medium",
+    "monthly_volume_estimate": "1K-5K",
+    "relevance_score": 9.0,
+    "long_tail": true,
+    "question_based": false,
+    "related_topics": ["remote work tools", "distributed teams", "project visibility"]
+  }}
+]
+
+SECONDARY KEYWORD RULES:
+
+1. **Create Long-Tail Variations (3+ words)**
+   - Expand primary keywords with modifiers
+   - Add qualifiers: "best", "top", "affordable", "for [audience]"
+   - Include use cases: "for small business", "for agencies", "for teams"
+
+2. **Include Question-Based Keywords**
+   - How to: "how to [action]", "how does [feature] work"
+   - What is: "what is [concept]", "what are [features]"
+   - Why: "why use [product]", "why choose [solution]"
+   - When: "when to use [tool]", "when is [timing]"
+
+3. **Focus on Lower Difficulty**
+   - Target: 70% low difficulty, 30% medium difficulty
+   - Long-tail = lower competition = easier to rank
+
+4. **Mix Search Intents**
+   - 50% informational (how-to, guides, explanations)
+   - 40% commercial (comparisons, reviews, "best X")
+   - 10% transactional (pricing, signup, buy)
+
+5. **Support Primary Keywords**
+   - Each secondary should relate to 1-2 primary keywords
+   - Include primary keywords in related_topics
+   - Create natural progression from awareness to decision
+
+FIELD REQUIREMENTS (SAME AS PRIMARY):
+- keyword: 3-7 words (long-tail)
+- search_intent: informational/navigational/commercial/transactional
+- difficulty: low/medium (NO high difficulty for secondary)
+- monthly_volume_estimate: "100-500", "500-1K", "1K-5K" (lower volumes expected)
+- relevance_score: 7-10 (minimum 7)
+- long_tail: MUST be true (secondary = long-tail)
+- question_based: true for question keywords
+- related_topics: 2-5 topics
+
+TARGET: Generate 20-30 keywords
+MINIMUM: 20 keywords (fill all 20 if possible)
+
+Return ONLY valid JSON array (no markdown, no code blocks):"""
 
         try:
             # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
