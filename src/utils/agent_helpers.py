@@ -35,7 +35,7 @@ def extract_json_from_response(response: str, fallback: Optional[Any] = None) ->
         pass
 
     # Try to extract from code blocks
-    json_match = re.search(r"```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```", response, re.DOTALL)
+    json_match = re.search(r"```(?:json)?\s*(\{.*\}|\[.*\])\s*```", response, re.DOTALL)
     if json_match:
         try:
             return json.loads(json_match.group(1))
