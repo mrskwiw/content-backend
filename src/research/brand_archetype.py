@@ -427,23 +427,107 @@ class BrandArchetypeAnalyzer(ResearchTool, CommonValidationMixin):
 **The 12 Brand Archetypes:**
 {archetype_list}
 
-Please respond with JSON only (no markdown):
+CRITICAL: Rate ALL 12 archetypes. Search ENTIRE input for personality traits, values, and positioning signals.
+
+EXAMPLE INPUT/OUTPUT:
+
+Input: "We're a sustainable outdoor gear company empowering adventurers to explore responsibly.
+We believe in freedom, environmental stewardship, and pushing boundaries while protecting nature."
+
+Output:
 {{
-    "innocent": 0.0-1.0,
-    "sage": 0.0-1.0,
-    "explorer": 0.0-1.0,
-    "outlaw": 0.0-1.0,
-    "magician": 0.0-1.0,
-    "hero": 0.0-1.0,
-    "lover": 0.0-1.0,
-    "jester": 0.0-1.0,
-    "everyman": 0.0-1.0,
-    "caregiver": 0.0-1.0,
-    "ruler": 0.0-1.0,
-    "creator": 0.0-1.0
+    "innocent": 0.2,
+    "sage": 0.3,
+    "explorer": 0.9,
+    "outlaw": 0.4,
+    "magician": 0.2,
+    "hero": 0.5,
+    "lover": 0.3,
+    "jester": 0.1,
+    "everyman": 0.4,
+    "caregiver": 0.6,
+    "ruler": 0.2,
+    "creator": 0.5
 }}
 
-Rate each archetype 0.0 (no fit) to 1.0 (perfect fit) based on the brand's personality, values, and positioning."""
+RATING CRITERIA (0.0-1.0):
+
+**0.9-1.0 (Dominant fit):** Brand strongly embodies this archetype's core traits, values, and voice
+- Example: "empowering adventurers to explore" + "freedom" + "pushing boundaries" = 0.9 Explorer
+
+**0.6-0.8 (Strong secondary):** Brand exhibits multiple traits but not the primary identity
+- Example: "environmental stewardship" + "protecting nature" = 0.6 Caregiver (secondary to Explorer)
+
+**0.3-0.5 (Moderate influence):** Some traits present but not defining characteristics
+- Example: "pushing boundaries" shows Hero courage (0.5) but Explorer is stronger
+
+**0.1-0.2 (Minimal presence):** Very weak or absent traits
+- Example: No humor/playfulness = 0.1 Jester
+
+**0.0 (No fit):** Archetype contradicts brand personality
+- Use sparingly - most brands have traces of multiple archetypes
+
+ARCHETYPE-SPECIFIC SIGNALS:
+
+1. **Innocent (0.0-1.0):** Look for: optimism, simplicity, purity, nostalgia, wholesome, natural, clean, happy, trust
+   - Keywords: "simple", "pure", "honest", "natural", "wholesome"
+   - Values: goodness, family, virtue, simplicity
+
+2. **Sage (0.0-1.0):** Look for: knowledge, wisdom, analysis, research, expertise, thought leadership, truth
+   - Keywords: "expert", "research", "data", "insight", "wisdom", "learn"
+   - Values: truth, knowledge, understanding, education
+
+3. **Explorer (0.0-1.0):** Look for: adventure, freedom, discovery, independence, pioneering, bold, new experiences
+   - Keywords: "explore", "adventure", "freedom", "discover", "journey", "bold"
+   - Values: independence, self-discovery, authenticity, breaking boundaries
+
+4. **Outlaw (0.0-1.0):** Look for: rebellion, disruption, challenging norms, radical change, provocative, rule-breaking
+   - Keywords: "disrupt", "rebel", "revolution", "challenge", "break", "radical"
+   - Values: liberation, disruption, questioning status quo
+
+5. **Magician (0.0-1.0):** Look for: transformation, vision, making dreams real, extraordinary, wonder, possibility
+   - Keywords: "transform", "vision", "imagine", "possible", "dream", "extraordinary"
+   - Values: transformation, vision, special moments, making impossible possible
+
+6. **Hero (0.0-1.0):** Look for: courage, achievement, overcoming obstacles, strength, determination, winning, excellence
+   - Keywords: "achieve", "win", "courage", "overcome", "champion", "power"
+   - Values: mastery, courage, performance, overcoming challenges
+
+7. **Lover (0.0-1.0):** Look for: passion, beauty, intimacy, elegance, sensuality, luxury, emotional connection
+   - Keywords: "passion", "beauty", "luxury", "intimate", "elegant", "indulge"
+   - Values: intimacy, passion, pleasure, aesthetics, relationships
+
+8. **Jester (0.0-1.0):** Look for: fun, humor, playfulness, entertainment, spontaneity, joy, lighthearted
+   - Keywords: "fun", "enjoy", "play", "laugh", "humor", "delight", "entertaining"
+   - Values: living in the moment, joy, playfulness, not taking life too seriously
+
+9. **Everyman (0.0-1.0):** Look for: down-to-earth, relatable, community, belonging, honest, friendly, accessible
+   - Keywords: "everyday", "real", "honest", "reliable", "community", "together"
+   - Values: belonging, connection, authenticity, equality, common sense
+
+10. **Caregiver (0.0-1.0):** Look for: nurturing, compassion, protection, support, care, wellness, safety, generosity
+    - Keywords: "care", "protect", "nurture", "support", "help", "safe", "comfort"
+    - Values: service, compassion, caring for others, protection
+
+11. **Ruler (0.0-1.0):** Look for: power, authority, leadership, control, success, prestige, premium, exclusive
+    - Keywords: "leader", "power", "success", "prestige", "authority", "premium"
+    - Values: control, status, leadership, order, stability
+
+12. **Creator (0.0-1.0):** Look for: innovation, creativity, craftsmanship, imagination, building, originality, design
+    - Keywords: "create", "build", "design", "innovate", "craft", "make", "original"
+    - Values: self-expression, innovation, creativity, vision, craftsmanship
+
+ANALYSIS STRATEGY:
+
+1. Read ENTIRE business description, positioning, audience, and values
+2. Identify explicit traits: What words/phrases directly match archetype keywords?
+3. Infer personality: What does their tone/style suggest about brand personality?
+4. Weigh values: What core values align with which archetypes?
+5. Consider audience: Who are they trying to attract? (Explorers attract Explorers, etc.)
+6. Rank archetypes: Primary (0.8-1.0), Secondary (0.5-0.7), Influences (0.2-0.4), Minimal (0.0-0.1)
+7. Rate ALL 12: Every archetype gets a score, even if 0.1
+
+Return ONLY the JSON object with all 12 archetype scores (0.0-1.0). No markdown, no explanation."""
 
         result = self._call_claude_api(
             prompt, max_tokens=500, temperature=0.3, extract_json=True, fallback_on_error={}
