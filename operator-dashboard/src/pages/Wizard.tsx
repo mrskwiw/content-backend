@@ -205,20 +205,12 @@ export default function Wizard() {
       // DEFENSIVE VALIDATION: Verify required fields
       if (!brief.companyName || brief.companyName.trim().length === 0) {
         alert(
-          'Company Name is required to create a client.
-
-' +
-          'This usually means:
-' +
-          '• Brief parsing failed (API authentication error)
-' +
-          '• Company name field was not filled in
-
-' +
-          'Please:
-' +
-          '• Enter the company name manually in the form above
-' +
+          'Company Name is required to create a client.\n\n' +
+          'This usually means:\n' +
+          '• Brief parsing failed (API authentication error)\n' +
+          '• Company name field was not filled in\n\n' +
+          'Please:\n' +
+          '• Enter the company name manually in the form above\n' +
           '• Or re-upload the brief after fixing API credentials in Render'
         );
         return;

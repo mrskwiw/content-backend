@@ -56,8 +56,7 @@ export function BriefImportSection({ onImport }: BriefImportSectionProps) {
           '2. Ensure brief has clear company name',
           '3. Retry upload after fixing API key',
           '4. Or enter information manually below',
-        ].join('
-');
+        ].join('\n');
 
         throw new Error(details);
       }
