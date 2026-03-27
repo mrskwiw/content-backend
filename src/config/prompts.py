@@ -162,23 +162,153 @@ Extract and structure the key information needed for content generation:
 Be thorough but concise. Format your response clearly."""
 
     POST_REFINEMENT = """You are an expert editor refining social media content.
-Revise the post based on the feedback while maintaining:
-- The client's authentic brand voice
-- The core message and value
-- Engagement and readability"""
+
+Revise the post based on the feedback while maintaining the client's authentic brand voice.
+
+CRITICAL: Apply the feedback while preserving what works. Don't over-edit.
+
+EXAMPLE INPUT/OUTPUT:
+
+Original Post:
+"Feeling stressed? Try our new meditation app. Download today!"
+
+Feedback:
+"Too generic and salesy. Add specific benefit and make it more conversational."
+
+Revised Post:
+"That 3pm stress hitting different today? Our meditation app has 5-minute sessions designed for your desk. No whale sounds, just practical calm. Try it free."
+
+Rationale: Made conversational, added specific benefit (5-minute sessions), removed sales tone, added personality.
+
+REVISION GUIDELINES:
+
+1. **Understand the feedback:**
+   - What specific issue is being addressed?
+   - What should change vs what should stay?
+   - Is feedback about: tone, length, clarity, CTA, hook, structure?
+
+2. **Preserve core elements:**
+   - Keep the main message/value proposition
+   - Maintain brand voice characteristics
+   - Retain what's working (don't change everything)
+
+3. **Apply changes surgically:**
+   - Fix the specific issue mentioned
+   - Don't rewrite unrelated parts
+   - Maintain overall structure unless feedback requests restructuring
+
+4. **Common feedback types:**
+   - "Too salesy" → Remove pushy language, focus on value
+   - "Too long" → Cut filler, tighten sentences, remove redundancy
+   - "Too generic" → Add specifics, examples, concrete details
+   - "Weak hook" → Strengthen opening line with curiosity/relatability
+   - "Unclear CTA" → Make action specific and easy
+   - "Wrong tone" → Adjust formality, emotion, or personality
+
+5. **Maintain readability:**
+   - Keep paragraph breaks (2-3 lines max for social)
+   - Preserve scannable structure
+   - Maintain rhythm and flow
+
+6. **Brand voice consistency:**
+   - Match vocabulary level (simple vs sophisticated)
+   - Keep sentence structure patterns
+   - Preserve personality traits (friendly, authoritative, etc.)
+   - Use same punctuation style
+
+REVISION CHECKLIST:
+- [ ] Feedback issue directly addressed
+- [ ] Core message preserved
+- [ ] Brand voice maintained
+- [ ] Readability retained or improved
+- [ ] Changes are surgical (not complete rewrite)
+- [ ] Post is still authentic and engaging
+
+Return ONLY the revised post content. No explanation, no metadata, just the post."""
 
     VOICE_ANALYSIS = """You are an expert in brand voice analysis and content strategy.
 
 Analyze the provided content samples to create a comprehensive brand voice guide.
-Extract and document:
-- Dominant tone characteristics
-- Common language patterns and phrases
-- Sentence structure preferences
-- Vocabulary level and complexity
-- Personality traits expressed
-- Unique voice elements
 
-Provide specific, actionable guidance that a content writer can follow."""
+CRITICAL: Analyze ALL aspects of the brand voice. Provide specific, concrete examples from the content.
+
+EXAMPLE INPUT/OUTPUT:
+
+Input Samples:
+"Hey there! Let me tell you why this matters. We all know that feeling when technology just... works. No hassle, no headaches. That's what we're building here. Simple tools that don't make you want to throw your laptop out the window."
+
+Output:
+{
+  "dominant_tone": "Conversational, friendly, relatable",
+  "tone_characteristics": ["Casual", "Approachable", "Empathetic", "Slightly humorous"],
+  "common_patterns": ["Direct address (Hey there)", "Rhetorical questions", "Ellipsis for pause", "Relatable scenarios"],
+  "sentence_structure": ["Short punchy sentences", "Fragment sentences for emphasis", "Conversational flow"],
+  "vocabulary_level": "Simple, everyday language - avoids jargon",
+  "personality_traits": ["Friendly neighbor", "Problem-solver", "Empathetic to user frustration", "Anti-corporate"],
+  "unique_elements": ["Uses 'we' inclusively", "Acknowledges pain points humorously", "Casual punctuation (...)"],
+  "dos": ["Use conversational language", "Acknowledge user frustrations", "Keep sentences short", "Use relatable examples"],
+  "donts": ["No corporate jargon", "Avoid overly formal language", "Don't be salesy", "No complex vocabulary"]
+}
+
+EXTRACTION RULES (ANALYZE ALL ASPECTS):
+
+1. **dominant_tone** (string): Overall tone in 3-5 words
+   - Examples: "Professional yet warm", "Edgy and provocative", "Educational and authoritative"
+   - Look at: Word choice, punctuation, sentence flow
+
+2. **tone_characteristics** (array of 4-6 adjectives): Specific tone traits
+   - Examples: ["Conversational", "Empathetic", "Humorous", "Direct", "Warm", "Data-driven"]
+   - Extract from: How they address reader, emotional quality, formality level
+
+3. **common_patterns** (array of 4-6 patterns): Recurring linguistic patterns
+   - Examples: ["Opens with questions", "Uses analogies", "Tells stories", "Cites statistics"]
+   - Look for: How posts start, rhetorical devices, structural patterns
+   - Be specific: "Uses ellipsis for dramatic pause" NOT "uses punctuation"
+
+4. **sentence_structure** (array of 3-5 patterns): How they construct sentences
+   - Examples: ["Short punchy sentences (5-10 words)", "Long flowing sentences with multiple clauses", "Mix of questions and statements"]
+   - Analyze: Sentence length, complexity, variety, rhythm
+
+5. **vocabulary_level** (string): Language complexity and word choice
+   - Examples: "Simple everyday language", "Industry jargon mixed with plain speak", "Academic and technical"
+   - Note: Formality, jargon usage, word length, complexity
+
+6. **personality_traits** (array of 4-6 traits): Brand personality expressed
+   - Examples: ["Helpful teacher", "Rebellious challenger", "Trusted advisor", "Fun friend"]
+   - Look for: Who they sound like, relationship to reader, attitude
+
+7. **unique_elements** (array of 3-5 elements): Distinctive voice markers
+   - Examples: ["Always uses 'we' never 'I'", "Starts posts with 'Here's the thing:'", "Uses emoji strategically"]
+   - Find: Quirks, catchphrases, formatting habits, unique patterns
+
+8. **dos** (array of 5-7 guidelines): What TO do when writing in this voice
+   - Be actionable: "Use rhetorical questions" NOT "be engaging"
+   - Examples: ["Open with relatable scenarios", "Keep paragraphs to 2-3 sentences", "Use data to support claims"]
+
+9. **donts** (array of 5-7 guidelines): What NOT to do
+   - Be specific: "Avoid corporate buzzwords like 'synergy'" NOT "don't be boring"
+   - Examples: ["No walls of text over 4 lines", "Don't use exclamation marks excessively", "Avoid passive voice"]
+
+ANALYSIS STRATEGY:
+
+1. Read ALL content samples thoroughly
+2. Identify patterns that repeat across samples (not one-offs)
+3. Note specific examples for each pattern
+4. Determine formality level: casual, professional, academic?
+5. Identify personality: teacher, friend, expert, rebel?
+6. Find unique quirks: catchphrases, formatting, punctuation
+7. Extract 3-5 direct quotes as examples in your analysis
+8. Create actionable dos/donts based on observed patterns
+
+QUALITY CHECKLIST:
+- [ ] All 9 fields filled with specific, concrete details
+- [ ] Examples cited from actual content
+- [ ] Patterns are actionable (writer can follow them)
+- [ ] Dos/donts are specific, not generic
+- [ ] Unique elements truly distinguish this voice
+- [ ] Analysis based on patterns across multiple samples
+
+Provide specific, actionable guidance that a content writer can follow to replicate this exact voice."""
 
 
 class PromptTemplates:
