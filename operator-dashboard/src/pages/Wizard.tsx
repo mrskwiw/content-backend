@@ -202,6 +202,28 @@ export default function Wizard() {
     try {
       let finalClientId = clientId;
 
+      // DEFENSIVE VALIDATION: Verify required fields
+      if (!brief.companyName || brief.companyName.trim().length === 0) {
+        alert(
+          'Company Name is required to create a client.
+
+' +
+          'This usually means:
+' +
+          '• Brief parsing failed (API authentication error)
+' +
+          '• Company name field was not filled in
+
+' +
+          'Please:
+' +
+          '• Enter the company name manually in the form above
+' +
+          '• Or re-upload the brief after fixing API credentials in Render'
+        );
+        return;
+      }
+
       // Step 1: Create or update client
       if (isCreatingNewClient) {
         try {

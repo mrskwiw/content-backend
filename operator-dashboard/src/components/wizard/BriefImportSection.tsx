@@ -30,6 +30,38 @@ export function BriefImportSection({ onImport }: BriefImportSectionProps) {
 
     try {
       const parsed = await briefImportService.parseFile(file);
+
+      // VALIDATION: Check required fields
+      const companyName = parsed.fields.companyName?.value;
+      const hasCompanyName = companyName && typeof companyName === 'string' && companyName.trim().length > 0;
+
+      if (!parsed.success || !hasCompanyName) {
+        const missingFields: string[] = [];
+        if (!hasCompanyName) missingFields.push('Company Name');
+
+        const errorMessage = !parsed.success
+          ? 'Brief parsing failed. AI could not extract required information.'
+          : `Brief incomplete. Missing: ${missingFields.join(', ')}`;
+
+        const details = [
+          errorMessage,
+          '',
+          'Common causes:',
+          '• API authentication failed (check ANTHROPIC_API_KEY in Render)',
+          '• Brief format not recognized',
+          '• Company information not clearly stated',
+          '',
+          'To fix:',
+          '1. Verify API key in Render environment variables',
+          '2. Ensure brief has clear company name',
+          '3. Retry upload after fixing API key',
+          '4. Or enter information manually below',
+        ].join('
+');
+
+        throw new Error(details);
+      }
+
       onImport(parsed);
     } catch (err: unknown) {
       // Determine if error is retryable
@@ -37,7 +69,9 @@ export function BriefImportSection({ onImport }: BriefImportSectionProps) {
       const isRetryable =
         message.includes('timed out') ||
         message.includes('Network error') ||
-        message.includes('Failed to parse brief');
+        message.includes('Failed to parse') ||
+        message.includes('authentication') ||
+        message.includes('Missing');
 
       setError({
         code: (err && typeof err === 'object' && 'code' in err && typeof err.code === 'string') ? err.code : 'UNKNOWN_ERROR',
@@ -79,7 +113,7 @@ export function BriefImportSection({ onImport }: BriefImportSectionProps) {
 
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 space-y-2">
-              <p className="text-sm font-medium text-red-800 dark:text-red-400">
+              <p className="text-sm font-medium text-red-800 dark:text-red-400 whitespace-pre-wrap">
                 {error.message}
               </p>
               {error.retryable && (
