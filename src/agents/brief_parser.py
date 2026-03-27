@@ -50,6 +50,7 @@ class BriefParserAgent:
                 self.client,
                 brief_text,
                 system_prompt=self.SYSTEM_PROMPT,
+                max_tokens=2000,  # Need more tokens for full 21-field JSON response
                 temperature=BRIEF_PARSING_TEMPERATURE,
                 extract_json=True,
                 fallback_on_error={},

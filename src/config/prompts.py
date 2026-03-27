@@ -98,14 +98,24 @@ FIELD-SPECIFIC EXTRACTION RULES:
    - Industry jargon used throughout
    - CONVERT topic phrases to keywords: "Dental myths" -> "dental myths", "oral health" -> "oral health"
 
-3. **customer_pain_points**: Search for problems, fears, challenges
-   - Sections: "Pain Points", "Problems", "Challenges", "Unique Approach describes problems"
+3. **customer_pain_points**: Search EVERYWHERE for problems, fears, frustrations, challenges
+   - Sections: "Pain Points", "Problems", "Challenges", "Main Problem Solved", "Unique Approach", "Content Goals", "Topics", "Stories"
+   - Extract from: Problem statements, anxiety mentions, obstacles, frustrations, barriers
+   - Examples: "dental anxiety", "haven't been to dentist in years", "fear of procedures", "can't afford treatment"
+   - Look in stories: Patient struggles, fears mentioned, problems before treatment
+   - Infer from solutions: If they solve X, then X is a pain point
    - Extract 5-10 specific pain points
 
-4. **customer_questions**: Search for questions OR topics to convert
-   - Sections: "Questions", "FAQs", "Topics", "Themes", "Content Areas"
-   - Convert topics to questions: "Dental myths" -> "What are common dental myths?"
-   - Extract 5-10 questions
+4. **customer_questions**: Search for questions OR topics to convert into questions
+   - Sections: "Questions", "FAQs", "Topics", "Themes", "Content Areas", "Content Goals", "Content Strategy"
+   - ALWAYS convert topics to questions format:
+     * "Oral health myths" → "What are common oral health myths?"
+     * "Connection between X and Y" → "How is X connected to Y?"
+     * "How to help kids develop habits" → "How can I help my kids develop good habits?"
+     * "What to expect during procedures" → "What should I expect during common procedures?"
+     * "Overcoming dental anxiety" → "How can I overcome dental anxiety?"
+   - Look for: Topic lists, content themes, educational goals, common concerns
+   - Extract 5-10 questions (convert ALL topics to question format)
 
 5. **main_cta**: Search for calls-to-action
    - Sections: "CTA", "Call to Action", "Preferred CTAs", "Goals"
