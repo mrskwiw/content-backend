@@ -66,7 +66,9 @@ export const clientsApi = {
     if (input.competitors !== undefined) backendInput.competitors = input.competitors;
     if (input.location !== undefined) backendInput.location = input.location;
 
+    console.log('📤 Sending to backend:', backendInput);
     const { data } = await apiClient.post('/api/clients/', backendInput);
+    console.log('📥 Received from backend:', data);
     return ClientSchema.parse(data);
   },
 
