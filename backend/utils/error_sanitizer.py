@@ -20,7 +20,7 @@ SENSITIVE_PATTERNS = [
     r"(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN)\s+",
     r"(syntax error|relation|table|column|constraint)",
     # File paths
-    r"(/home/|/var/|/usr/|/app/|C:\|D:\)",
+    r"(/home/|/var/|/usr/|/app/|[CD]:\\)",
     r"(\.py|\.pyc|\.pyo):\d+",
     # Stack traces
     r"(Traceback|File \"|line \d+)",

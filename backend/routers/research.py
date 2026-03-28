@@ -412,9 +412,9 @@ async def run_research(
     All string parameters are sanitized before being passed to LLM prompts.
     """
     # TR-003: Check per-user rate limits (hourly, daily, monthly)
-    tool_cost = get_research_tool_cost(input.tool_name)
+    tool_cost = get_research_tool_cost(input.tool)
     usage_stats = research_rate_limiter.check_and_increment(
-        user=current_user, tool_name=input.tool_name, cost_credits=tool_cost
+        user=current_user, tool_name=input.tool, cost_credits=tool_cost
     )
     logger.info(f"Research tool rate limit check passed. Usage: {usage_stats}")
 
