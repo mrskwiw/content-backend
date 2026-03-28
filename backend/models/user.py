@@ -8,6 +8,7 @@ from sqlalchemy.sql import func
 
 from backend.database import Base
 from backend.models.mixins import SoftDeleteMixin
+from backend.config import settings
 
 
 class User(Base, SoftDeleteMixin):
@@ -27,8 +28,8 @@ class User(Base, SoftDeleteMixin):
 
     # Credit system fields
     credit_balance = Column(
-        Integer, default=1000, nullable=False
-    )  # Task #50: 1000 free welcome credits
+        Integer, default=100000 if settings.DEBUG_MODE else 1000, nullable=False
+    )  # 100k credits in debug/test, 1000 in production
     total_credits_purchased = Column(Integer, default=0, nullable=False)
     total_credits_used = Column(Integer, default=0, nullable=False)
 
