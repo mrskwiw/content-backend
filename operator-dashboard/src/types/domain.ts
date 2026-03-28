@@ -23,7 +23,8 @@ export type DeliverableStatus = z.infer<typeof DeliverableStatusSchema>;
 export const PlatformSchema = z.enum(['linkedin', 'twitter', 'facebook', 'blog', 'email', 'generic']);
 export type Platform = z.infer<typeof PlatformSchema>;
 
-export const ClientSchema = z.object({
+// Input schema that accepts both name and companyName from backend
+const ClientSchemaInput = z.object({
   id: z.string(),
   name: z.string().optional(),
   companyName: z.string().optional(),
@@ -40,19 +41,39 @@ export const ClientSchema = z.object({
   competitors: z.array(z.string()).nullish(),
   location: z.string().nullish(),
   createdAt: z.string().datetime({ offset: true }),
-}).transform((data) => {
-  // Backend returns "companyName", frontend uses "name"
-  // Accept either and normalize to "name"
+});
+
+// Output schema with only 'name' field
+const ClientSchemaOutput = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email().nullish(),
+  businessDescription: z.string().nullish(),
+  idealCustomer: z.string().nullish(),
+  mainProblemSolved: z.string().nullish(),
+  tonePreference: z.string().nullish(),
+  platforms: z.array(z.string()).nullish(),
+  customerPainPoints: z.array(z.string()).nullish(),
+  customerQuestions: z.array(z.string()).nullish(),
+  industry: z.string().nullish(),
+  keywords: z.array(z.string()).nullish(),
+  competitors: z.array(z.string()).nullish(),
+  location: z.string().nullish(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+// Transform backend response (companyName) to frontend format (name)
+export const ClientSchema = ClientSchemaInput.transform((data) => {
   const name = data.name || data.companyName;
   if (!name) {
     throw new Error('Either name or companyName is required');
   }
+  const { companyName, ...rest } = data;
   return {
-    ...data,
+    ...rest,
     name,
-    companyName: undefined, // Remove duplicate field
   };
-});
+}).pipe(ClientSchemaOutput);
 export type Client = z.infer<typeof ClientSchema>;
 
 export const ProjectSchema = z.object({
