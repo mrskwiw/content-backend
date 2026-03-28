@@ -681,6 +681,9 @@ async def run_research(
             },
         )
 
+    except HTTPException:
+        # Re-raise HTTPException without modification (preserves status codes like 402, 404, etc.)
+        raise
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
