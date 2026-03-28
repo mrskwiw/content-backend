@@ -25,7 +25,8 @@ export type Platform = z.infer<typeof PlatformSchema>;
 
 export const ClientSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  name: z.string().optional(),
+  companyName: z.string().optional(),
   email: z.string().email().nullish(),
   businessDescription: z.string().nullish(),
   idealCustomer: z.string().nullish(),
@@ -39,6 +40,18 @@ export const ClientSchema = z.object({
   competitors: z.array(z.string()).nullish(),
   location: z.string().nullish(),
   createdAt: z.string().datetime({ offset: true }),
+}).transform((data) => {
+  // Backend returns "companyName", frontend uses "name"
+  // Accept either and normalize to "name"
+  const name = data.name || data.companyName;
+  if (!name) {
+    throw new Error('Either name or companyName is required');
+  }
+  return {
+    ...data,
+    name,
+    companyName: undefined, // Remove duplicate field
+  };
 });
 export type Client = z.infer<typeof ClientSchema>;
 

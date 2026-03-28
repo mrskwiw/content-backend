@@ -219,12 +219,6 @@ export default function Wizard() {
       // Step 1: Create or update client
       if (isCreatingNewClient) {
         try {
-          console.log('🔍 Creating client with data:', {
-            name: brief.companyName,
-            nameType: typeof brief.companyName,
-            nameValue: JSON.stringify(brief.companyName),
-            fullBrief: brief
-          });
           const client = await createClientMutation.mutateAsync({
             name: brief.companyName,
             // email field excluded - can be added to form later
