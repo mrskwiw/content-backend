@@ -402,3 +402,43 @@ class ResearchPrerequisites:
         """Get execution tier for a tool (1-4)"""
         deps = self.get_dependencies(tool_id)
         return deps.tier if deps else 999  # Unknown tools go last
+
+
+# System Prerequisites (Infrastructure Requirements)
+# These are not research tools but configuration requirements
+
+
+class SystemPrerequisiteType(str, Enum):
+    """Types of system/infrastructure prerequisites"""
+
+    WEB_SEARCH = "web_search"  # Requires web search API configured
+    CENSUS_API = "census_api"  # Requires Census API configured
+
+
+# Tools that require web search to be configured
+REQUIRES_WEB_SEARCH = {
+    "market_trends_research",
+    "competitive_analysis",
+    "content_gap_analysis",
+    "audience_research",
+    "business_report",
+    "determine_competitors",
+}
+
+
+def get_system_prerequisites(tool_id: str) -> List[SystemPrerequisiteType]:
+    """
+    Get system/infrastructure prerequisites for a tool.
+
+    Args:
+        tool_id: Research tool identifier
+
+    Returns:
+        List of system prerequisites required
+    """
+    prerequisites = []
+
+    if tool_id in REQUIRES_WEB_SEARCH:
+        prerequisites.append(SystemPrerequisiteType.WEB_SEARCH)
+
+    return prerequisites

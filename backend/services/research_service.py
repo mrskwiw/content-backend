@@ -434,6 +434,31 @@ class ResearchService:
         if tool_name not in RESEARCH_TOOL_MAP:
             raise ValueError(f"Research tool '{tool_name}' not found")
 
+        # Import system prerequisite functions
+        from backend.services.research_prerequisites import (
+            get_system_prerequisites,
+            SystemPrerequisiteType,
+        )
+        from backend.utils.web_search_validator import is_web_search_configured
+
+        # Check system prerequisites (infrastructure requirements)
+        system_prereqs = get_system_prerequisites(tool_name)
+        if SystemPrerequisiteType.WEB_SEARCH in system_prereqs:
+            is_configured, message = is_web_search_configured(db, project.user_id)
+            if not is_configured:
+                logger.warning(f"Web search not configured for {tool_name}: {message}")
+                return {
+                    "success": False,
+                    "outputs": {},
+                    "metadata": {
+                        "tool_name": tool_name,
+                        "blocked": True,
+                        "system_prerequisite_missing": "web_search",
+                    },
+                    "error": f"This tool requires web search to be configured. {message}",
+                }
+            logger.info(f"Web search configured for {tool_name}: using {message}")
+
         # Check prerequisites
         can_run, missing_required, missing_recommended = self.check_prerequisites(
             db, project_id, tool_name
