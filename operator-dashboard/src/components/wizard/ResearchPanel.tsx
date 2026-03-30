@@ -77,6 +77,60 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
     isComplete: false,
   });
 
+  // Bug #58 Fix: Persist execution state across tab navigation using sessionStorage
+  const storageKey = `research-execution-${projectId}`;
+
+  // Restore execution state from sessionStorage on mount
+  useEffect(() => {
+    if (!projectId) return;
+
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        const { step: savedStep, executionState: savedExecution, selected: savedSelected, collectedData: savedData } = JSON.parse(saved);
+
+        // Only restore if we were in the executing step
+        if (savedStep === 'executing') {
+          setStep(savedStep);
+          setExecutionState(savedExecution);
+          setSelected(new Set(savedSelected));
+          setCollectedData(savedData);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore research execution state:', error);
+      // Clear corrupted data
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [projectId, storageKey]); // Only run on mount or projectId change
+
+  // Save execution state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (!projectId || step !== 'executing') return;
+
+    try {
+      const state = {
+        step,
+        executionState,
+        selected: Array.from(selected),
+        collectedData,
+        timestamp: new Date().toISOString(),
+      };
+      sessionStorage.setItem(storageKey, JSON.stringify(state));
+    } catch (error) {
+      console.error('Failed to save research execution state:', error);
+    }
+  }, [projectId, step, executionState, selected, collectedData, storageKey]);
+
+  // Clear storage when execution completes and user continues
+  const clearExecutionState = () => {
+    if (projectId) {
+      sessionStorage.removeItem(storageKey);
+    }
+  };
+
+
   // Fetch available research tools
   const { data: tools = [], isLoading } = useQuery({
     queryKey: ['research', 'tools'],
@@ -372,6 +426,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
 
     // Don't auto-advance if there are failures - let user review
     if (failed.length === 0 && onContinue) {
+      clearExecutionState(); // Clear persisted state on successful completion
       onContinue();
     }
   };
@@ -384,6 +439,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
   };
 
   const handleCancelExecution = () => {
+    clearExecutionState(); // Clear persisted state on cancel
     // Go back to selection
     setStep('selection');
     setExecutionState({
@@ -395,6 +451,7 @@ export const ResearchPanel = memo(function ResearchPanel({ projectId, clientId, 
   };
 
   const handleContinueAfterExecution = () => {
+    clearExecutionState(); // Clear persisted state when continuing after execution
     if (onContinue) {
       onContinue();
     }
