@@ -286,7 +286,7 @@ class ResearchTool(ABC):
                 messages=[{"role": "user", "content": "Please provide the requested analysis."}],
             )
 
-            response_text = response.content[0].text  # type: ignore[attr-defined]
+            response_text = response  # Wrapper already extracts text
 
             logger.debug(f"{self.tool_name}: Received response ({len(response_text)} chars)")
 
