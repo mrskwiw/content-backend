@@ -113,8 +113,6 @@ export const projectsApi = {
         Object.entries(input.templateQuantities).map(([id, qty]) => [id.toString(), qty])
       );
     }
-    if (input.pricePerPost !== undefined) backendInput.price_per_post = input.pricePerPost;
-    if (input.researchPricePerPost !== undefined) backendInput.research_price_per_post = input.researchPricePerPost;
     if (input.totalPrice !== undefined) backendInput.total_price = input.totalPrice;
     if (input.postsCost !== undefined) backendInput.posts_cost = input.postsCost;
     if (input.researchAddonCost !== undefined) backendInput.research_addon_cost = input.researchAddonCost;

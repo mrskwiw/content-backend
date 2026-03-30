@@ -216,7 +216,6 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
         tone: 'professional',
         numPosts: data.numPosts,
         // pricePerPost removed - credits only
-        researchPricePerPost: data.researchAddon ? RESEARCH_PRICE_PER_POST : 0,
         postsCost: pricing.postsCost,
         researchAddonCost: pricing.researchAddonCost,
         toolsCost: pricing.toolsCost,
