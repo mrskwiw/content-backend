@@ -1,0 +1,11 @@
+Add this defensive validation at the start of handleSaveProfile (line ~201):
+
+    // DEFENSIVE VALIDATION
+    if (!brief.companyName || brief.companyName.trim().length === 0) {
+      alert(
+        'Company Name is required.\n\n' +
+        'This means brief parsing failed or field was not filled.\n\n' +
+        'Please:\n• Enter company name manually\n• Re-upload brief if parsing failed'
+      );
+      return;
+    }

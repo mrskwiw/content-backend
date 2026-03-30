@@ -1,0 +1,22 @@
+diff --git a/src/research/determine_competitors.py b/src/research/determine_competitors.py
+index original..modified 100644
+--- a/src/research/determine_competitors.py
++++ b/src/research/determine_competitors.py
+@@ -148,43 +148,166 @@ class CompetitorDeterminer(ResearchTool, CommonValidationMixin):
+         prompt = f"""Based on the web search results and local business data below, analyze this business and identify its top 5-7 market competitors.
+
+ **Business:** {business_name}
+ **Industry:** {industry}{location_context}
+ **Description:** {business_description}
+
+ **WEB SEARCH RESULTS:**
+ {search_data}{maps_section}
+
+-CRITICAL INSTRUCTIONS:
+-Use ONLY the companies/information found in the search results above
+-Prioritize LOCAL competitors from Google Maps when available (they have verified reviews/ratings)
+-Identify 5-7 PRIMARY competitors (direct and adjacent)
+-Identify 0-2 EMERGING competitors if found in search results
+-Do NOT invent or hallucinate companies not in the search results
+-Include Google Maps rating and review count in your analysis when available
++CRITICAL: Extract 5-7 PRIMARY competitors + 0-2 EMERGING competitors. Fill ALL 6 fields for EVERY competitor.
