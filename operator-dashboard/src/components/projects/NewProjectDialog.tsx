@@ -215,7 +215,7 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
         platforms: [],
         tone: 'professional',
         numPosts: data.numPosts,
-        pricePerPost: PRICE_PER_POST,
+        // pricePerPost removed - credits only
         researchPricePerPost: data.researchAddon ? RESEARCH_PRICE_PER_POST : 0,
         postsCost: pricing.postsCost,
         researchAddonCost: pricing.researchAddonCost,
@@ -359,7 +359,7 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
                   errors.numPosts ? 'border-rose-500 dark:border-rose-400' : 'border-neutral-200 dark:border-neutral-700'
                 } focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400`}
               />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">× ${PRICE_PER_POST}/post</span>
+              <!-- Dollar pricing removed - credits only -->
             </div>
             {errors.numPosts && <p className="text-xs text-rose-600 dark:text-rose-400">{errors.numPosts}</p>}
 
@@ -372,7 +372,7 @@ export function NewProjectDialog({ open, onOpenChange, onSuccess }: Props) {
               />
               <span className="text-sm text-neutral-700 dark:text-neutral-300">
                 Topic research add-on{' '}
-                <span className="text-neutral-500 dark:text-neutral-400">(+${RESEARCH_PRICE_PER_POST}/post)</span>
+                <!-- Research pricing removed -->
               </span>
             </label>
           </div>

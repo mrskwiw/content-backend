@@ -1380,8 +1380,9 @@ MANDATORY 6-SECTION STRUCTURE (each section MUST meet word minimums):
 ## Conclusion (250-300 words) [FINAL CHECKPOINT: 1500-2000 words total]
 - Summarize key takeaways (3-5 bullet points, each with 1 sentence explanation)
 - Reinforce the main benefit and transformation available
-- Clear, specific call-to-action (subscribe, download, book call, etc.)
-- Final thought or question to drive engagement
+- Clear, specific call-to-action using IMPERATIVE form (command, not question)
+  Examples: "Subscribe now", "Download the guide", "Book your call today"
+  NOT questions like: "Want to learn more?" or "Ready to get started?"
 - End with forward-looking statement about what's possible
 
 🚨 CRITICAL WRITING REQUIREMENTS:
@@ -1576,7 +1577,7 @@ Think of research insights as your secret knowledge about the client - use them 
             if platform == Platform.LINKEDIN:
                 lines.append("- First line must hook (visible before 'see more')")
                 lines.append("- Use line breaks for readability")
-                lines.append("- End with engagement question or CTA")
+                lines.append("- End with clear imperative CTA (command, NOT question)")
                 lines.append("- Optimal posting: Tue-Thu 8-10am, 12pm, 5-6pm")
             elif platform == Platform.TWITTER:
                 lines.append("- Front-load value in first sentence")

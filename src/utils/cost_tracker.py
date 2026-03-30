@@ -116,7 +116,9 @@ class CostTracker:
             db_path: Path to SQLite database (default: data/cost_tracking.db)
         """
         if db_path is None:
-            db_path = Path("data/cost_tracking.db")
+            # Use absolute path relative to project root (Bug #59 fix)
+            project_root = Path(__file__).parent.parent.parent
+            db_path = project_root / "data" / "cost_tracking.db"
 
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)

@@ -25,10 +25,16 @@ class ResearchRateLimiter:
     """
     Per-user rate limiter for expensive research operations.
 
-    Limits:
-    - 5 research calls per hour (existing)
-    - 20 research calls per day (new)
-    - 100 research calls per month (new)
+    Limits (Environment-Aware):
+    Debug Mode:
+    - 1000 research calls per hour (testing)
+    - 1000 research calls per day (testing)
+    - 1000 research calls per month (testing)
+
+    Production Mode:
+    - 20 research calls per hour (4x original)
+    - 100 research calls per day (5x original)
+    - 500 research calls per month (5x original)
     """
 
     def __init__(self):
@@ -65,12 +71,21 @@ class ResearchRateLimiter:
             HTTPException: If any rate limit exceeded
         """
         user_id = user.id
-        # Define time windows
-        windows = {
-            "hourly": (3600, 5, "hour"),  # 1 hour, 5 calls
-            "daily": (86400, 20, "day"),  # 1 day, 20 calls
-            "monthly": (2592000, 100, "month"),  # 30 days, 100 calls
-        }
+        # Define time windows - environment-aware limits
+        # Debug mode: High limits for testing (1000 calls)
+        # Production: Reasonable limits for normal operations
+        if settings.DEBUG_MODE:
+            windows = {
+                "hourly": (3600, 1000, "hour"),  # Debug: 1000 calls/hour
+                "daily": (86400, 1000, "day"),  # Debug: 1000 calls/day
+                "monthly": (2592000, 1000, "month"),  # Debug: 1000 calls/month
+            }
+        else:
+            windows = {
+                "hourly": (3600, 20, "hour"),  # Production: 20 calls/hour (4x original)
+                "daily": (86400, 100, "day"),  # Production: 100 calls/day (5x original)
+                "monthly": (2592000, 500, "month"),  # Production: 500 calls/month (5x original)
+            }
 
         usage = {}
 

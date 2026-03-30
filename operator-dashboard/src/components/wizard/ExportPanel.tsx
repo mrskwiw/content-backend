@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { generatorApi } from '@/api/generator';
 import { researchApi } from '@/api/research';
 import type { ExportInput, ExportTarget } from '@/types/domain';
-import { Download, Loader2, CheckCircle, FlaskConical, DollarSign, Info, Target } from 'lucide-react';
+import { Download, Loader2, CheckCircle, FlaskConical, DollarSign, Info } from 'lucide-react';
 
 interface Props {
   projectId: string;
@@ -13,7 +13,7 @@ interface Props {
 
 export function ExportPanel({ projectId, clientId, onExported }: Props) {
   const [format, setFormat] = useState<'txt' | 'md' | 'docx'>('docx');
-  const [exportTarget, setExportTarget] = useState<ExportTarget>('docx');
+  // Auto-set export target based on format (no UI selection needed)
   const [includeAuditLog, setIncludeAuditLog] = useState(false);
   const [includeResearch, setIncludeResearch] = useState(false);
 
@@ -26,7 +26,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
   });
 
   const completedResearch = researchResults?.results?.filter(r => r.status === 'completed') || [];
-  const totalInvestment = completedResearch.reduce((sum, r) => sum + (r.toolPrice || 0), 0);
+  // REMOVED: totalInvestment calculation (credit-only system)
 
   const exportMut = useMutation({
     mutationFn: (input: ExportInput) => generatorApi.exportPackage(input),
@@ -34,6 +34,9 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
   });
 
   const handleExport = () => {
+    // Auto-set export target based on format
+    const exportTarget: ExportTarget = format === 'md' ? 'markdown' : format;
+
     exportMut.mutate({
       projectId,
       clientId,
@@ -49,46 +52,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
       {/* Header */}
       <div>
         <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Export Package</h3>
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">Select export target and file format for your content package.</p>
-      </div>
-
-      {/* Export Target Selection */}
-      <div>
-        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          <Target className="h-4 w-4" />
-          Export Target Platform
-        </label>
-        <select
-          className="w-full rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={exportTarget}
-          onChange={(e) => setExportTarget(e.target.value as ExportTarget)}
-        >
-          <optgroup label="Social Media">
-            <option value="linkedin-posts">LinkedIn Posts</option>
-            <option value="linkedin-articles">LinkedIn Articles</option>
-            <option value="twitter">Twitter/X</option>
-            <option value="twitter-threads">Twitter/X Threads</option>
-            <option value="facebook">Facebook</option>
-            <option value="instagram">Instagram</option>
-          </optgroup>
-          <optgroup label="Publishing Platforms">
-            <option value="substack">Substack</option>
-            <option value="medium">Medium</option>
-            <option value="wordpress">WordPress</option>
-            <option value="ghost">Ghost</option>
-          </optgroup>
-          <optgroup label="Productivity Tools">
-            <option value="notion">Notion</option>
-          </optgroup>
-          <optgroup label="Standard Formats">
-            <option value="docx">DOCX</option>
-            <option value="markdown">Markdown</option>
-            <option value="txt">Plain Text</option>
-          </optgroup>
-        </select>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          Choose where you'll publish or use this content. Format will be optimized for the selected platform.
-        </p>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">Select file format for your content package.</p>
       </div>
 
       {/* File Format & Options */}
@@ -155,12 +119,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
                   <FlaskConical className="h-4 w-4" />
                   <strong>{completedResearch.length}</strong> {completedResearch.length === 1 ? 'tool' : 'tools'}
                 </span>
-                {totalInvestment > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <DollarSign className="h-4 w-4" />
-                    <strong>${totalInvestment.toFixed(0)}</strong> research investment
-                  </span>
-                )}
+                {/* REMOVED: Dollar investment display (credit-only system) */}
               </div>
               <div className="flex flex-wrap gap-2">
                 {completedResearch.map((result) => (
@@ -169,9 +128,7 @@ export function ExportPanel({ projectId, clientId, onExported }: Props) {
                     className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-neutral-900 px-2.5 py-1 text-xs font-medium text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700"
                   >
                     {result.toolLabel}
-                    {result.toolPrice && (
-                      <span className="text-amber-700 dark:text-amber-300">(${result.toolPrice})</span>
-                    )}
+                    {/* REMOVED: Tool price display (credit-only system) */}
                   </span>
                 ))}
               </div>

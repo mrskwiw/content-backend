@@ -31,7 +31,7 @@ class PricingConfig(BaseModel):
     """Global pricing constants"""
 
     # Base pricing
-    PRICE_PER_POST: float = 40.0
+    PRICE_PER_POST: float = 0.0  # DEPRECATED: System uses credits only (20 credits/post)
     RESEARCH_PRICE_PER_POST: float = (
         0.0  # DEPRECATED (Bug #43): Topic research replaced by research tools ($300-$600 each)
     )

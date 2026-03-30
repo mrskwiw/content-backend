@@ -7,6 +7,43 @@
 - Mix and match 2 posts per template (30 posts = variety)
 - Vary opening hooks to keep audience engaged
 
+
+---
+
+## CTA GUIDELINES (ALL TEMPLATES) - Bug #58 Fix
+
+**CRITICAL: CTAs MUST be imperatives (commands), NOT questions**
+
+### ✅ GOOD CTAs (Imperatives/Commands):
+- "Download our case study"
+- "Book a free consultation"
+- "Join our community today"
+- "Click to see pricing"
+- "Subscribe for weekly insights"
+- "Contact us to schedule a demo"
+- "Reply with your biggest challenge"
+- "Share your experience below"
+
+### ❌ BAD CTAs (Questions):
+- "Want to see our case study?" ❌ (question)
+- "Ready for a consultation?" ❌ (question)
+- "Thinking about joining?" ❌ (question)
+- "Curious about pricing?" ❌ (question)
+- "Does this resonate with you?" ❌ (question)
+- "What do you think?" ❌ (question)
+
+### Why Imperatives Work Better:
+- Questions feel wishy-washy and indecisive
+- Commands drive clear action
+- Imperatives have higher conversion rates
+- Questions can be misinterpreted as rhetorical
+
+### CTA Placement:
+- Always place CTA at the END of the post
+- Use strong action verbs: Download, Book, Join, Subscribe, Contact, Reply, Share
+- Be specific about what action to take
+
+---
 ---
 
 ## TEMPLATE 1: The Problem-Recognition Post

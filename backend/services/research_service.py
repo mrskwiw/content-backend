@@ -539,7 +539,7 @@ class ResearchService:
                 project_id=project_id,
                 tool_name=tool_name,
                 tool_label=tool_class_metadata.get("label"),
-                tool_price=tool_class_metadata.get("price"),
+                tool_price=None,  # DEPRECATED: Tools use credits, not dollar prices
                 params=params,
                 outputs=serializable_outputs,
                 data=result.metadata.get("data"),  # Tool-specific structured data

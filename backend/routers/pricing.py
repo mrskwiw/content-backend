@@ -30,8 +30,8 @@ router = APIRouter()
 class PricingConfigResponse(BaseModel):
     """Response model for pricing configuration"""
 
-    pricePerPost: float
-    researchPricePerPost: float
+    # pricePerPost removed - system uses credits only
+    # researchPricePerPost removed - tools use credits (Bug #51)
     minPosts: int
     maxPosts: int
     unlimitedRevisions: bool
@@ -42,8 +42,8 @@ class CalculatePriceResponse(BaseModel):
 
     numPosts: int
     researchIncluded: bool
-    pricePerPost: float
-    researchPricePerPost: float
+    # pricePerPost removed - system uses credits only
+    # researchPricePerPost removed - tools use credits (Bug #51)
     totalPrice: float
 
 
@@ -61,8 +61,8 @@ async def get_pricing_config(request: Request) -> PricingConfigResponse:
     Example response:
     ```json
     {
-        "pricePerPost": 40.0,
-        "researchPricePerPost": 15.0,
+        "pricePerPost": 0.0,  // DEPRECATED - use credits,
+        "researchPricePerPost": 0.0,  # DEPRECATED,
         "minPosts": 1,
         "maxPosts": 100,
         "unlimitedRevisions": true
@@ -71,8 +71,6 @@ async def get_pricing_config(request: Request) -> PricingConfigResponse:
     """
     config = PricingConfig()
     return PricingConfigResponse(
-        pricePerPost=config.PRICE_PER_POST,
-        researchPricePerPost=config.RESEARCH_PRICE_PER_POST,
         minPosts=config.MIN_POSTS,
         maxPosts=config.MAX_POSTS,
         unlimitedRevisions=config.UNLIMITED_REVISIONS,
@@ -110,13 +108,12 @@ async def calculate_custom_price(
     {
         "numPosts": 30,
         "researchIncluded": true,
-        "pricePerPost": 40.0,
-        "researchPricePerPost": 15.0,
+        "pricePerPost": 0.0,  // DEPRECATED - use credits,
+        "researchPricePerPost": 0.0,  # DEPRECATED,
         "totalPrice": 1650.0
     }
     ```
     """
-    config = PricingConfig()
 
     # Handle POST with template_quantities
     if body and "template_quantities" in body:
@@ -128,15 +125,11 @@ async def calculate_custom_price(
         price = calculate_price(
             num_posts=calculated_num_posts,
             research_per_post=research_requested,
-            price_per_post=config.PRICE_PER_POST,
-            research_price=config.RESEARCH_PRICE_PER_POST,
         )
 
         return CalculatePriceResponse(
             numPosts=calculated_num_posts,
             researchIncluded=research_requested,
-            pricePerPost=config.PRICE_PER_POST,
-            researchPricePerPost=config.RESEARCH_PRICE_PER_POST if research_requested else 0.0,
             totalPrice=price,
         )
 
@@ -150,15 +143,11 @@ async def calculate_custom_price(
     price = calculate_price(
         num_posts=num_posts,
         research_per_post=research,
-        price_per_post=config.PRICE_PER_POST,
-        research_price=config.RESEARCH_PRICE_PER_POST,
     )
 
     return CalculatePriceResponse(
         numPosts=num_posts,
         researchIncluded=research,
-        pricePerPost=config.PRICE_PER_POST,
-        researchPricePerPost=config.RESEARCH_PRICE_PER_POST if research else 0.0,
         totalPrice=price,
     )
 
@@ -198,21 +187,17 @@ async def calculate_price_from_template_quantities(
     {
         "numPosts": 10,
         "researchIncluded": false,
-        "pricePerPost": 40.0,
+        "pricePerPost": 0.0,  // DEPRECATED - use credits,
         "researchPricePerPost": 0.0,
         "totalPrice": 400.0
-    }
     ```
     """
     # Convert string keys to integers
     quantities_int = {int(k): v for k, v in template_quantities.items()}
 
-    config = PricingConfig()
     price = calculate_price_from_quantities(
         template_quantities=quantities_int,
         research_per_post=research,
-        price_per_post=config.PRICE_PER_POST,
-        research_price=config.RESEARCH_PRICE_PER_POST,
     )
 
     total_posts = sum(quantities_int.values())
@@ -220,7 +205,5 @@ async def calculate_price_from_template_quantities(
     return CalculatePriceResponse(
         numPosts=total_posts,
         researchIncluded=research,
-        pricePerPost=config.PRICE_PER_POST,
-        researchPricePerPost=config.RESEARCH_PRICE_PER_POST if research else 0.0,
         totalPrice=price,
     )

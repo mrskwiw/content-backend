@@ -381,7 +381,7 @@ async def list_research_tools(
 
 
 @router.post("/run", response_model=ResearchRunResult)
-@strict_limiter.limit("5/hour")  # TR-004: Expensive operation ($400-600/call), prevent abuse
+@strict_limiter.limit("50/hour")  # TR-004: Credit-limited operations (Bug #56 fix)
 async def run_research(
     request: Request,
     input: RunResearchInput,
@@ -638,9 +638,43 @@ async def run_research(
             )
 
         if not result["success"]:
+            # Log detailed error information for debugging
+            logger.error(
+                f"Research tool {input.tool} failed: {result.get('error', 'Unknown')} "
+                f"Metadata: {result.get('metadata', {})}"
+            )
+
+            error_msg = result.get("error", "Unknown error")
+            metadata = result.get("metadata", {})
+
+            # Check if this is a prerequisite/validation error (should be 400)
+            if (
+                metadata.get("blocked")
+                or "missing" in error_msg.lower()
+                or "prerequisite" in error_msg.lower()
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg,
+                )
+
+            # Check if this is a validation error
+            if (
+                "validation" in error_msg.lower()
+                or "invalid" in error_msg.lower()
+                or "required" in error_msg.lower()
+                or "coming soon" in error_msg.lower()
+                or "not available" in error_msg.lower()
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg,
+                )
+
+            # Otherwise it's a server error (500)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Research tool execution failed: {result.get('error', 'Unknown error')}",
+                detail=f"Research tool execution failed: {error_msg}",
             )
 
         # Auto-save competitors to client profile if determine_competitors tool was run
@@ -1161,7 +1195,7 @@ class BatchResearchResponse(BaseModel):
 
 
 @router.post("/batch", response_model=BatchResearchResponse)
-@strict_limiter.limit("10/hour")  # Strict limit for expensive batch operations
+@strict_limiter.limit("30/hour")  # Batch operations (Bug #56 fix)
 async def execute_research_batch(
     request: Request,
     batch_request: BatchResearchRequest,
@@ -1367,18 +1401,8 @@ async def get_research_analytics(
         )
 
     # Calculate aggregates
-    total_revenue = sum(r.tool_price or 0.0 for r in results)
+    # total_revenue removed: Tools use credits, not prices (Bug #51)
     total_api_cost = sum(r.actual_cost_usd or 0.0 for r in results)
-    profit_margin = (
-        round(((total_revenue - total_api_cost) / total_revenue * 100), 2)
-        if total_revenue > 0
-        else 0.0
-    )
-
-    # Cache statistics
-    cached_count = sum(1 for r in results if r.is_cached_result)
-    cache_hit_rate = round((cached_count / len(results) * 100), 1) if results else 0.0
-    cache_savings = total_revenue * (cache_hit_rate / 100)
 
     # Group by tool_name for top tools
     tool_stats = {}
@@ -1386,25 +1410,18 @@ async def get_research_analytics(
         if r.tool_name not in tool_stats:
             tool_stats[r.tool_name] = {
                 "tool_name": r.tool_name,
-                "tool_label": r.tool_label,
-                "execution_count": 0,
-                "total_revenue": 0.0,
                 "total_api_cost": 0.0,
             }
         tool_stats[r.tool_name]["execution_count"] += 1
-        tool_stats[r.tool_name]["total_revenue"] += r.tool_price or 0.0
+        # tool_stats revenue removed (Bug #51)
         tool_stats[r.tool_name]["total_api_cost"] += r.actual_cost_usd or 0.0
 
     # Sort by execution count
     top_tools = sorted(tool_stats.values(), key=lambda x: x["execution_count"], reverse=True)[:10]
 
     return ResearchAnalyticsResponse(
-        total_revenue=round(total_revenue, 2),
         total_api_cost=round(total_api_cost, 2),
-        profit_margin=profit_margin,
         total_executions=len(results),
-        cache_hit_rate=cache_hit_rate,
-        cache_savings=round(cache_savings, 2),
         avg_cost_per_tool=round(total_api_cost / len(results), 4) if results else 0.0,
         top_tools=top_tools,
         date_range=days,

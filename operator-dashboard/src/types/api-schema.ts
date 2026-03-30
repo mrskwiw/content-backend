@@ -2003,7 +2003,7 @@ export interface paths {
          *     ```json
          *     {
          *         "pricePerPost": 40.0,
-         *         "researchPricePerPost": 15.0,
+         *         "researchPricePerPost": 0.0  // DEPRECATED,
          *         "minPosts": 1,
          *         "maxPosts": 100,
          *         "unlimitedRevisions": true
@@ -2050,7 +2050,7 @@ export interface paths {
          *         "numPosts": 30,
          *         "researchIncluded": true,
          *         "pricePerPost": 40.0,
-         *         "researchPricePerPost": 15.0,
+         *         "researchPricePerPost": 0.0  // DEPRECATED,
          *         "totalPrice": 1650.0
          *     }
          *     ```
@@ -2081,7 +2081,7 @@ export interface paths {
          *         "numPosts": 30,
          *         "researchIncluded": true,
          *         "pricePerPost": 40.0,
-         *         "researchPricePerPost": 15.0,
+         *         "researchPricePerPost": 0.0  // DEPRECATED,
          *         "totalPrice": 1650.0
          *     }
          *     ```
@@ -2132,7 +2132,7 @@ export interface paths {
          *         "numPosts": 10,
          *         "researchIncluded": false,
          *         "pricePerPost": 40.0,
-         *         "researchPricePerPost": 0.0,
+         *         "researchPricePerPost": 0.0  // DEPRECATED,
          *         "totalPrice": 400.0
          *     }
          *     ```

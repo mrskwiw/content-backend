@@ -461,8 +461,7 @@ def _generate_research_section(project_id: str, db: Session) -> dict:
         # Metadata
         if result.created_at:
             lines.append(f"**Executed:** {result.created_at.strftime('%B %d, %Y at %H:%M')}")
-        if result.tool_price:
-            lines.append(f"**Cost:** ${result.tool_price:.2f}")
+        # Cost removed: Tools use credits, not dollar prices (Bug #51 fix)
         lines.append("")
 
         # Format tool-specific data
@@ -900,7 +899,7 @@ def _format_seo_keywords(data: dict) -> List[str]:
             "|---|---------|--------|------------|--------|-----------|---------|--------|"
         )
 
-        for i, kw in enumerate(primary_keywords[:10], 1):
+        for i, kw in enumerate(primary_keywords, 1):
             keyword_name = kw.get("keyword", "N/A")
             intent = kw.get("search_intent", "N/A")
             difficulty = kw.get("difficulty", "N/A").upper()
@@ -938,7 +937,7 @@ def _format_seo_keywords(data: dict) -> List[str]:
         # Show detailed info for top 3 keywords
         lines.append("**Top Keyword Details:**")
         lines.append("")
-        for i, kw in enumerate(primary_keywords[:3], 1):
+        for i, kw in enumerate(primary_keywords[:5], 1):
             lines.append(f"**{i}. {kw.get('keyword', 'N/A')}**")
 
             details = []
@@ -954,11 +953,11 @@ def _format_seo_keywords(data: dict) -> List[str]:
 
             related_topics = kw.get("related_topics", [])
             if related_topics:
-                lines.append(f"- Related: {', '.join(related_topics[:3])}")
+                lines.append(f"- Related: {', '.join(related_topics)}")
 
             related_queries = kw.get("related_queries", [])
             if related_queries:
-                lines.append(f"- Related searches: {', '.join(related_queries[:3])}")
+                lines.append(f"- Related searches: {', '.join(related_queries)}")
 
             lines.append("")
 
@@ -969,7 +968,7 @@ def _format_seo_keywords(data: dict) -> List[str]:
         lines.append("")
         lines.append("Low-difficulty, high-relevance opportunities for immediate targeting:")
         lines.append("")
-        for qw in quick_wins[:5]:
+        for qw in quick_wins:
             lines.append(f"- {qw}")
         lines.append("")
 
@@ -979,7 +978,7 @@ def _format_seo_keywords(data: dict) -> List[str]:
         lines.append("### Keyword Clusters")
         lines.append("")
 
-        for cluster in clusters[:5]:  # Top 5 clusters
+        for cluster in clusters:  # All clusters
             theme = cluster.get("theme", "Unknown")
             priority = cluster.get("priority", "Medium").upper()
             primary_kw = cluster.get("primary_keyword", "")
@@ -989,7 +988,7 @@ def _format_seo_keywords(data: dict) -> List[str]:
 
             secondary = cluster.get("secondary_keywords", [])
             if secondary:
-                lines.append(f"- Secondary: {', '.join(secondary[:5])}")
+                lines.append(f"- Secondary: {', '.join(secondary)}")
 
             suggestions = cluster.get("content_suggestions", [])
             if suggestions:
@@ -1014,7 +1013,7 @@ def _format_seo_keywords(data: dict) -> List[str]:
         lines.append("### Competitor Insights")
         lines.append("")
 
-        for comp in competitor_analysis[:3]:  # Top 3 competitors
+        for comp in competitor_analysis:  # All competitors
             comp_name = comp.get("competitor_name", "Unknown")
             gaps = comp.get("gaps", [])
             overlaps = comp.get("overlaps", [])
@@ -1022,9 +1021,9 @@ def _format_seo_keywords(data: dict) -> List[str]:
             lines.append(f"**{comp_name}**")
 
             if gaps:
-                lines.append(f"- Gap opportunities: {', '.join(gaps[:3])}")
+                lines.append(f"- Gap opportunities: {', '.join(gaps)}")
             if overlaps:
-                lines.append(f"- Keyword overlaps: {', '.join(overlaps[:3])}")
+                lines.append(f"- Keyword overlaps: {', '.join(overlaps)}")
 
             lines.append("")
 

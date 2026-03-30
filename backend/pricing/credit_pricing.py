@@ -5,7 +5,7 @@ Defines credit costs for all content types and research tools.
 Costs are based on human labor replacement value and complexity.
 
 Pricing Philosophy:
-- Blog posts: 10 credits (replaces 2-3 hours of writing)
+- Blog posts: 20 credits ($40 ÷ $2/credit = 20 credits)
 - Research tools: 150-300 credits based on labor savings
   - 150 credits: Replaces 3-4 hours of work (dollar300)
   - 200 credits: Replaces 4-8 hours of work (dollar400)
@@ -15,7 +15,7 @@ Pricing Philosophy:
 
 # Content generation costs
 CONTENT_COSTS = {
-    "blog_post": 10,  # Long-form blog content (500-1500 words)
+    "blog_post": 20,  # Long-form blog content (500-1500 words) - $40/post ÷ $2/credit
 }
 
 # Research tool costs (150-300 credits based on labor replacement)
@@ -111,7 +111,7 @@ def calculate_project_cost(
     total_credits = blog_cost + research_cost
 
     return {
-        "blog_posts": {"count": num_blog_posts, "credits_per_post": 10, "total": blog_cost},
+        "blog_posts": {"count": num_blog_posts, "credits_per_post": 20, "total": blog_cost},
         "research_tools": {"breakdown": research_breakdown, "total": research_cost},
         "total_credits": total_credits,
         "estimated_cost": {

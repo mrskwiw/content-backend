@@ -1,5 +1,5 @@
 import { useState, useMemo, memo, useEffect } from 'react';
-import { Plus, Minus, DollarSign, FileText, Calculator, TrendingUp, HelpCircle, AlertCircle, X, CheckCircle2, Sparkles, Link2 } from 'lucide-react';
+import { Plus, Minus, Coins, FileText, Calculator, TrendingUp, HelpCircle, AlertCircle, X, CheckCircle2, Sparkles, Link2 } from 'lucide-react';
 import { PlatformSelector } from './PlatformSelector';
 import { generatorApi, type TemplateDependencies } from '@/api/generator';
 import { researchApi } from '@/api/research';
@@ -153,8 +153,8 @@ interface Props {
   ) => void;
 }
 
-const PRICE_PER_POST = 40.0;
-const RESEARCH_PRICE_PER_POST = 15.0;
+const CREDITS_PER_POST = 20;  // $40/post ÷ $2/credit = 20 credits
+// const RESEARCH_PRICE_PER_POST = 15.0; // DEPRECATED: Research now handled by granular tools
 
 export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   initialQuantities = {},
@@ -228,15 +228,15 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   }, [quantities]);
 
   // Calculate totals
-  const { totalPosts, totalPrice, pricePerPost } = useMemo(() => {
+  const { totalPosts, totalCredits, creditsPerPost } = useMemo(() => {
     const total = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
-    const basePrice = PRICE_PER_POST;
-    const research = includeResearch ? RESEARCH_PRICE_PER_POST : 0;
-    const perPost = basePrice + research;
+    const baseCredits = CREDITS_PER_POST;
+    // Research costs handled separately by research tools, not per-post
+    const perPost = baseCredits;
     return {
       totalPosts: total,
-      pricePerPost: perPost,
-      totalPrice: total * perPost,
+      creditsPerPost: perPost,
+      totalCredits: total * perPost,
     };
   }, [quantities, includeResearch]);
 
@@ -337,7 +337,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
       </div>
 
       <p className="mb-6 text-sm text-neutral-600 dark:text-neutral-400">
-        Specify exact quantities for each template. Pricing is $40/post. Research tools are available in the Research step ($300-$600 each).
+        Specify exact quantities for each template. Cost is 20 credits per post. Research tools are available in the Research step (100-300 credits each).
       </p>
 
       {/* Pricing Summary Card */}
@@ -358,18 +358,18 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
               <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">${pricePerPost}</div>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{creditsPerPost}</div>
               <div className="text-xs text-neutral-600 dark:text-neutral-400">Per Post</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-purple-100 dark:bg-purple-900/40 p-2">
-              <DollarSign className="h-5 w-5 text-purple-600" />
+              <Coins className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">${totalPrice.toLocaleString()}</div>
-              <div className="text-xs text-neutral-600 dark:text-neutral-400">Total Price</div>
+              <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{totalCredits.toLocaleString()}</div>
+              <div className="text-xs text-neutral-600 dark:text-neutral-400">Total Credits</div>
             </div>
           </div>
         </div>
@@ -619,7 +619,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
 
                 {hasQuantity && (
                   <div className="ml-auto text-xs font-semibold text-neutral-600 dark:text-neutral-400">
-                    ${(quantity * pricePerPost).toLocaleString()}
+                    {(quantity * creditsPerPost).toLocaleString()} credits
                   </div>
                 )}
               </div>
@@ -637,12 +637,12 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
           {totalPosts > 50 && 'Large order - generation may take longer'}
         </div>
         <button
-          onClick={() => onContinue?.(quantities, includeResearch, totalPrice, customTopics, targetPlatform)}
+          onClick={() => onContinue?.(quantities, includeResearch, totalCredits, customTopics, targetPlatform)}
           disabled={totalPosts === 0}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue to Generation
-          <span className="text-xs opacity-75">(${totalPrice.toLocaleString()})</span>
+          <span className="text-xs opacity-75">({totalCredits.toLocaleString()} credits)</span>
         </button>
       </div>
       </div>

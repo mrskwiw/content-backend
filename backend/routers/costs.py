@@ -286,12 +286,6 @@ def get_research_costs(
     )
 
     # Aggregate costs
-    total_business_price = sum(r.tool_price or 0 for r in research_results)
-    total_actual_cost = sum(r.actual_cost_usd or 0 for r in research_results)
-
-    # Calculate savings (business price - actual cost)
-    price_difference = total_business_price - total_actual_cost
-
     # Group by tool name
     tools_summary = {}
     for r in research_results:
@@ -306,7 +300,7 @@ def get_research_costs(
             }
 
         tools_summary[r.tool_name]["execution_count"] += 1
-        tools_summary[r.tool_name]["total_business_price"] += r.tool_price or 0
+        # tools_summary[r.tool_name]["total_business_price"] removed (Bug #51)
         tools_summary[r.tool_name]["total_actual_cost"] += r.actual_cost_usd or 0
         tools_summary[r.tool_name]["total_tokens"] += (r.input_tokens or 0) + (r.output_tokens or 0)
 
@@ -314,8 +308,5 @@ def get_research_costs(
         client_id=client_id,
         client_name=client.name,
         total_research_tools=len(research_results),
-        total_business_price_usd=total_business_price,
-        total_actual_cost_usd=total_actual_cost,
-        price_difference_usd=price_difference,
         tools_breakdown=list(tools_summary.values()),
     )

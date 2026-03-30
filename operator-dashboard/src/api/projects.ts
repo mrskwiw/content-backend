@@ -14,8 +14,8 @@ export interface CreateProjectInput {
   templates: string[]; // Legacy field for backward compatibility
   templateQuantities?: Record<number, number>; // New field: template_id -> quantity
   numPosts?: number; // Total post count
-  pricePerPost?: number; // Price per post ($40 base, $55 with research)
-  researchPricePerPost?: number; // Research add-on price per post ($15)
+  // pricePerPost removed - credits only
+  // researchPricePerPost removed: Tools use credits (Bug #51)
   totalPrice?: number; // Total project price
   postsCost?: number; // Post generation cost (num_posts * price_per_post)
   researchAddonCost?: number; // Per-post topic research cost
@@ -31,8 +31,8 @@ export interface UpdateProjectInput {
   status?: ProjectStatus;
   templates?: string[]; // Legacy field
   templateQuantities?: Record<number, number>; // New field: template_id -> quantity
-  pricePerPost?: number;
-  researchPricePerPost?: number;
+  // pricePerPost removed - credits only
+  // researchPricePerPost removed: Tools use credits (Bug #51)
   totalPrice?: number;
   postsCost?: number;
   researchAddonCost?: number;
@@ -87,8 +87,8 @@ export const projectsApi = {
           Object.entries(input.templateQuantities).map(([id, qty]) => [id.toString(), qty])
         ) : undefined,  // Convert to string keys for JSON
       num_posts: input.numPosts,
-      price_per_post: input.pricePerPost,
-      research_price_per_post: input.researchPricePerPost,
+      // price_per_post removed
+      // research_price_per_post removed (Bug #51)
       total_price: input.totalPrice,
       posts_cost: input.postsCost,
       research_addon_cost: input.researchAddonCost,

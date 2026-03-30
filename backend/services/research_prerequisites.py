@@ -98,8 +98,8 @@ TOOL_DEPENDENCIES: Dict[str, ToolDependencies] = {
         prerequisites=[
             ToolPrerequisite(
                 tool_id="competitive_analysis",
-                type=PrerequisiteType.RECOMMENDED,
-                reason="Identifies competitor content gaps",
+                type=PrerequisiteType.REQUIRED,
+                reason="Required for accurate content gap identification",
             ),
             ToolPrerequisite(
                 tool_id="seo_keyword_research",

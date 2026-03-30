@@ -295,8 +295,8 @@ export default function Wizard() {
         platforms: brief.platforms ?? [],
         templates: selectedTemplates.map(String), // Legacy field for backward compatibility
         templateQuantities: templateQuantities, // New field for per-template quantities
-        pricePerPost: includeResearch ? 55.0 : 40.0, // $40 base + $15 research
-        researchPricePerPost: includeResearch ? 15.0 : 0.0,
+        // pricePerPost removed - credits only, // $40 base + $15 research
+        // researchPricePerPost removed (Bug #51),  // DEPRECATED: Per-post research replaced by research tools
         totalPrice: totalPrice,
         tone: brief.tonePreference ?? undefined,
       };
@@ -421,8 +421,8 @@ export default function Wizard() {
                         platforms: [] as Platform[],
                         templates: [], // Legacy field
                         templateQuantities: {}, // Will be set in template selection step
-                        pricePerPost: 40.0,
-                        researchPricePerPost: 0.0,
+                        // pricePerPost removed - credits only,
+                        // researchPricePerPost removed (Bug #51),
                         totalPrice: 0.0,
                         tone: 'professional',
                       };

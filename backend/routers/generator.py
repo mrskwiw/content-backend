@@ -167,8 +167,17 @@ async def run_generation_background(
                 total_cost_usd=project_cost.total_cost,
             )
         except Exception as cost_err:
-            # If cost tracking fails, still update run status
-            logger.warning(f"Failed to track costs for run {run_id}: {cost_err}")
+            # If cost tracking fails, still update run status (Bug #59 diagnostic)
+            logger.error(
+                f"Failed to track costs for run {run_id}: {cost_err.__class__.__name__}: {cost_err}",
+                exc_info=True,
+            )
+            logs.append(
+                LogEntry(
+                    timestamp=timestamp,
+                    message=f"WARNING: Cost tracking failed - {str(cost_err)[:100]}",
+                )
+            )
             crud.update_run(db, run_id, status="succeeded", logs=[log.model_dump() for log in logs])
 
         logger.info(f"Background generation completed successfully for run {run_id}")

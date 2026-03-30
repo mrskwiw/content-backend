@@ -23,6 +23,7 @@ from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
 from ..utils.anthropic_client import get_default_client
+from ..utils.web_search import WebSearchClient
 
 
 class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
@@ -314,6 +315,28 @@ Return as JSON with these exact keys: coverage_areas, depth_assessment, formats,
                 "audience_segments": ["General"],
             }
 
+    def _search_competitor_content(
+        self, competitor: str, industry: str, max_results: int = 5
+    ) -> List[Dict[str, str]]:
+        """Search for competitor content using web search."""
+        try:
+            web_client = WebSearchClient()
+            query = f"{competitor} {industry} content marketing strategy blog"
+            search_response = web_client.search(query, max_results=max_results, search_type="web")
+
+            results = []
+            for result in search_response.results:
+                results.append(
+                    {"title": result.title, "url": result.url, "snippet": result.snippet}
+                )
+
+            logger.info(f"Found {len(results)} web results for {competitor}")
+            return results
+
+        except Exception as e:
+            logger.warning(f"Web search failed for {competitor}: {e}. Using AI inference instead.")
+            return []
+
     def _analyze_competitor_content(
         self, business_description: str, target_audience: str, competitors: List[str]
     ) -> List[CompetitorContentAnalysis]:
@@ -324,15 +347,29 @@ Return as JSON with these exact keys: coverage_areas, depth_assessment, formats,
         client = get_default_client()
         analyses = []
 
+        # Extract industry for better web search
+        industry = self.config.get("industry", "business") if self.config else "business"
+
         for competitor in competitors[:5]:  # Max 5 competitors
+            # Try web search for real data
+            web_results = self._search_competitor_content(competitor, industry)
+
+            # Build web context
+            web_context = ""
+            if web_results:
+                web_context = "\n\nWeb Search Results:\n"
+                for i, result in enumerate(web_results[:3], 1):
+                    web_context += f"{i}. {result['title']}\n   {result['snippet']}\n"
+
             prompt = f"""Analyze the content strategy for this competitor:
 
 Competitor: {competitor}
 
 Our Business: {business_description}
 Our Audience: {target_audience}
+{web_context}
 
-Based on typical content strategies in this space, infer:
+Based on web search results and typical content strategies, analyze:
 1. Their content strengths (3-5 items)
 2. Their popular topics (5-7 topics)
 3. Formats they likely use (blog, video, webinar, etc.)

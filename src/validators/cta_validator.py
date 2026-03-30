@@ -24,9 +24,9 @@ class CTAValidator:
         Platform.EMAIL: 0.70,  # 70% max - campaign-focused, single CTA type
     }
 
-    # Common CTA patterns to detect
+    # Common CTA patterns to detect (IMPERATIVES ONLY - Bug #58 fix)
+    # Questions ending with '?' are NOT CTAs and should be filtered out
     CTA_PATTERNS = [
-        (r"what(?:'s| is) your (?:take|thoughts?|experience)", "question_take"),
         (r"(?:drop|share|leave) (?:your|a) comment", "comment_request"),
         (r"(?:dm|message|reach out|contact) me", "direct_contact"),
         (r"reply (?:with|below)", "reply_request"),
@@ -35,10 +35,10 @@ class CTAValidator:
         (r"sign up|subscribe|join", "signup"),
         (r"download|get (?:the |your )", "download"),
         (r"learn more|find out", "learn_more"),
-        (r"what(?:'s| is) (?:your|the) biggest", "question_biggest"),
         (r"(?:tell|share) me (?:in|about)", "share_request"),
-        (r"curious (?:what|if|how)", "curious_question"),
-        (r"does this (?:ring true|resonate|sound familiar)", "resonance_check"),
+        # Action verbs that indicate clear imperatives
+        (r"(?:read|watch|listen to|try|start|begin|explore)", "action_verb"),
+        (r"(?:visit|follow|connect|register|apply)", "engagement"),
     ]
 
     def __init__(self, variety_threshold: Optional[float] = None):

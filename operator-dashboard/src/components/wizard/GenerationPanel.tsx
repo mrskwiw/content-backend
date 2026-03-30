@@ -42,7 +42,7 @@ export function GenerationPanel({ projectId, clientId, templateQuantities, custo
 
   // Calculate total posts and credit cost
   const totalPosts = templateQuantities ? Object.values(templateQuantities).reduce((sum, qty) => sum + qty, 0) : 0;
-  const creditCost = totalPosts * 40; // 40 credits per post
+  const creditCost = totalPosts * 20; // 20 credits per post ($40 ÷ $2/credit)
   const hasInsufficientCredits = creditBalance ? creditBalance.balance < creditCost : false;
 
   const generate = useMutation({
