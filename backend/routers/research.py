@@ -381,7 +381,9 @@ async def list_research_tools(
 
 
 @router.post("/run", response_model=ResearchRunResult)
-@strict_limiter.limit("50/hour")  # TR-004: Credit-limited operations (Bug #56 fix)
+@strict_limiter.limit(
+    "2/minute"
+)  # TR-004: DoS protection (2/min = 120/hr) - per-user limits still apply
 async def run_research(
     request: Request,
     input: RunResearchInput,
@@ -1195,7 +1197,7 @@ class BatchResearchResponse(BaseModel):
 
 
 @router.post("/batch", response_model=BatchResearchResponse)
-@strict_limiter.limit("30/hour")  # Batch operations (Bug #56 fix)
+@strict_limiter.limit("2/minute")  # DoS protection - per-user limits still apply
 async def execute_research_batch(
     request: Request,
     batch_request: BatchResearchRequest,
