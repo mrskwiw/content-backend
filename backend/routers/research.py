@@ -143,6 +143,7 @@ RESEARCH_TOOLS = [
         status="available",
         description="Identify content opportunities competitors are missing",
         category="seo",
+        required_integrations=["web_search"],
     ),
     # Market Intelligence Tools
     ResearchTool(
@@ -152,6 +153,7 @@ RESEARCH_TOOLS = [
         status="available",
         description="Discover trending topics and emerging opportunities",
         category="market",
+        required_integrations=["web_search"],
     ),
     ResearchTool(
         name="business_report",
