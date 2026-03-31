@@ -51,6 +51,9 @@ class Client(Base, SoftDeleteMixin):
         "backend.models.project.Project", back_populates="client", cascade="all, delete-orphan"
     )
     deliverables = relationship("backend.models.deliverable.Deliverable", back_populates="client")
+    communications = relationship(
+        "Communication", back_populates="client", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Client {self.name}>"

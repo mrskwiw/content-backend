@@ -34,6 +34,7 @@ from backend.routers import (
     auth,
     briefs,
     clients,
+    communications,
     costs,
     credits,
     database,
@@ -626,6 +627,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(admin_users.router, prefix="/api/admin", tags=["Admin - User Management"])
 app.include_router(health.router, prefix="/api", tags=["Health & Monitoring"])
 app.include_router(clients.router, prefix="/api/clients", tags=["Clients"])
+app.include_router(communications.router, prefix="/api", tags=["Communications"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(briefs.router, prefix="/api/briefs", tags=["Briefs"])
 app.include_router(runs.router, prefix="/api/runs", tags=["Runs"])

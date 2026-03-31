@@ -34,11 +34,13 @@ import { postsApi } from '@/api/posts';
 import { deliverablesApi } from '@/api/deliverables';
 import { researchApi } from '@/api/research';
 import { storiesApi, type Story } from '@/api/stories';
+import { communicationsApi, type Communication, type CreateCommunicationInput } from '@/api/communications';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ResearchResultsDrawer } from '@/components/research/ResearchResultsDrawer';
 import { StoryDetailsDrawer } from '@/components/stories/StoryDetailsDrawer';
 import { AddStoryDialog } from '@/components/stories/AddStoryDialog';
 import { EditClientDialog } from '@/components/clients/EditClientDialog';
+import { NewCommunicationDialog } from '@/components/clients/NewCommunicationDialog';
 import type { Project, PostDraft, Deliverable, ResearchResult } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -70,6 +72,8 @@ export default function ClientDetail() {
   const [addStoryDialogOpen, setAddStoryDialogOpen] = useState(false);
   // Edit client dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // New communication dialog state
+  const [newCommDialogOpen, setNewCommDialogOpen] = useState(false);
 
   // Data collection dialog state
   const [dialogInputValue, setDialogInputValue] = useState('');
@@ -91,7 +95,7 @@ export default function ClientDetail() {
   };
 
   // Fetch client data
-  const { data: client, isLoading: clientLoading, isError: clientError } = useQuery({
+  const { data: client, isLoading: clientLoading, isError: clientError, refetch: refetchClient } = useQuery({
     queryKey: ['client', clientId],
     queryFn: () => clientsApi.get(clientId!),
     enabled: !!clientId,
@@ -191,6 +195,40 @@ export default function ClientDetail() {
     },
     onError: (error) => {
       alert(`Failed to archive client: ${getApiErrorMessage(error)}`);
+    },
+  });
+
+  // Fetch client communications
+  const {
+    data: communicationsData,
+    isLoading: isLoadingCommunications,
+    refetch: refetchCommunications,
+  } = useQuery<Communication[]>({
+    queryKey: ['client-communications', clientId],
+    queryFn: () => communicationsApi.listClientCommunications(clientId!),
+    enabled: !!clientId,
+  });
+
+  // Create communication mutation
+  const createCommunicationMutation = useMutation({
+    mutationFn: (input: CreateCommunicationInput) => communicationsApi.create(input),
+    onSuccess: () => {
+      refetchCommunications();
+      setNewCommDialogOpen(false);
+    },
+    onError: (error) => {
+      alert(`Failed to log communication: ${getApiErrorMessage(error)}`);
+    },
+  });
+
+  // Delete communication mutation
+  const deleteCommunicationMutation = useMutation({
+    mutationFn: (commId: number) => communicationsApi.delete(commId),
+    onSuccess: () => {
+      refetchCommunications();
+    },
+    onError: (error) => {
+      alert(`Failed to delete communication: ${getApiErrorMessage(error)}`);
     },
   });
 
@@ -337,8 +375,7 @@ export default function ClientDetail() {
     { id: '2', date: '2024-02-01', amount: 1800, status: 'pending', project: clientProjects[1]?.name || 'Project 2' },
   ];
 
-  // TODO: Replace with actual communications from backend
-  const mockCommunications: any[] = [];
+  const communications: Communication[] = communicationsData ?? [];
 
   const tabs: {
     id: TabType;
@@ -1402,57 +1439,99 @@ export default function ClientDetail() {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Communication Log</h3>
               <button
-                onClick={() => alert('Communication logging feature coming soon. For now, use the Send Email button to contact the client.')}
+                onClick={() => setNewCommDialogOpen(true)}
                 className="rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600"
               >
                 New Communication
               </button>
             </div>
 
-            {/* Communication Timeline */}
-            <div className="space-y-4">
-              {mockCommunications.map((comm, index) => (
-                <div key={comm.id} className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                        comm.type === 'email' ? 'bg-primary-100 dark:bg-primary-900/20' : 'bg-emerald-100 dark:bg-emerald-900/20'
-                      }`}
-                    >
-                      {comm.type === 'email' ? (
-                        <Mail className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                      ) : (
-                        <Phone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-medium text-neutral-900 dark:text-neutral-100">{comm.subject}</p>
-                          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                            {comm.type === 'email' ? `From: ${comm.from}` : `Duration: ${comm.duration}`}
-                          </p>
+            {isLoadingCommunications ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {communications.map((comm) => {
+                  const bgColors: Record<string, string> = {
+                    email: 'bg-primary-100 dark:bg-primary-900/20',
+                    call: 'bg-emerald-100 dark:bg-emerald-900/20',
+                    meeting: 'bg-violet-100 dark:bg-violet-900/20',
+                    note: 'bg-amber-100 dark:bg-amber-900/20',
+                  };
+                  const iconColors: Record<string, string> = {
+                    email: 'text-primary-600 dark:text-primary-400',
+                    call: 'text-emerald-600 dark:text-emerald-400',
+                    meeting: 'text-violet-600 dark:text-violet-400',
+                    note: 'text-amber-600 dark:text-amber-400',
+                  };
+                  const TypeIcon =
+                    comm.type === 'email' ? Mail
+                    : comm.type === 'call' ? Phone
+                    : comm.type === 'meeting' ? Calendar
+                    : MessageSquare;
+
+                  return (
+                    <div key={comm.id} className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-5">
+                      <div className="flex items-start gap-4">
+                        <div className={}>
+                          <TypeIcon className={} />
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                          <Calendar className="h-4 w-4" />
-                          {format(new Date(comm.date), 'MMM d, yyyy')}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-medium text-neutral-900 dark:text-neutral-100">{comm.subject}</p>
+                              <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                <span className="capitalize">{comm.type}</span>
+                                <span>&middot;</span>
+                                <span className="capitalize">{comm.direction}</span>
+                                {comm.duration && (
+                                  <>
+                                    <span>&middot;</span>
+                                    <span>{comm.duration}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                                {formatDistanceToNow(new Date(comm.created_at), { addSuffix: true })}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  if (confirm('Delete this communication record?')) {
+                                    deleteCommunicationMutation.mutate(comm.id);
+                                  }
+                                }}
+                                className="text-neutral-400 hover:text-red-500 dark:hover:text-red-400"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          {comm.content && (
+                            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap">{comm.content}</p>
+                          )}
                         </div>
                       </div>
-                      {comm.type === 'email' && (
-                        <button className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
-                          View Email Thread →
-                        </button>
-                      )}
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
-            {mockCommunications.length === 0 && (
+            {!isLoadingCommunications && communications.length === 0 && (
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-12 text-center">
                 <MessageSquare className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
-                <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">No communication history</p>
+                <p className="mt-4 font-medium text-neutral-700 dark:text-neutral-300">No communication history</p>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Log calls, emails, and meetings to track your client interactions.</p>
+                <button
+                  onClick={() => setNewCommDialogOpen(true)}
+                  className="mt-4 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600"
+                >
+                  Log First Communication
+                </button>
               </div>
             )}
           </div>
@@ -1555,6 +1634,15 @@ export default function ClientDetail() {
           onClose={() => setEditDialogOpen(false)}
           onSubmit={(updates) => updateClientMutation.mutate(updates)}
           isSubmitting={updateClientMutation.isPending}
+        />
+      )}
+
+      {newCommDialogOpen && clientId && (
+        <NewCommunicationDialog
+          clientId={clientId}
+          onClose={() => setNewCommDialogOpen(false)}
+          onSubmit={(input) => createCommunicationMutation.mutate(input)}
+          isSubmitting={createCommunicationMutation.isPending}
         />
       )}
     </div>
