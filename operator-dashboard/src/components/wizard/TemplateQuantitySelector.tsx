@@ -244,7 +244,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
     }
 
     const validateTemplates = async () => {
-      try:
+      try {
         const templateQuantities: Record<string, number> = {};
         templatesWithQuantity.forEach((id) => {
           templateQuantities[id.toString()] = quantities[id];
@@ -768,7 +768,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
           </div>
         )}
 
-        <button        <button
+        <button
           onClick={() => onContinue?.(quantities, includeResearch, totalCredits, customTopics, targetPlatform)}
           disabled={totalPosts === 0 || hasBlockedTemplates}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"

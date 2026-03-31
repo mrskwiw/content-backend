@@ -76,3 +76,50 @@ export const generatorApi = {
       custom_topics: input.customTopics,  // NEW: topic override for content generation
       target_platform: input.targetPlatform,  // NEW: target platform for platform-specific generation
     };
+
+    const { data } = await apiClient.post('/api/generator/generate-all', backendInput);
+    return RunSchema.parse(data);
+  },
+
+  async regenerate(input: RegenerateInput): Promise<Run> {
+    // Convert camelCase to snake_case for backend compatibility
+    const backendInput = {
+      project_id: input.projectId,
+      post_ids: input.postIds,
+      reason: input.reason,
+    };
+    const { data } = await apiClient.post('/api/generator/regenerate', backendInput);
+    return RunSchema.parse(data);
+  },
+
+  async exportPackage(input: ExportInput): Promise<Deliverable> {
+    // Convert camelCase to snake_case for backend compatibility
+    const backendInput = {
+      project_id: input.projectId,
+      client_id: input.clientId,
+      format: input.format,
+      include_audit_log: input.includeAuditLog,
+      include_research: input.includeResearch,
+    };
+    const { data } = await apiClient.post('/api/generator/export', backendInput);
+    return DeliverableSchema.parse(data);
+  },
+
+  async getTemplateDependencies(templateNumber: number): Promise<TemplateDependenciesResponse> {
+    const { data } = await apiClient.get(
+      `/api/generator/template-dependencies/${templateNumber}`
+    );
+    return TemplateDependenciesResponseSchema.parse(data);
+  },
+
+  async validateTemplates(
+    clientId: string,
+    templateQuantities: Record<string, number>
+  ): Promise<TemplateValidationResponse> {
+    const { data } = await apiClient.post('/api/generator/validate-templates', {
+      client_id: clientId,
+      template_quantities: templateQuantities,
+    });
+    return TemplateValidationResponseSchema.parse(data);
+  },
+};
