@@ -92,6 +92,18 @@ export const clientsApi = {
     return ClientSchema.parse(data);
   },
 
+
+  async delete(clientId: string): Promise<void> {
+    await apiClient.delete(`/api/clients/${clientId}`);
+  },
+
+  async archive(clientId: string): Promise<void> {
+    await apiClient.patch(`/api/clients/${clientId}`, { is_deleted: true });
+  },
+
+  async unarchive(clientId: string): Promise<void> {
+    await apiClient.patch(`/api/clients/${clientId}`, { is_deleted: false });
+  },
   async exportProfile(clientId: string): Promise<{ blob: Blob; filename: string }> {
     const response = await apiClient.get(`/api/clients/${clientId}/export-profile`, {
       responseType: 'blob',

@@ -173,6 +173,12 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   const [dependencies, setDependencies] = useState<Map<number, TemplateDependencies>>(new Map());
   const [completedTools, setCompletedTools] = useState<Set<string>>(new Set());
   const [loadingDeps, setLoadingDeps] = useState(false);
+  const [validationResults, setValidationResults] = useState<Map<number, {
+    blocked: boolean;
+    warning: string | null;
+    error: string | null;
+    missingFields: string[];
+  }>>(new Map());
 
   // Fetch completed research tools
   useEffect(() => {
@@ -226,6 +232,64 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
 
     fetchDependencies();
   }, [quantities]);
+  // Validate templates when quantities change
+  useEffect(() => {
+    const templatesWithQuantity = Object.keys(quantities)
+      .map(Number)
+      .filter((id) => quantities[id] > 0);
+
+    if (templatesWithQuantity.length === 0 || !clientId) {
+      setValidationResults(new Map());
+      return;
+    }
+
+    const validateTemplates = async () => {
+      try:
+        const templateQuantities: Record<string, number> = {};
+        templatesWithQuantity.forEach((id) => {
+          templateQuantities[id.toString()] = quantities[id];
+        });
+
+        const validation = await generatorApi.validateTemplates(
+          clientId,
+          templateQuantities
+        );
+
+        const results = new Map();
+
+        // Mark blocked templates
+        validation.blocked_templates.forEach((blocked) => {
+          const templateId = parseInt(blocked.template_id);
+          results.set(templateId, {
+            blocked: true,
+            warning: null,
+            error: blocked.error_message,
+            missingFields: blocked.missing_fields,
+          });
+        });
+
+        // Mark warnings
+        validation.warnings.forEach((warning) => {
+          const templateId = parseInt(warning.template_id);
+          if (!results.has(templateId)) {
+            results.set(templateId, {
+              blocked: false,
+              warning: warning.warning_message,
+              error: null,
+              missingFields: warning.missing_recommended_fields,
+            });
+          }
+        });
+
+        setValidationResults(results);
+      } catch (error) {
+        console.error('Failed to validate templates:', error);
+      }
+    };
+
+    validateTemplates();
+  }, [quantities, clientId]);
+
 
   // Calculate totals
   const { totalPosts, totalCredits, creditsPerPost } = useMemo(() => {
@@ -309,6 +373,12 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   const missingRecommended = Array.from(allRecommended).filter(
     (tool) => !completedTools.has(tool) && !allRequired.has(tool)
   );
+
+
+  // Check if any templates are blocked
+  const hasBlockedTemplates = useMemo(() => {
+    return Array.from(validationResults.values()).some((v) => v.blocked);
+  }, [validationResults]);
 
   return (
     <div className="space-y-8">
@@ -506,6 +576,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
           const quantity = quantities[template.id] || 0;
           const hasQuantity = quantity > 0;
           const templateDeps = dependencies.get(template.id);
+          const validation = validationResults.get(template.id);
           const hasRequiredDeps = templateDeps?.required && templateDeps.required.length > 0;
           const hasRecommendedDeps = templateDeps?.recommended && templateDeps.recommended.length > 0;
 
@@ -532,6 +603,37 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                 </div>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400">{template.description}</p>
               </div>
+
+              {/* Validation Badges */}
+              {validation?.blocked && (
+                <div className="mb-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-red-800 dark:text-red-200">
+                      Cannot Generate: Required Data Missing
+                    </p>
+                    <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                      {validation.error}
+                    </p>
+                    {validation.missingFields.length > 0 && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                        Missing: {validation.missingFields.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {validation?.warning && !validation.blocked && (
+                <div className="mb-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded flex items-start gap-2">
+                  <HelpCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                      {validation.warning}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Template Details */}
               <div className="mb-3 space-y-1">
@@ -636,9 +738,39 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
           {totalPosts >= 10 && totalPosts <= 50 && '✓ Good quantity selection'}
           {totalPosts > 50 && 'Large order - generation may take longer'}
         </div>
-        <button
+        {/* Blocked Templates Summary */}
+        {hasBlockedTemplates && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">
+                  Cannot Start Generation
+                </h4>
+                <p className="text-sm text-red-800 dark:text-red-200 mb-3">
+                  Some selected templates require additional client data before generation can proceed.
+                  Please update the client profile or remove these templates:
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  {Array.from(validationResults.entries())
+                    .filter(([_, v]) => v.blocked)
+                    .map(([templateId, validation]) => {
+                      const template = TEMPLATES.find((t) => t.id === templateId);
+                      return (
+                        <li key={templateId} className="text-sm text-red-700 dark:text-red-300">
+                          <strong>{template?.name}:</strong> {validation.error}
+                        </li>
+                      );
+                    })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button        <button
           onClick={() => onContinue?.(quantities, includeResearch, totalCredits, customTopics, targetPlatform)}
-          disabled={totalPosts === 0}
+          disabled={totalPosts === 0 || hasBlockedTemplates}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue to Generation

@@ -203,11 +203,27 @@ class ContentCalendarStrategist(ResearchTool, CommonValidationMixin):
         self, client: Any, business_description: str, target_audience: str, content_goals: str
     ) -> List[Dict[str, Any]]:
         """Determine 4-6 content pillars"""
-        prompt = f"""Based on this business and audience, determine 4-6 core content pillars.
+        prompt = f"""CRITICAL: Extract 4-6 content pillars. Fill ALL fields for EVERY pillar.
 
 Business: {business_description}
 Target Audience: {target_audience}
 Content Goals: {content_goals}
+
+EXAMPLE OUTPUT:
+[
+  {{
+    "pillar": "education",
+    "description": "Educational content teaching best practices for workflow automation",
+    "topics": ["Getting started with automation", "Common automation mistakes", "Advanced workflow tips"],
+    "percentage": 35
+  }},
+  {{
+    "pillar": "thought_leadership",
+    "description": "Industry insights and future trends in enterprise automation",
+    "topics": ["Future of work automation", "AI impact on workflows", "Industry benchmarks"],
+    "percentage": 25
+  }}
+]
 
 Content pillars are the main themes that content will focus on. They should:
 1. Align with business value and audience needs
@@ -215,20 +231,13 @@ Content pillars are the main themes that content will focus on. They should:
 3. Provide variety and cover different aspects
 4. Be specific enough to guide content creation
 
-Available pillar types: education, thought_leadership, case_studies, product, community, industry_news, entertainment
+FIELD-BY-FIELD REQUIREMENTS:
+- "pillar": MUST be one of: education, thought_leadership, case_studies, product, community, industry_news, entertainment
+- "description": Specific explanation (not generic) of how this pillar supports the business goals
+- "topics": 3-5 concrete topic ideas that fit this pillar
+- "percentage": Number representing content mix (all percentages must add to 100)
 
-Return JSON array with 4-6 pillars:
-[
-  {{
-    "pillar": "education",
-    "description": "How the pillar supports goals",
-    "topics": ["topic 1", "topic 2", "topic 3"],
-    "percentage": 30
-  }},
-  ...
-]
-
-Percentages should add up to 100."""
+Return JSON array with 4-6 pillars. Percentages should add up to 100."""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
         data = self._call_claude_api(

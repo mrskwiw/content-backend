@@ -223,18 +223,48 @@ class PlatformStrategist(ResearchTool, CommonValidationMixin):
         self, client: Any, business_description: str, target_audience: str
     ) -> List[AudienceBehavior]:
         """Analyze where target audience is active"""
-        prompt = f"""Analyze where this target audience is most active and how they engage with content.
+        prompt = f"""CRITICAL: Analyze ALL major platforms. Fill EVERY field for EACH platform.
 
 Business: {business_description}
-
 Target Audience: {target_audience}
+
+EXAMPLE OUTPUT:
+[
+  {{
+    "platform": "LinkedIn",
+    "activity_level": "high",
+    "audience_present": true,
+    "consumption_patterns": "Professional content, industry news, thought leadership during business hours",
+    "engagement_style": "Comments on posts, shares within network, values expertise",
+    "decision_makers_present": true,
+    "fit_score": 95
+  }},
+  {{
+    "platform": "Twitter",
+    "activity_level": "medium",
+    "audience_present": true,
+    "consumption_patterns": "Real-time updates, quick tips, industry conversations",
+    "engagement_style": "Retweets, quick replies, follows thought leaders",
+    "decision_makers_present": false,
+    "fit_score": 60
+  }}
+]
 
 For each major platform (LinkedIn, Twitter, Facebook, Instagram, YouTube, Blog, Email, Podcast), analyze:
 1. Is the target audience present and active?
 2. Activity level (High/Medium/Low)
-3. Content consumption patterns
-4. Engagement style
+3. Content consumption patterns (be specific)
+4. Engagement style (how they interact)
 5. Are decision-makers present?
+
+FIELD-BY-FIELD REQUIREMENTS:
+- "platform": Platform name (LinkedIn, Twitter, Facebook, Instagram, YouTube, Blog, Email, Podcast)
+- "activity_level": "high", "medium", or "low"
+- "audience_present": true/false
+- "consumption_patterns": Specific description of what content they consume and when
+- "engagement_style": How this audience engages (comments, shares, likes, etc.)
+- "decision_makers_present": true/false - Are C-level/decision makers active here?
+- "fit_score": 0-100 score for platform fit
 
 Return a JSON array with objects containing:
 - platform: platform name (lowercase)

@@ -38,6 +38,7 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { ResearchResultsDrawer } from '@/components/research/ResearchResultsDrawer';
 import { StoryDetailsDrawer } from '@/components/stories/StoryDetailsDrawer';
 import { AddStoryDialog } from '@/components/stories/AddStoryDialog';
+import { EditClientDialog } from '@/components/clients/EditClientDialog';
 import type { Project, PostDraft, Deliverable, ResearchResult } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -67,6 +68,8 @@ export default function ClientDetail() {
 
   // Add story dialog state
   const [addStoryDialogOpen, setAddStoryDialogOpen] = useState(false);
+  // Edit client dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Data collection dialog state
   const [dialogInputValue, setDialogInputValue] = useState('');
@@ -154,6 +157,40 @@ export default function ClientDetail() {
     },
     onError: (error) => {
       alert(`Failed to create story: ${getApiErrorMessage(error)}`);
+    },
+  });
+
+  // Update client mutation
+  const updateClientMutation = useMutation({
+    mutationFn: (updates) => clientsApi.update(clientId!, updates),
+    onSuccess: () => {
+      refetchClient();
+      setEditDialogOpen(false);
+    },
+    onError: (error) => {
+      alert(`Failed to update client: ${getApiErrorMessage(error)}`);
+    },
+  });
+
+  // Delete client mutation
+  const deleteClientMutation = useMutation({
+    mutationFn: () => clientsApi.delete(clientId!),
+    onSuccess: () => {
+      navigate('/clients');
+    },
+    onError: (error) => {
+      alert(`Failed to delete client: ${getApiErrorMessage(error)}`);
+    },
+  });
+
+  // Archive client mutation
+  const archiveClientMutation = useMutation({
+    mutationFn: () => clientsApi.archive(clientId!),
+    onSuccess: () => {
+      navigate('/clients');
+    },
+    onError: (error) => {
+      alert(`Failed to archive client: ${getApiErrorMessage(error)}`);
     },
   });
 
@@ -300,11 +337,8 @@ export default function ClientDetail() {
     { id: '2', date: '2024-02-01', amount: 1800, status: 'pending', project: clientProjects[1]?.name || 'Project 2' },
   ];
 
-  const mockCommunications = [
-    { id: '1', type: 'email', subject: 'Project kickoff meeting', date: '2024-01-10', from: 'operator@company.com' },
-    { id: '2', type: 'call', subject: 'Revision discussion', date: '2024-01-20', duration: '15 min' },
-    { id: '3', type: 'email', subject: 'Deliverable sent', date: '2024-02-05', from: 'operator@company.com' },
-  ];
+  // TODO: Replace with actual communications from backend
+  const mockCommunications: any[] = [];
 
   const tabs: {
     id: TabType;
@@ -359,11 +393,23 @@ export default function ClientDetail() {
 
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+            <button
+              onClick={() => setEditDialogOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+            >
               <Edit className="h-4 w-4" />
               Edit
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+            <button
+              onClick={() => {
+                if (client?.email) {
+                  window.location.href = `mailto:${client.email}`;
+                } else {
+                  alert('No email address on file for this client.');
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+            >
               <Mail className="h-4 w-4" />
               Send Email
             </button>
@@ -392,9 +438,29 @@ export default function ClientDetail() {
               <Plus className="h-4 w-4" />
               New Project
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+            <button
+              onClick={() => {
+                if (client && confirm(`Are you sure you want to archive ${client.name}? You can restore it later.`)) {
+                  archiveClientMutation.mutate();
+                }
+              }}
+              disabled={archiveClientMutation.isPending}
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Archive className="h-4 w-4" />
-              Archive
+              {archiveClientMutation.isPending ? 'Archiving...' : 'Archive'}
+            </button>
+            <button
+              onClick={() => {
+                if (client && confirm(`Are you sure you want to delete ${client.name}? This action cannot be undone.`)) {
+                  deleteClientMutation.mutate();
+                }
+              }}
+              disabled={deleteClientMutation.isPending}
+              className="inline-flex items-center gap-2 rounded-lg border border-red-300 dark:border-red-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteClientMutation.isPending ? 'Deleting...' : 'Delete'}
             </button>
           </div>
         </div>
@@ -1335,7 +1401,10 @@ export default function ClientDetail() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Communication Log</h3>
-              <button className="rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600">
+              <button
+                onClick={() => alert('Communication logging feature coming soon. For now, use the Send Email button to contact the client.')}
+                className="rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 dark:hover:bg-primary-600"
+              >
                 New Communication
               </button>
             </div>
@@ -1477,6 +1546,17 @@ export default function ClientDetail() {
         onSubmit={(story) => createStoryMutation.mutate(story)}
         isSubmitting={createStoryMutation.isPending}
       />
+
+      {/* Edit Client Dialog */}
+      {client && (
+        <EditClientDialog
+          client={client}
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSubmit={(updates) => updateClientMutation.mutate(updates)}
+          isSubmitting={updateClientMutation.isPending}
+        />
+      )}
     </div>
   );
 }

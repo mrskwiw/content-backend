@@ -151,13 +151,19 @@ def get_web_search_config(db: Session, user_id: int) -> dict:
     """
     Get web search configuration for a user.
 
+    Checks user settings first, then falls back to environment variables.
+    This allows system-wide API keys to be configured via .env file.
+
     Returns:
         dict with keys: provider, brave_api_key, tavily_api_key, serpapi_api_key
     """
+    # Get provider (user setting or default to stub)
     provider = get_setting(db, user_id, "web_search_provider", decrypt=False) or "stub"
-    brave_key = get_setting(db, user_id, "brave_api_key") or ""
-    tavily_key = get_setting(db, user_id, "tavily_api_key") or ""
-    serpapi_key = get_setting(db, user_id, "serpapi_api_key") or ""
+
+    # Get API keys: check user settings first, then environment variables
+    brave_key = get_setting(db, user_id, "brave_api_key") or os.getenv("BRAVE_API_KEY") or ""
+    tavily_key = get_setting(db, user_id, "tavily_api_key") or os.getenv("TAVILY_API_KEY") or ""
+    serpapi_key = get_setting(db, user_id, "serpapi_api_key") or os.getenv("SERPAPI_API_KEY") or ""
 
     return {
         "provider": provider,

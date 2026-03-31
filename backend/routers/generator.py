@@ -25,6 +25,10 @@ from src.utils.template_parser import template_parser
 from backend.services import credit_service
 from backend.services.credit_service import InsufficientCreditsError
 from backend.pricing.credit_pricing import get_content_cost
+from backend.services.template_prerequisites import (
+    check_template_prerequisites,
+    TEMPLATE_IDS,
+)
 
 router = APIRouter()
 
@@ -51,6 +55,13 @@ class GenerateAllInput(BaseModel):
         if v is not None and v <= 0:
             raise ValueError("num_posts must be greater than 0")
         return v
+
+
+class ValidateTemplatesInput(BaseModel):
+    """Input for template validation endpoint"""
+
+    client_id: str
+    template_quantities: dict[str, int]  # Template ID -> quantity mapping
 
 
 class RegenerateInput(BaseModel):
@@ -366,6 +377,142 @@ def _infer_difficulty(template_data: dict) -> str:
     return "medium"
 
 
+def validate_template_prerequisites(template_quantities: dict[str, int], client_data: dict) -> dict:
+    """
+    Validate that all templates have required data.
+
+    Args:
+        template_quantities: Dict of {template_id: quantity}
+        client_data: Client data dict
+
+    Returns:
+        dict with:
+        - can_generate (bool): Whether generation should proceed
+        - blocked_templates (list): Templates that are blocked
+        - warnings (list): Warning messages for HIGH risk templates
+        - errors (list): Error messages for CRITICAL templates
+    """
+    blocked_templates = []
+    warnings = []
+    errors = []
+
+    if not template_quantities:
+        return {
+            "can_generate": True,
+            "blocked_templates": [],
+            "warnings": [],
+            "errors": [],
+        }
+
+    for template_id_str, quantity in template_quantities.items():
+        if quantity <= 0:
+            continue
+
+        # Convert template ID to template name
+        template_id_num = int(template_id_str)
+        template_name = TEMPLATE_IDS.get(template_id_num)
+
+        if not template_name:
+            logger.warning(f"Unknown template ID: {template_id_str}")
+            continue
+
+        # Check prerequisites
+        result = check_template_prerequisites(template_name, client_data)
+
+        # Handle CRITICAL templates that are blocked
+        if result.get("should_block"):
+            blocked_templates.append(
+                {
+                    "template_id": template_id_str,
+                    "template_name": template_name,
+                    "error_message": result.get("error_message"),
+                    "missing_fields": result.get("missing_required_fields", []),
+                }
+            )
+            errors.append(f"Template '{template_name}': {result.get('error_message')}")
+
+        # Handle HIGH risk templates with warnings
+        elif result.get("warning_message"):
+            warnings.append(
+                {
+                    "template_id": template_id_str,
+                    "template_name": template_name,
+                    "warning_message": result.get("warning_message"),
+                    "missing_recommended_fields": result.get("missing_recommended_fields", []),
+                    "missing_research_tools": result.get("missing_research_tools", []),
+                }
+            )
+
+    can_generate = len(blocked_templates) == 0
+
+    return {
+        "can_generate": can_generate,
+        "blocked_templates": blocked_templates,
+        "warnings": warnings,
+        "errors": errors,
+    }
+
+
+@router.post("/validate-templates")
+@standard_limiter.limit("100/hour")  # Lightweight validation endpoint
+async def validate_templates(
+    request: Request,
+    input: ValidateTemplatesInput,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Validate template prerequisites before generation.
+
+    Returns validation results including:
+    - Whether generation can proceed
+    - Blocked templates (CRITICAL risk missing data)
+    - Warnings (HIGH risk templates)
+    - Missing fields for each template
+
+    Frontend can use this to show prerequisites UI before generation starts.
+    """
+    # Verify client exists and user has access
+    client = crud.get_client(db, input.client_id)
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client {input.client_id} not found",
+        )
+
+    # TR-021: Verify user owns the client
+    if (
+        hasattr(client, "user_id")
+        and client.user_id != current_user.id
+        and not current_user.is_superuser
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You don't own this client",
+        )
+
+    # Convert client to dict for validation
+    client_data = {
+        "industry": client.industry,
+        "business_description": client.business_description,
+        "founder_name": getattr(client, "founder_name", None),
+        "customer_pain_points": client.customer_pain_points or [],
+        "ideal_customer": client.ideal_customer,
+        "main_problem_solved": client.main_problem_solved,
+        "customer_questions": client.customer_questions or [],
+    }
+
+    # Validate templates
+    validation = validate_template_prerequisites(input.template_quantities, client_data)
+
+    return {
+        "can_generate": validation["can_generate"],
+        "blocked_templates": validation["blocked_templates"],
+        "warnings": validation["warnings"],
+        "errors": validation["errors"],
+    }
+
+
 @router.post("/generate-all", response_model=RunResponse)
 @strict_limiter.limit("10/hour")  # TR-004: Expensive AI generation (composite key: IP+user)
 async def generate_all(
@@ -414,6 +561,39 @@ async def generate_all(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Client {input.client_id} not found",
         )
+
+    # TEMPLATE PREREQUISITES: Validate templates have required data
+    if input.template_quantities:
+        # Convert client SQLAlchemy model to dict for validation
+        client_data = {
+            "industry": client.industry,
+            "business_description": client.business_description,
+            "founder_name": getattr(client, "founder_name", None),
+            "customer_pain_points": client.customer_pain_points or [],
+            "ideal_customer": client.ideal_customer,
+            "main_problem_solved": client.main_problem_solved,
+            "customer_questions": client.customer_questions or [],
+        }
+
+        validation = validate_template_prerequisites(input.template_quantities, client_data)
+
+        # Block generation if CRITICAL templates are missing data
+        if not validation["can_generate"]:
+            error_details = {
+                "message": "Cannot generate: Required data missing for selected templates",
+                "blocked_templates": validation["blocked_templates"],
+                "errors": validation["errors"],
+            }
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=error_details,
+            )
+
+        # Log warnings for HIGH risk templates (but allow generation)
+        if validation["warnings"]:
+            logger.warning(
+                f"Template warnings for project {input.project_id}: {validation['warnings']}"
+            )
 
     # Create Run record with status="pending"
     db_run = crud.create_run(db, project_id=input.project_id, is_batch=input.is_batch)
