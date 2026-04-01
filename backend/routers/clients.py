@@ -28,6 +28,7 @@ async def list_clients(
     request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    archived: bool = Query(False, description="Show archived clients"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -39,6 +40,10 @@ async def list_clients(
     """
     # TR-021: Filter to user's clients only
     query = filter_user_clients(db, current_user)
+    if archived:
+        query = query.filter(Client.is_deleted.is_(True))
+    else:
+        query = query.filter(Client.is_deleted.is_(False))
     return query.offset(skip).limit(limit).all()
 
 
@@ -130,6 +135,7 @@ async def delete_client(
 
     # Check for associated projects
     from backend.models import Project
+
     projects = db.query(Project).filter(Project.client_id == client_id).all()
 
     if projects and not force:
@@ -143,6 +149,7 @@ async def delete_client(
         for project in projects:
             # Delete associated posts, runs, briefs, deliverables
             from backend.models import Post, Run, Brief, Deliverable
+
             db.query(Post).filter(Post.project_id == project.id).delete()
             db.query(Run).filter(Run.project_id == project.id).delete()
             db.query(Brief).filter(Brief.project_id == project.id).delete()
@@ -154,6 +161,47 @@ async def delete_client(
     db.commit()
 
     return None
+
+
+@router.post("/{client_id}/archive", response_model=ClientResponse)
+@standard_limiter.limit("100/hour")
+async def archive_client(
+    request: Request,
+    client_id: str,
+    client: Client = Depends(verify_client_ownership),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Soft-delete (archive) a client."""
+    client.soft_delete()
+    db.commit()
+    db.refresh(client)
+    return client
+
+
+@router.post("/{client_id}/unarchive", response_model=ClientResponse)
+@standard_limiter.limit("100/hour")
+async def unarchive_client(
+    request: Request,
+    client_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Restore an archived client."""
+    client = (
+        db.query(Client)
+        .filter(
+            Client.id == client_id,
+            Client.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    client.restore()
+    db.commit()
+    db.refresh(client)
+    return client
 
 
 @router.get("/{client_id}/export-profile")

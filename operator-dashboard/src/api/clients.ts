@@ -35,8 +35,8 @@ export interface UpdateClientInput {
 }
 
 export const clientsApi = {
-  async list(): Promise<Client[]> {
-    const { data } = await apiClient.get('/api/clients/');
+  async list(archived = false): Promise<Client[]> {
+    const { data } = await apiClient.get('/api/clients/', { params: { archived } });
     return z.array(ClientSchema).parse(data);
   },
 
@@ -98,11 +98,11 @@ export const clientsApi = {
   },
 
   async archive(clientId: string): Promise<void> {
-    await apiClient.patch(`/api/clients/${clientId}`, { is_deleted: true });
+    await apiClient.post(`/api/clients/${clientId}/archive`);
   },
 
   async unarchive(clientId: string): Promise<void> {
-    await apiClient.patch(`/api/clients/${clientId}`, { is_deleted: false });
+    await apiClient.post(`/api/clients/${clientId}/unarchive`);
   },
   async exportProfile(clientId: string): Promise<{ blob: Blob; filename: string }> {
     const response = await apiClient.get(`/api/clients/${clientId}/export-profile`, {

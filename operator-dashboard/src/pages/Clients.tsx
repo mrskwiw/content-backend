@@ -47,6 +47,7 @@ export default function Clients() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientWithMetrics | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const queryClient = useQueryClient();
 
   // Delete client mutation
@@ -60,6 +61,15 @@ export default function Clients() {
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || 'Failed to delete client');
     },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (clientId: string) => clientsApi.archive(clientId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast.success('Client archived');
+    },
+    onError: () => toast.error('Failed to archive client'),
   });
 
   const handleExportClientData = async () => {
@@ -76,8 +86,8 @@ export default function Clients() {
 
   // Fetch data
   const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => clientsApi.list(),
+    queryKey: ['clients', showArchived],
+    queryFn: () => clientsApi.list(showArchived),
   });
 
   const { data: projectsResponse } = useQuery({
@@ -192,10 +202,18 @@ export default function Clients() {
             Manage client relationships and project history
           </p>
         </div>
-        <Button variant="primary" onClick={() => navigate('/dashboard/clients/new')}>
-          <Plus className="h-4 w-4" />
-          Add Client
-        </Button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${showArchived ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' : 'border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'}`}
+          >
+            {showArchived ? 'Hide Archived' : 'Show Archived'}
+          </button>
+          <Button variant="primary" onClick={() => navigate('/dashboard/clients/new')}>
+            <Plus className="h-4 w-4" />
+            Add Client
+          </Button>
+        </div>
       </header>
 
       {/* Summary Stats */}
@@ -437,12 +455,10 @@ export default function Clients() {
                             label: "Archive Client",
                             icon: 'archive',
                             onClick: () => {
-                              if (confirm(`Archive client "${client.name}"?`)) {
-                                // TODO: Implement archive functionality
-                                alert('Archive functionality coming soon');
+                              if (confirm(`Archive client "${client.name}"? You can restore it later.`)) {
+                                archiveMutation.mutate(client.id);
                               }
                             },
-                            hidden: true, // Hide until implemented
                           },
                         ]}
                       />
