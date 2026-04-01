@@ -50,6 +50,7 @@ from backend.routers import (
     settings,
     stories,
     trends,
+    stripe_checkout,
 )
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -646,6 +647,7 @@ app.include_router(settings.router, tags=["Settings"])  # Prefix included in rou
 app.include_router(database.router, prefix="/api", tags=["Database"])
 app.include_router(cache.router, prefix="/api/cache", tags=["Cache Management"])
 app.include_router(metrics.router, prefix="/api/metrics", tags=["Metrics & Monitoring"])
+app.include_router(stripe_checkout.router, prefix="/api/stripe", tags=["Payments"])
 
 
 if __name__ == "__main__":

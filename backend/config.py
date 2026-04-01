@@ -192,6 +192,11 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_MAX_CONNECTIONS: int = 50
 
+    # Stripe Payments
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
     model_config = SettingsConfigDict(env_file=ENV_FILE, case_sensitive=True, extra="ignore")
 
 

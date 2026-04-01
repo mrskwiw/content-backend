@@ -105,6 +105,11 @@ def purchase_credits(
     Note: In production, this should be called AFTER successful payment processing.
     The payment_reference should contain the payment/invoice ID.
     """
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Direct credit purchase requires admin. Use /api/stripe/checkout instead.",
+        )
     try:
         transaction = credit_service.purchase_credits(
             db=db,

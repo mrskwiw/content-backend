@@ -43,3 +43,6 @@ pre-commit==3.6.0
 redis==5.0.1
 pyotp==2.9.0
 qrcode[pil]==7.4.2
+
+# Stripe Payments
+stripe>=7.0.0

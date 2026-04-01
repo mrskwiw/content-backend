@@ -40,6 +40,9 @@ const ResearchToolsAnalytics = lazyWithRetry(() => import('@/pages/ResearchTools
 // Settings pages
 const SettingsIntegrations = lazyWithRetry(() => import('@/pages/Settings/Integrations'));
 
+// Payment pages
+const PaymentSuccess = lazyWithRetry(() => import('@/pages/PaymentSuccess'));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex h-screen items-center justify-center">
@@ -102,6 +105,10 @@ export const router = createBrowserRouter([
       { path: 'research-tools/results', element: withSuspense(ResearchToolsResults) },
       { path: 'research-tools/analytics', element: withSuspense(ResearchToolsAnalytics) },
     ],
+  },
+  {
+    path: '/payment-success',
+    element: withSuspense(PaymentSuccess),
   },
   {
     path: '*',

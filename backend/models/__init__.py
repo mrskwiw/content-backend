@@ -20,6 +20,7 @@ from .trends import (
     TrendsRelatedQuery,
     TrendsKeywordInsight,
 )
+from .stripe_payment import StripeCustomer, StripePayment
 
 __all__ = [
     "User",
@@ -39,4 +40,6 @@ __all__ = [
     "TrendsKeywordInsight",
     "CreditTransaction",
     "CreditPackage",
+    "StripeCustomer",
+    "StripePayment",
 ]

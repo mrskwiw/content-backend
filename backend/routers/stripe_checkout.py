@@ -1,0 +1,155 @@
+"""
+Stripe payment router.
+
+Endpoints:
+  POST   /api/stripe/checkout              — create checkout session
+  GET    /api/stripe/payment-status/{id}   — poll payment status
+  POST   /api/stripe/webhook               — Stripe webhook (no auth, sig verified)
+"""
+
+import json
+import logging
+
+import stripe
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
+
+from backend.config import settings
+from backend.database import get_db
+from backend.middleware.auth_dependency import get_current_user
+from backend.models import User
+from backend.models.stripe_payment import StripePayment
+from backend.schemas.stripe_schemas import (
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
+    PaymentStatusResponse,
+)
+from backend.services import stripe_service
+from backend.utils.http_rate_limiter import standard_limiter
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+@router.post("/checkout", response_model=CheckoutSessionResponse)
+@standard_limiter.limit("20/hour")
+async def create_checkout_session(
+    request: Request,
+    body: CheckoutSessionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a Stripe Checkout Session for a credit package."""
+    from backend.models.credit import CreditPackage
+
+    package = (
+        db.query(CreditPackage)
+        .filter(
+            CreditPackage.id == body.package_id,
+            CreditPackage.is_active.is_(True),
+        )
+        .first()
+    )
+    if not package:
+        raise HTTPException(status_code=404, detail="Credit package not found")
+
+    try:
+        result = stripe_service.create_checkout_session(
+            db=db,
+            user=current_user,
+            package=package,
+            success_url=body.success_url,
+            cancel_url=body.cancel_url,
+            project_id=body.project_id,
+        )
+        return CheckoutSessionResponse(**result)
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating checkout session: {e}")
+        raise HTTPException(status_code=502, detail="Payment service unavailable")
+
+
+@router.get("/payment-status/{session_id}", response_model=PaymentStatusResponse)
+@standard_limiter.limit("60/hour")
+async def get_payment_status(
+    request: Request,
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Poll payment status for a checkout session. Used by success page."""
+    payment = (
+        db.query(StripePayment)
+        .filter(
+            StripePayment.stripe_session_id == session_id,
+            StripePayment.user_id == current_user.id,  # IDOR protection
+        )
+        .first()
+    )
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment session not found")
+
+    project_id = None
+    if payment.metadata_json:
+        try:
+            project_id = json.loads(payment.metadata_json).get("project_id")
+        except Exception:
+            pass
+
+    return PaymentStatusResponse(
+        session_id=session_id,
+        status=payment.status,
+        credits=payment.credits,
+        project_id=project_id,
+    )
+
+
+@router.post("/webhook", status_code=200)
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Stripe webhook endpoint. Verifies signature and processes events.
+    IMPORTANT: Must receive raw bytes — do NOT use a Pydantic body parameter.
+    """
+    body = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    if not settings.STRIPE_WEBHOOK_SECRET:
+        logger.warning("STRIPE_WEBHOOK_SECRET not configured — skipping signature verification")
+        try:
+            event = json.loads(body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid payload")
+    else:
+        try:
+            event = stripe.Webhook.construct_event(body, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        except stripe.error.SignatureVerificationError:
+            logger.warning("Stripe webhook signature verification failed")
+            raise HTTPException(status_code=400, detail="Invalid signature")
+        except Exception as e:
+            logger.error(f"Webhook payload error: {e}")
+            raise HTTPException(status_code=400, detail="Invalid payload")
+
+    event_type = event.get("type", "")
+    event_data = event.get("data", {}).get("object", {})
+
+    logger.info(f"Stripe webhook received: {event_type}")
+
+    if event_type == "checkout.session.completed":
+        session_id = event_data.get("id")
+        if session_id:
+            try:
+                stripe_service.fulfill_payment(db, session_id)
+            except Exception as e:
+                logger.error(f"Failed to fulfill payment for session {session_id}: {e}")
+                raise HTTPException(status_code=500, detail="Fulfillment failed")
+
+    elif event_type == "checkout.session.expired":
+        session_id = event_data.get("id")
+        if session_id:
+            stripe_service.expire_payment(db, session_id)
+
+    elif event_type == "payment_intent.payment_failed":
+        pi_id = event_data.get("id")
+        if pi_id:
+            stripe_service.fail_payment(db, pi_id)
+
+    return {"received": True}
