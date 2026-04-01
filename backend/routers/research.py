@@ -196,6 +196,9 @@ RESEARCH_TOOLS = [
         status="available",
         description="Deep-dive into target audience demographics and psychographics",
         category="strategy",
+        required_integrations=[
+            "web_search"
+        ],  # Requires Brave, Tavily, or SerpAPI for audience data
     ),
     # Workshop Assistants
     ResearchTool(
