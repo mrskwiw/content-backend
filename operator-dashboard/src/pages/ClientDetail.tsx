@@ -1474,8 +1474,8 @@ export default function ClientDetail() {
                   return (
                     <div key={comm.id} className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-5">
                       <div className="flex items-start gap-4">
-                        <div className={}>
-                          <TypeIcon className={} />
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${bgColors[comm.type] ?? 'bg-neutral-100 dark:bg-neutral-800'}`}>
+                          <TypeIcon className={`h-4 w-4 ${iconColors[comm.type] ?? 'text-neutral-600 dark:text-neutral-400'}`} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
