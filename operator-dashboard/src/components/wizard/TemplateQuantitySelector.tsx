@@ -151,6 +151,7 @@ interface Props {
     customTopics: string[],
     targetPlatform: string
   ) => void;
+  onEditClient?: () => void;  // Navigate to client edit
 }
 
 const CREDITS_PER_POST = 20;  // $40/post ÷ $2/credit = 20 credits
@@ -165,6 +166,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   clientId,  // NEW
   onNavigateToResearch,  // NEW
   onContinue,
+  onEditClient,
 }: Props) {
   const [quantities, setQuantities] = useState<Record<number, number>>(initialQuantities);
   const [includeResearch, setIncludeResearch] = useState(initialIncludeResearch);
@@ -620,6 +622,15 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                         Missing: {validation.missingFields.join(', ')}
                       </p>
                     )}
+                    {validation.missingFields.length > 0 && onEditClient && (
+                      <button
+                        type="button"
+                        onClick={onEditClient}
+                        className="mt-1.5 text-xs font-medium text-red-700 dark:text-red-300 underline hover:text-red-900 dark:hover:text-red-100"
+                      >
+                        Edit Client Profile →
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -763,6 +774,15 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                       );
                     })}
                 </ul>
+                {onEditClient && (
+                  <button
+                    type="button"
+                    onClick={onEditClient}
+                    className="mt-3 text-sm font-medium text-red-700 dark:text-red-300 underline hover:text-red-900 dark:hover:text-red-100"
+                  >
+                    Edit Client Profile →
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -36,14 +36,14 @@ TEMPLATE_IDS = {
 
 TEMPLATE_PREREQUISITES = {
     "personal_story": {
-        "required_client_fields": ["founder_name", "business_description"],
+        "required_client_fields": ["business_description"],
         "recommended_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
         "error_message": "Personal Story posts require authentic stories.",
     },
     "things_i_got_wrong": {
-        "required_client_fields": ["founder_name"],
+        "required_client_fields": ["business_description"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
         "error_message": "This template requires authentic learning stories.",

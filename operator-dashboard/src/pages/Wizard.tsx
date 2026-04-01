@@ -472,6 +472,7 @@ export default function Wizard() {
                 projectId={projectId || undefined}
                 clientId={clientId || undefined}
                 onNavigateToResearch={() => setActiveStep('research')}
+                onEditClient={() => setActiveStep('profile')}
                 onContinue={(quantities, research, price, topics, platform) => {
                   setTemplateQuantities(quantities);
                   setIncludeResearch(research);
