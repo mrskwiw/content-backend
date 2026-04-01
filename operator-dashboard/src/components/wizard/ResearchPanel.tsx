@@ -1,4 +1,4 @@
-import { useState, memo, useMemo } from 'react';
+import { useState, useEffect, memo, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { CheckCircle2, Circle, FlaskConical, ArrowRight, Loader2, Coins, Clock, Link2, AlertCircle, Settings } from 'lucide-react';
 import { researchApi, ResearchTool } from '@/api/research';

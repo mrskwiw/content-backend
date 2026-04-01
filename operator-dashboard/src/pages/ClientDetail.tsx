@@ -28,7 +28,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { clientsApi } from '@/api/clients';
+import { clientsApi, type UpdateClientInput } from '@/api/clients';
 import { projectsApi } from '@/api/projects';
 import { postsApi } from '@/api/posts';
 import { deliverablesApi } from '@/api/deliverables';
@@ -166,7 +166,7 @@ export default function ClientDetail() {
 
   // Update client mutation
   const updateClientMutation = useMutation({
-    mutationFn: (updates) => clientsApi.update(clientId!, updates),
+    mutationFn: (updates: UpdateClientInput) => clientsApi.update(clientId!, updates),
     onSuccess: () => {
       refetchClient();
       setEditDialogOpen(false);
