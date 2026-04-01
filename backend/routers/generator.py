@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from backend.database import get_db, SessionLocal
 from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
+from backend.models.research_result import ResearchResult
 from backend.schemas.run import RunResponse, LogEntry
 from backend.schemas.deliverable import DeliverableResponse
 from backend.services import crud
@@ -61,6 +62,7 @@ class ValidateTemplatesInput(BaseModel):
     """Input for template validation endpoint"""
 
     client_id: str
+    project_id: Optional[str] = None  # For querying completed research tools
     template_quantities: dict[str, int]  # Template ID -> quantity mapping
 
 
@@ -377,13 +379,18 @@ def _infer_difficulty(template_data: dict) -> str:
     return "medium"
 
 
-def validate_template_prerequisites(template_quantities: dict[str, int], client_data: dict) -> dict:
+def validate_template_prerequisites(
+    template_quantities: dict[str, int],
+    client_data: dict,
+    completed_research_tools: list[str] | None = None,
+) -> dict:
     """
     Validate that all templates have required data.
 
     Args:
         template_quantities: Dict of {template_id: quantity}
         client_data: Client data dict
+        completed_research_tools: List of research tool names already run for this project
 
     Returns:
         dict with:
@@ -392,6 +399,9 @@ def validate_template_prerequisites(template_quantities: dict[str, int], client_
         - warnings (list): Warning messages for HIGH risk templates
         - errors (list): Error messages for CRITICAL templates
     """
+    if completed_research_tools is None:
+        completed_research_tools = []
+
     blocked_templates = []
     warnings = []
     errors = []
@@ -417,7 +427,7 @@ def validate_template_prerequisites(template_quantities: dict[str, int], client_
             continue
 
         # Check prerequisites
-        result = check_template_prerequisites(template_name, client_data)
+        result = check_template_prerequisites(template_name, client_data, completed_research_tools)
 
         # Handle CRITICAL templates that are blocked
         if result.get("should_block"):
@@ -427,6 +437,7 @@ def validate_template_prerequisites(template_quantities: dict[str, int], client_
                     "template_name": template_name,
                     "error_message": result.get("error_message"),
                     "missing_fields": result.get("missing_required_fields", []),
+                    "missing_tools": result.get("missing_required_tools", []),
                 }
             )
             errors.append(f"Template '{template_name}': {result.get('error_message')}")
@@ -502,8 +513,20 @@ async def validate_templates(
         "customer_questions": client.customer_questions or [],
     }
 
+    # Query completed research tools for this client/project
+    research_query = db.query(ResearchResult.tool_name).filter(
+        ResearchResult.client_id == input.client_id,
+        ResearchResult.status == "completed",
+        ResearchResult.is_deleted.is_(False),
+    )
+    if input.project_id:
+        research_query = research_query.filter(ResearchResult.project_id == input.project_id)
+    completed_research_tools = [row[0] for row in research_query.distinct().all()]
+
     # Validate templates
-    validation = validate_template_prerequisites(input.template_quantities, client_data)
+    validation = validate_template_prerequisites(
+        input.template_quantities, client_data, completed_research_tools
+    )
 
     return {
         "can_generate": validation["can_generate"],
@@ -575,7 +598,23 @@ async def generate_all(
             "customer_questions": client.customer_questions or [],
         }
 
-        validation = validate_template_prerequisites(input.template_quantities, client_data)
+        # Query completed research tools for this project
+        completed_research_tools = [
+            row[0]
+            for row in db.query(ResearchResult.tool_name)
+            .filter(
+                ResearchResult.client_id == input.client_id,
+                ResearchResult.project_id == input.project_id,
+                ResearchResult.status == "completed",
+                ResearchResult.is_deleted.is_(False),
+            )
+            .distinct()
+            .all()
+        ]
+
+        validation = validate_template_prerequisites(
+            input.template_quantities, client_data, completed_research_tools
+        )
 
         # Block generation if CRITICAL templates are missing data
         if not validation["can_generate"]:

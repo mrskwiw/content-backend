@@ -4,7 +4,7 @@ Template Prerequisites System
 Validates that templates have required data before generation.
 """
 
-from typing import Dict
+from typing import Dict, List
 from enum import Enum
 
 
@@ -37,16 +37,17 @@ TEMPLATE_IDS = {
 TEMPLATE_PREREQUISITES = {
     "personal_story": {
         "required_client_fields": ["business_description"],
-        "recommended_research_tools": ["story_mining"],
+        "required_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
-        "error_message": "Personal Story posts require authentic stories.",
+        "error_message": "Personal Story posts require authentic stories. Run Story Mining first.",
     },
     "things_i_got_wrong": {
         "required_client_fields": ["business_description"],
+        "required_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
-        "error_message": "This template requires authentic learning stories.",
+        "error_message": "This template requires authentic learning stories. Run Story Mining first.",
     },
     "inside_look": {
         "required_client_fields": ["business_description"],
@@ -56,9 +57,10 @@ TEMPLATE_PREREQUISITES = {
     },
     "milestone": {
         "required_client_fields": ["business_description"],
+        "required_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
-        "error_message": "Milestone posts require real achievements.",
+        "error_message": "Milestone posts require real achievements. Run Story Mining first.",
     },
     # HIGH RISK - Warn but allow generation
     "statistic_insight": {
@@ -145,17 +147,26 @@ def check_client_field(client_data: Dict, field_name: str) -> bool:
     return bool(value)
 
 
-def check_template_prerequisites(template_id: str, client_data: Dict) -> Dict:
+def check_template_prerequisites(
+    template_id: str, client_data: Dict, completed_research_tools: List[str] = []
+) -> Dict:
     """
     Check if template prerequisites are met.
+
+    Args:
+        template_id: Template name key (e.g. "personal_story")
+        client_data: Dict of client fields
+        completed_research_tools: List of tool names that have been run for this project
 
     Returns:
         dict with keys:
         - can_generate (bool): Whether generation should proceed
         - should_block (bool): Whether generation should be blocked
         - risk_level (str): CRITICAL, HIGH, MEDIUM, or LOW
-        - missing_required_fields (list): Required fields that are missing
-        - missing_recommended_fields (list): Recommended fields that are missing
+        - missing_required_fields (list): Required client fields that are missing
+        - missing_recommended_fields (list): Recommended client fields that are missing
+        - missing_required_tools (list): Required research tools not yet run
+        - missing_research_tools (list): Recommended research tools not yet run
         - error_message (str): Error message if blocked
         - warning_message (str): Warning message if not blocked but data incomplete
     """
@@ -166,18 +177,27 @@ def check_template_prerequisites(template_id: str, client_data: Dict) -> Dict:
             "can_generate": True,
             "should_block": False,
             "risk_level": RiskLevel.LOW,
+            "missing_required_fields": [],
+            "missing_recommended_fields": [],
+            "missing_required_tools": [],
+            "missing_research_tools": [],
         }
 
-    # Check required fields
+    # Check required client fields
     required_fields = prereqs.get("required_client_fields", [])
     missing_required = [f for f in required_fields if not check_client_field(client_data, f)]
 
-    # Check recommended fields
+    # Check recommended client fields
     recommended_fields = prereqs.get("recommended_client_fields", [])
     missing_recommended = [f for f in recommended_fields if not check_client_field(client_data, f)]
 
+    # Check required research tools (block if missing)
+    required_tools = prereqs.get("required_research_tools", [])
+    missing_required_tools = [t for t in required_tools if t not in completed_research_tools]
+
     # Determine if generation should be blocked
-    should_block = prereqs.get("block_generation", False) and len(missing_required) > 0
+    block = prereqs.get("block_generation", False)
+    should_block = block and (len(missing_required) > 0 or len(missing_required_tools) > 0)
 
     result = {
         "can_generate": not should_block,
@@ -185,6 +205,7 @@ def check_template_prerequisites(template_id: str, client_data: Dict) -> Dict:
         "risk_level": prereqs.get("risk_level", RiskLevel.LOW),
         "missing_required_fields": missing_required,
         "missing_recommended_fields": missing_recommended,
+        "missing_required_tools": missing_required_tools,
         "missing_research_tools": prereqs.get("recommended_research_tools", []),
     }
 

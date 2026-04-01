@@ -30,6 +30,7 @@ export interface ValidationBlockedTemplate {
   template_name: string;
   error_message: string;
   missing_fields: string[];
+  missing_tools: string[];
 }
 
 export interface ValidationWarning {
@@ -54,6 +55,7 @@ const TemplateValidationResponseSchema = z.object({
     template_name: z.string(),
     error_message: z.string(),
     missing_fields: z.array(z.string()),
+    missing_tools: z.array(z.string()).default([]),
   })),
   warnings: z.array(z.object({
     template_id: z.string(),
@@ -114,11 +116,13 @@ export const generatorApi = {
 
   async validateTemplates(
     clientId: string,
-    templateQuantities: Record<string, number>
+    templateQuantities: Record<string, number>,
+    projectId?: string
   ): Promise<TemplateValidationResponse> {
     const { data } = await apiClient.post('/api/generator/validate-templates', {
       client_id: clientId,
       template_quantities: templateQuantities,
+      ...(projectId ? { project_id: projectId } : {}),
     });
     return TemplateValidationResponseSchema.parse(data);
   },

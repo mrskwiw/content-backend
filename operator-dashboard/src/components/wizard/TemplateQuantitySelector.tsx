@@ -180,6 +180,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
     warning: string | null;
     error: string | null;
     missingFields: string[];
+    missingTools: string[];
   }>>(new Map());
 
   // Fetch completed research tools
@@ -254,7 +255,8 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
 
         const validation = await generatorApi.validateTemplates(
           clientId,
-          templateQuantities
+          templateQuantities,
+          projectId
         );
 
         const results = new Map();
@@ -267,6 +269,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
             warning: null,
             error: blocked.error_message,
             missingFields: blocked.missing_fields,
+            missingTools: blocked.missing_tools ?? [],
           });
         });
 
@@ -619,7 +622,12 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                     </p>
                     {validation.missingFields.length > 0 && (
                       <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                        Missing: {validation.missingFields.join(', ')}
+                        Missing fields: {validation.missingFields.join(', ')}
+                      </p>
+                    )}
+                    {(validation.missingTools?.length ?? 0) > 0 && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                        Run first: {(validation.missingTools ?? []).map((t) => TOOL_LABELS[t] ?? t).join(', ')}
                       </p>
                     )}
                     {validation.missingFields.length > 0 && onEditClient && (
@@ -629,6 +637,15 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                         className="mt-1.5 text-xs font-medium text-red-700 dark:text-red-300 underline hover:text-red-900 dark:hover:text-red-100"
                       >
                         Edit Client Profile →
+                      </button>
+                    )}
+                    {(validation.missingTools?.length ?? 0) > 0 && onNavigateToResearch && (
+                      <button
+                        type="button"
+                        onClick={onNavigateToResearch}
+                        className="mt-1.5 ml-2 text-xs font-medium text-red-700 dark:text-red-300 underline hover:text-red-900 dark:hover:text-red-100"
+                      >
+                        Go to Research →
                       </button>
                     )}
                   </div>
