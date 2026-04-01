@@ -328,14 +328,10 @@ API integrations
 Your focus areas:"""
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.3,  # Lower temp for focused extraction
+            focus_areas_text = self._call_claude_api(
+                prompt, max_tokens=300, temperature=0.3, extract_json=False, fallback_on_error=""
             )
-
-            # Parse response - already a string from create_message
-            focus_areas_text = response.strip()
+            focus_areas_text = str(focus_areas_text).strip()
             focus_areas = [
                 area.strip()
                 for area in focus_areas_text.split("\n")
@@ -710,17 +706,12 @@ Focus on trends that are:
 - Relevant to the target audience
 - Actionable for content creation
 
-Return as JSON array of categories with keys:
-category_name, description, category_momentum, trends (array with all trend fields)"""
+Return ONLY a valid JSON array of category objects. Each object has: category_name, description, category_momentum, trends (array). No markdown. No explanation."""
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=3000,
-                temperature=0.5,
+            categories_data = self._call_claude_api(
+                prompt, max_tokens=3000, temperature=0.5, extract_json=True, fallback_on_error=[]
             )
-
-            categories_data = json.loads(response)
             categories = []
 
             for cat_data in categories_data[:5]:  # Max 5 categories
@@ -783,17 +774,12 @@ Focus on:
 - Conversations relevant to target audience
 - Areas where original perspective could add value
 
-Return as JSON array with keys:
-topic, description, key_perspectives (array), thought_leaders (array), content_opportunity"""
+Return ONLY a valid JSON array. Each object has: topic, description, key_perspectives (array), thought_leaders (array), content_opportunity. No markdown."""
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=2000,
-                temperature=0.6,
+            conversations_data = self._call_claude_api(
+                prompt, max_tokens=2000, temperature=0.6, extract_json=True, fallback_on_error=[]
             )
-
-            conversations_data = json.loads(response)
             conversations = []
 
             for conv_data in conversations_data[:5]:  # Max 5 conversations
@@ -833,17 +819,12 @@ Examples:
 - Holiday/end-of-year patterns
 - Industry-specific cycles
 
-Return as JSON array with keys:
-topic, timing, description, preparation_timeline"""
+Return ONLY a valid JSON array. Each object has: topic, timing, description, preparation_timeline. No markdown."""
 
         try:
-            response = self.client.create_message(
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500,
-                temperature=0.4,
+            seasonal_data = self._call_claude_api(
+                prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error=[]
             )
-
-            seasonal_data = json.loads(response)
             seasonal_trends = []
 
             for trend_data in seasonal_data[:5]:  # Max 5 seasonal trends

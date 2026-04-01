@@ -262,13 +262,13 @@ Return JSON with:
 - urgency_level: string
 - failed_attempts: array of strings
 - pain_points: array of strings
-- cost_of_inaction: string"""
+- cost_of_inaction: string
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Challenge(
             problem_description=data.get("problem_description", ""),
@@ -308,13 +308,13 @@ Return JSON with:
 - key_decision_factors: array of strings
 - decision_timeline: string
 - stakeholders_involved: array of strings
-- concerns_overcome: array of strings"""
+- concerns_overcome: array of strings
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return DecisionProcess(
             why_chose_solution=data.get("why_chose_solution", ""),
@@ -353,13 +353,13 @@ Return JSON with:
 - key_milestones: array of strings
 - obstacles_overcome: array of strings
 - surprises_discoveries: array of strings
-- support_needed: string"""
+- support_needed: string
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Implementation(
             getting_started=data.get("getting_started"),
@@ -399,13 +399,13 @@ Return JSON with:
 - roi_metrics: string
 - time_savings: string
 - before_after_comparison: string
-- unexpected_benefits: array of strings"""
+- unexpected_benefits: array of strings
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Results(
             quantitative_results=data.get("quantitative_results", []),
@@ -445,13 +445,11 @@ Return JSON with:
 - would_recommend: string
 - advice_for_others: string
 
-Make quotes sound authentic and specific."""
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Testimonials(
             headline_quote=data.get("headline_quote"),
@@ -484,13 +482,13 @@ Return JSON with:
 - ongoing_success: string
 - next_goals: array of strings
 - long_term_vision: string
-- expansion_plans: string"""
+- expansion_plans: string
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=1500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return FuturePlans(
             ongoing_success=data.get("ongoing_success"),
@@ -525,13 +523,13 @@ Provide:
 Return JSON with:
 - one_sentence_summary: string
 - key_takeaways: array of strings
-- use_cases: array of strings"""
+- use_cases: array of strings
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2000
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return (
             data.get("one_sentence_summary", ""),
@@ -554,14 +552,12 @@ Recommend specific content like:
 - Video: [specific story]
 - Webinar: [specific topic]
 
-Return JSON array of strings."""
+Return ONLY a valid JSON array of strings. No markdown. No explanation."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=1500
+        data = self._call_claude_api(
+            prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error=[]
         )
-
-        data: List[str] = self._extract_json_from_response(response)
-        return data
+        return data if isinstance(data, list) else []
 
     def _generate_social_proof(self, client: Any, story: SuccessStory) -> List[str]:
         """Generate social proof snippets"""
@@ -579,14 +575,12 @@ Create snippets like:
 
 Each snippet should be 1-2 sentences, punchy, with results.
 
-Return JSON array of strings."""
+Return ONLY a valid JSON array of strings. No markdown. No explanation."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=1500
+        data = self._call_claude_api(
+            prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error=[]
         )
-
-        data: List[str] = self._extract_json_from_response(response)
-        return data
+        return data if isinstance(data, list) else []
 
     def _generate_case_study_outline(self, client: Any, story: SuccessStory) -> str:
         """Generate case study outline"""
@@ -607,12 +601,10 @@ Create a structured case study outline with:
 
 Return as markdown text (not JSON)."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2000
+        text = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.4, extract_json=False, fallback_on_error=""
         )
-
-        text: str = response.content[0].text if response.content else ""
-        return text.strip()
+        return text.strip() if isinstance(text, str) else ""
 
     def generate_reports(self, analysis: StoryMiningAnalysis) -> Dict[str, Path]:
         """Generate output files"""

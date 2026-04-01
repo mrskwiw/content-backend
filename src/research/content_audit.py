@@ -287,7 +287,7 @@ For each piece, provide:
 7. Action priority (High/Medium/Low)
 8. Specific updates needed (2-3 items)
 
-Provide analysis in JSON array format."""
+Return ONLY a valid JSON array. Each item has: performance_level, health_status, engagement_score, strengths (array), weaknesses (array), recommended_action, action_priority, specific_updates_needed (array). No markdown."""
 
         client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=16000)
 
@@ -355,7 +355,7 @@ For each topic cluster, provide:
 5. Underperforming pieces (if any)
 6. Strategy recommendation
 
-Return as JSON array of topic performance objects."""
+Return ONLY a valid JSON array. Each item has: topic_cluster, performance_trend, total_pieces, avg_engagement, top_performing (array), refresh_opportunities (array), strategy_recommendation. No markdown."""
 
         client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
 
@@ -406,7 +406,7 @@ For each refresh opportunity, provide:
 5. Estimated impact (High/Medium/Low)
 6. Estimated effort (Small/Medium/Large)
 
-Return as JSON array."""
+Return ONLY a valid JSON array. Each item has: content_title, current_issues (array), suggested_updates (array), priority, estimated_effort. No markdown."""
 
         client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
 
@@ -459,7 +459,7 @@ Examples:
 - Guide → Email series
 - Webinar → Blog series
 
-Return as JSON array."""
+Return ONLY a valid JSON array. Each item has: source_content, repurpose_into, target_platform, why_repurpose, estimated_reach. No markdown."""
 
         client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
 
@@ -518,7 +518,7 @@ For each gap:
 3. Priority (High/Medium/Low)
 4. Reason why this gap matters
 
-Return as JSON array."""
+Return ONLY a valid JSON array. Each item has: gap_description, content_type_needed, priority, reason_why_matters. No markdown."""
 
         client.create_message(messages=[{"role": "user", "content": prompt}], max_tokens=8000)
 

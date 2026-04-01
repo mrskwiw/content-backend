@@ -207,16 +207,25 @@ For the IDEAL customer (not average, but the BEST-FIT customer), provide:
 6. Technologies used (tools/platforms they use)
 7. Decision-maker job titles (who makes buying decisions)
 
-Return JSON with these fields:
-- company_size: string
-- industry: string
-- revenue_range: string
-- location: string
-- team_structure: string
-- technologies_used: array of strings
-- job_titles: array of strings
+EXAMPLE OUTPUT:
+{{
+  "company_size": "50-200 employees",
+  "industry": "B2B SaaS / Marketing Technology",
+  "revenue_range": "$5M-$20M ARR",
+  "location": "North America (US-focused)",
+  "team_structure": "Marketing team of 5-10 with dedicated content manager",
+  "technologies_used": ["HubSpot", "Salesforce", "Slack", "Google Analytics"],
+  "job_titles": ["VP of Marketing", "Director of Content", "CMO"]
+}}
 
-Focus on the IDEAL customer, not the average customer."""
+FIELD RULES:
+- company_size: specific range, not vague
+- revenue_range: "$X-$Y" format; null if B2C
+- technologies_used: 4-6 specific tool names
+- job_titles: 2-4 actual decision-maker titles
+- Fill ALL fields
+
+Return ONLY valid JSON. No markdown. No code blocks."""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
         data = self._call_claude_api(
@@ -265,13 +274,11 @@ Return JSON with:
 - decision_factors: array of strings
 - aspirations: string
 
-Focus on deep motivations, not surface-level wants."""
+Fill ALL fields: goals, challenges, values, decision_factors, aspirations. Return ONLY valid JSON. No markdown. No code blocks."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=3000
+        data = self._call_claude_api(
+            prompt, max_tokens=3000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Psychographics(
             goals=data.get("goals", []),
@@ -308,13 +315,13 @@ Return JSON with:
 - content_consumption: array of strings
 - research_habits: string
 - influencers: array of strings
-- platforms_active_on: array of strings"""
+- platforms_active_on: array of strings
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Behavioral(
             buying_process=data.get("buying_process"),
@@ -350,13 +357,13 @@ Return JSON with:
 - timing_seasonality: string
 - budget_constraints: string
 - competitive_pressures: array of strings
-- current_solutions: string"""
+- current_solutions: string
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return Situational(
             pain_triggers=data.get("pain_triggers", []),
@@ -392,13 +399,13 @@ Return JSON with:
 - kpis_tracked: array of strings
 - roi_expectations: string
 - implementation_timeline: string
-- success_indicators: array of strings"""
+- success_indicators: array of strings
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=2500
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=2500, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return SuccessCriteria(
             definition_of_success=data.get("definition_of_success"),
@@ -447,13 +454,13 @@ Return JSON with:
 - one_sentence_summary: string
 - key_insights: array of strings
 - messaging_recommendations: array of strings
-- content_topics: array of strings"""
+- content_topics: array of strings
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=3000
+Fill ALL fields. Return ONLY valid JSON. No markdown. No code blocks."""
+
+        data = self._call_claude_api(
+            prompt, max_tokens=3000, temperature=0.4, extract_json=True, fallback_on_error={}
         )
-
-        data = self._extract_json_from_response(response)
 
         return (
             data.get("one_sentence_summary", ""),
@@ -477,13 +484,11 @@ Provide actionable next steps like:
 - Research to conduct
 - Tools to implement
 
-Return JSON array of strings."""
+Return ONLY a valid JSON array of strings. No object wrapper. No markdown."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], max_tokens=1500
+        data = self._call_claude_api(
+            prompt, max_tokens=1500, temperature=0.4, extract_json=True, fallback_on_error=[]
         )
-
-        data = self._extract_json_from_response(response)
         return list(data) if isinstance(data, list) else []
 
     def generate_reports(self, analysis: ICPWorkshopAnalysis) -> Dict[str, Path]:

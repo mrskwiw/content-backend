@@ -522,23 +522,32 @@ class VoiceAnalyzer(ResearchTool, CommonValidationMixin):
         # Sample 3-5 representative texts
         sample_texts = texts[:5]
 
-        prompt = f"""Analyze the following content samples and identify the writing voice characteristics:
+        prompt = f"""Analyze the following content samples and identify the writing voice characteristics.
 
 SAMPLES:
 ---
 {chr(10).join([f"Sample {i+1}:{chr(10)}{text}{chr(10)}---" for i, text in enumerate(sample_texts)])}
 
-Provide analysis in JSON format:
+EXAMPLE OUTPUT:
 {{
-    "summary": "2-3 sentence description of the voice",
-    "primary_tone": "one of: analytical, authoritative, casual, conversational, direct, empathetic, enthusiastic, formal, friendly, professional, technical, witty",
-    "secondary_tone": "optional secondary tone",
-    "formality_score": 1-10,
-    "confidence_score": 1-10,
-    "personality_traits": ["list of 2-4 traits from: approachable, bold, confident, data_driven, direct, empathetic, humble, innovative, motivating, vulnerable"]
+  "summary": "Direct, tactical voice with strong confidence. Short punchy sentences interspersed with data. Speaks to practitioners, not executives.",
+  "primary_tone": "direct",
+  "secondary_tone": "empathetic",
+  "formality_score": 5,
+  "confidence_score": 8,
+  "personality_traits": ["direct", "confident", "data_driven"]
 }}
 
-Focus on objective patterns in the writing, not what the content is about."""
+FIELD RULES (fill ALL fields):
+- "summary": 2-3 sentences describing voice, tone, and writing style patterns observed
+- "primary_tone": MUST be exactly one of: analytical, authoritative, casual, conversational, direct, empathetic, enthusiastic, formal, friendly, professional, technical, witty
+- "secondary_tone": same enum values as primary_tone, or null if no clear secondary tone
+- "formality_score": integer 1-10 (1 = very casual/slang, 10 = very formal/academic)
+- "confidence_score": integer 1-10 (1 = very hesitant/hedging, 10 = assertive/declarative)
+- "personality_traits": array of 2-4 items, EACH must be exactly one of: approachable, bold, confident, data_driven, direct, empathetic, humble, innovative, motivating, vulnerable
+
+Return ONLY valid JSON. No markdown. No code blocks. No text before or after the JSON.
+Fill ALL fields. Use null for secondary_tone if there is no clear secondary tone."""
 
         try:
             result = self._call_claude_api(

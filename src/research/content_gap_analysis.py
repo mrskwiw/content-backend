@@ -22,7 +22,6 @@ from ..utils.logger import logger
 from ..validators.research_input_validator import ResearchInputValidator
 from .base import ResearchTool
 from .validation_mixin import CommonValidationMixin
-from ..utils.anthropic_client import get_default_client
 from ..utils.web_search import WebSearchClient
 
 
@@ -276,7 +275,6 @@ class ContentGapAnalyzer(ResearchTool, CommonValidationMixin):
         self, business_description: str, current_content_topics: Any
     ) -> Dict[str, Any]:
         """Analyze what content currently exists"""
-        client = get_default_client()
 
         # Convert topics to string if list (Bug #36 fix - handle dicts)
         if isinstance(current_content_topics, list):
@@ -297,15 +295,14 @@ Provide a structured analysis:
 4. Buyer journey stages covered (awareness, consideration, decision)
 5. Audience segments addressed
 
-Return as JSON with these exact keys: coverage_areas, depth_assessment, formats, buyer_stages, audience_segments"""
+Return ONLY valid JSON with these exact keys: coverage_areas, depth_assessment, formats, buyer_stages, audience_segments. No markdown. No explanation."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], temperature=0.7
+        result = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.7, extract_json=True, fallback_on_error={}
         )
 
         try:
-            result: Dict[str, Any] = self._parse_json(response)
-            return result
+            return result if isinstance(result, dict) else {}
         except (json.JSONDecodeError, KeyError, IndexError, AttributeError):
             return {
                 "coverage_areas": [topics_str],
@@ -344,7 +341,6 @@ Return as JSON with these exact keys: coverage_areas, depth_assessment, formats,
         if not competitors:
             return []
 
-        client = get_default_client()
         analyses = []
 
         # Extract industry for better web search
@@ -375,14 +371,15 @@ Based on web search results and typical content strategies, analyze:
 3. Formats they likely use (blog, video, webinar, etc.)
 4. Gaps in their content (what they're missing that we could own)
 
-Return as JSON with keys: content_strengths, popular_topics, formats_used, gaps_in_their_content"""
+Return ONLY valid JSON with keys: content_strengths, popular_topics, formats_used, gaps_in_their_content. No markdown. No explanation."""
 
-            response = client.create_message(
-                messages=[{"role": "user", "content": prompt}], temperature=0.7
+            data = self._call_claude_api(
+                prompt, max_tokens=2000, temperature=0.7, extract_json=True, fallback_on_error={}
             )
 
             try:
-                data = self._parse_json(response)
+                if not isinstance(data, dict):
+                    raise TypeError("expected dict")
                 analyses.append(
                     CompetitorContentAnalysis(
                         competitor_name=competitor,
@@ -414,7 +411,6 @@ Return as JSON with keys: content_strengths, popular_topics, formats_used, gaps_
         competitor_analysis: List[CompetitorContentAnalysis],
     ) -> List[ContentGap]:
         """Identify specific topic gaps"""
-        client = get_default_client()
 
         # Build competitor context
         competitor_topics = []
@@ -448,14 +444,13 @@ Identify 10-15 specific content gaps. For each gap:
 - example_topics: 3-5 specific topics
 - estimated_effort: "Small", "Medium", or "Large"
 
-Return as JSON array of gap objects."""
+Return ONLY a valid JSON array of gap objects. No markdown. No explanation."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], temperature=0.7
+        gaps_data = self._call_claude_api(
+            prompt, max_tokens=3000, temperature=0.7, extract_json=True, fallback_on_error=[]
         )
 
         try:
-            gaps_data = self._parse_json(response)
             if isinstance(gaps_data, dict) and "gaps" in gaps_data:
                 gaps_data = gaps_data["gaps"]
 
@@ -484,7 +479,6 @@ Return as JSON array of gap objects."""
         self, business_description: str, current_coverage: Dict
     ) -> List[FormatGap]:
         """Identify missing content formats"""
-        client = get_default_client()
 
         current_formats = current_coverage.get("formats", [])
         # Bug #36 fix - handle dicts in formats
@@ -514,14 +508,13 @@ For each format:
 - topics_to_cover: 3-5 topics that work well in this format
 - estimated_impact: "High", "Medium", or "Low"
 
-Return as JSON array of format gap objects."""
+Return ONLY a valid JSON array of format gap objects. No markdown. No explanation."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], temperature=0.7
+        gaps_data = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.7, extract_json=True, fallback_on_error=[]
         )
 
         try:
-            gaps_data = self._parse_json(response)
             if isinstance(gaps_data, dict) and "formats" in gaps_data:
                 gaps_data = gaps_data["formats"]
 
@@ -540,7 +533,6 @@ Return as JSON array of format gap objects."""
         self, business_description: str, target_audience: str, current_coverage: Dict
     ) -> List[BuyerJourneyGap]:
         """Analyze gaps in buyer journey coverage"""
-        client = get_default_client()
 
         current_stages = current_coverage.get("buyer_stages", [])
         # Bug #36 fix - handle dicts in buyer_stages
@@ -559,14 +551,13 @@ For each stage (Awareness, Consideration, Decision):
 - recommended_content: 3-5 specific content pieces to create
 - priority: "critical", "high", "medium", or "low"
 
-Return as JSON array of buyer journey gap objects."""
+Return ONLY a valid JSON array of buyer journey gap objects. No markdown. No explanation."""
 
-        response = client.create_message(
-            messages=[{"role": "user", "content": prompt}], temperature=0.7
+        gaps_data = self._call_claude_api(
+            prompt, max_tokens=2000, temperature=0.7, extract_json=True, fallback_on_error=[]
         )
 
         try:
-            gaps_data = self._parse_json(response)
             if isinstance(gaps_data, dict) and "stages" in gaps_data:
                 gaps_data = gaps_data["stages"]
 
