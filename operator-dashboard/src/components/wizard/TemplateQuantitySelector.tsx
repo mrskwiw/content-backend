@@ -136,6 +136,35 @@ const TEMPLATES: Template[] = [
   },
 ];
 
+// Static prerequisite display data — mirrors backend TEMPLATE_PREREQUISITES
+// Shown on every template card before selection so users see requirements upfront
+const FIELD_LABELS: Record<string, string> = {
+  business_description: 'business description',
+  ideal_customer: 'ideal customer',
+  industry: 'industry',
+  main_problem_solved: 'main problem solved',
+  customer_pain_points: 'pain points',
+  customer_questions: 'customer questions',
+};
+
+const TEMPLATE_STATIC_PREREQS: Record<number, { fields: string[]; tools: string[] }> = {
+  1:  { fields: ['customer_pain_points', 'ideal_customer'], tools: [] },
+  2:  { fields: ['industry', 'business_description'], tools: [] },
+  3:  { fields: ['industry'], tools: [] },
+  4:  { fields: ['industry'], tools: [] },
+  5:  { fields: ['ideal_customer'], tools: [] },
+  6:  { fields: ['business_description'], tools: ['story_mining'] },
+  7:  { fields: ['industry'], tools: [] },
+  8:  { fields: ['business_description'], tools: ['story_mining'] },
+  9:  { fields: ['business_description', 'main_problem_solved'], tools: [] },
+  10: { fields: ['industry'], tools: [] },
+  11: { fields: ['business_description'], tools: [] },
+  12: { fields: ['business_description'], tools: [] },
+  13: { fields: ['industry', 'business_description'], tools: [] },
+  14: { fields: ['customer_questions'], tools: [] },
+  15: { fields: ['business_description'], tools: ['story_mining'] },
+};
+
 interface Props {
   initialQuantities?: Record<number, number>;
   initialIncludeResearch?: boolean;
@@ -175,6 +204,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   const [dependencies, setDependencies] = useState<Map<number, TemplateDependencies>>(new Map());
   const [completedTools, setCompletedTools] = useState<Set<string>>(new Set());
   const [loadingDeps, setLoadingDeps] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [validationResults, setValidationResults] = useState<Map<number, {
     blocked: boolean;
     warning: string | null;
@@ -247,6 +277,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
     }
 
     const validateTemplates = async () => {
+      setIsValidating(true);
       try {
         const templateQuantities: Record<string, number> = {};
         templatesWithQuantity.forEach((id) => {
@@ -289,6 +320,8 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
         setValidationResults(results);
       } catch (error) {
         console.error('Failed to validate templates:', error);
+      } finally {
+        setIsValidating(false);
       }
     };
 
@@ -609,6 +642,28 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                 <p className="text-xs text-neutral-600 dark:text-neutral-400">{template.description}</p>
               </div>
 
+              {/* Static Prerequisites Chip — always visible before selection */}
+              {(() => {
+                const sp = TEMPLATE_STATIC_PREREQS[template.id];
+                if (!sp) return null;
+                const fieldLabels = sp.fields.map((f) => FIELD_LABELS[f] ?? f);
+                const toolLabels = sp.tools.map((t) => TOOL_LABELS[t] ?? t);
+                const allLabels = [...fieldLabels, ...toolLabels];
+                if (allLabels.length === 0) return null;
+                return (
+                  <div className="mb-2 flex flex-wrap gap-1">
+                    {allLabels.map((label) => (
+                      <span
+                        key={label}
+                        className="inline-flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 px-2 py-0.5 text-xs text-neutral-600 dark:text-neutral-400"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
+
               {/* Validation Badges */}
               {validation?.blocked && (
                 <div className="mb-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded flex items-start gap-2">
@@ -807,7 +862,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
 
         <button
           onClick={() => onContinue?.(quantities, includeResearch, totalCredits, customTopics, targetPlatform)}
-          disabled={totalPosts === 0 || hasBlockedTemplates}
+          disabled={totalPosts === 0 || hasBlockedTemplates || isValidating}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue to Generation
