@@ -202,15 +202,15 @@ async def register_user(request: Request, user_data: UserCreate, db: Session = D
     # Hash password
     hashed_password = get_password_hash(user_data.password)
 
-    # TR-023: Create user in INACTIVE state (requires admin activation)
-    # In DEBUG_MODE grant extra credits so dev/testing isn't blocked by credit limits
+    # TR-023: In production, users start INACTIVE (requires admin activation).
+    # In DEBUG_MODE, activate immediately and grant extra credits for testing.
     starting_credits = settings.DEBUG_CREDITS if settings.DEBUG_MODE else None
     user = crud.create_user(
         db,
         email=user_data.email,
         hashed_password=hashed_password,
         full_name=user_data.full_name,
-        is_active=False,  # TR-023: New users inactive by default
+        is_active=settings.DEBUG_MODE,  # Active immediately in debug, inactive in prod
         credit_balance=starting_credits,
     )
 

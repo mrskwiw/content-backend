@@ -22,7 +22,7 @@ from backend.utils.http_rate_limiter import standard_limiter
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ClientResponse], response_model_by_alias=False)
+@router.get("/", response_model=List[ClientResponse])
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def list_clients(
     request: Request,
@@ -51,7 +51,6 @@ async def list_clients(
     "/",
     response_model=ClientResponse,
     status_code=status.HTTP_201_CREATED,
-    response_model_by_alias=False,
 )
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def create_client(
@@ -70,7 +69,7 @@ async def create_client(
     return crud.create_client(db, client, user_id=current_user.id)
 
 
-@router.get("/{client_id}", response_model=ClientResponse, response_model_by_alias=False)
+@router.get("/{client_id}", response_model=ClientResponse)
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def get_client(
     request: Request,
@@ -89,7 +88,7 @@ async def get_client(
     return client
 
 
-@router.patch("/{client_id}", response_model=ClientResponse, response_model_by_alias=False)
+@router.patch("/{client_id}", response_model=ClientResponse)
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def update_client(
     request: Request,
@@ -252,7 +251,7 @@ async def delete_client(
     return None
 
 
-@router.post("/{client_id}/archive", response_model=ClientResponse, response_model_by_alias=False)
+@router.post("/{client_id}/archive", response_model=ClientResponse)
 @standard_limiter.limit("100/hour")
 async def archive_client(
     request: Request,
@@ -268,7 +267,7 @@ async def archive_client(
     return client
 
 
-@router.post("/{client_id}/unarchive", response_model=ClientResponse, response_model_by_alias=False)
+@router.post("/{client_id}/unarchive", response_model=ClientResponse)
 @standard_limiter.limit("100/hour")
 async def unarchive_client(
     request: Request,
