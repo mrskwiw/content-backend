@@ -76,15 +76,14 @@ def add_security_headers_middleware(app):
 
 def enforce_https_redirect(app):
     """
-    Redirect HTTP to HTTPS in production.
+    HTTPS redirect is intentionally disabled.
 
-    NOTE: This is typically handled by reverse proxy (nginx, Cloudflare, etc.)
-    but included here as defense-in-depth.
+    Render (and most PaaS providers) terminate TLS at the edge and forward
+    requests to the app as plain HTTP internally. Adding HTTPSRedirectMiddleware
+    causes an infinite redirect loop: Render sends HTTP → app redirects to
+    HTTPS → Render forwards as HTTP → repeat.
+
+    HTTPS is enforced at the Render layer. HSTS headers are set by
+    SecurityHeadersMiddleware to instruct browsers to use HTTPS directly.
     """
-    from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-
-    if not settings.DEBUG_MODE:
-        app.add_middleware(HTTPSRedirectMiddleware)
-        logger.info("HTTPS redirect enabled (TR-011)")
-    else:
-        logger.info("HTTPS redirect disabled in debug mode")
+    logger.info("HTTPS redirect skipped — handled by Render edge (TR-011)")
