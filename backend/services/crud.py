@@ -796,6 +796,7 @@ def create_user(
     full_name: str,
     is_active: bool = True,
     is_superuser: bool = False,
+    credit_balance: Optional[int] = None,
 ) -> User:
     """
     Create new user.
@@ -807,6 +808,7 @@ def create_user(
         full_name: User's full name
         is_active: User active status (default: True for backward compatibility)
         is_superuser: Admin status (default: False, TR-023: never allow self-promotion)
+        credit_balance: Starting credits; defaults to model column default (1000)
 
     Returns:
         Created User instance
@@ -815,7 +817,7 @@ def create_user(
         - is_superuser defaults to False and should never be True from registration
         - is_active can be False to require admin activation
     """
-    db_user = User(
+    kwargs: dict = dict(
         id=f"user-{uuid.uuid4().hex[:12]}",
         email=email,
         hashed_password=hashed_password,
@@ -823,6 +825,9 @@ def create_user(
         is_active=is_active,  # TR-023: Configurable activation status
         is_superuser=is_superuser,  # TR-023: Explicit control, defaults to False
     )
+    if credit_balance is not None:
+        kwargs["credit_balance"] = credit_balance
+    db_user = User(**kwargs)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

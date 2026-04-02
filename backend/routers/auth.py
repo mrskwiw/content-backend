@@ -24,6 +24,7 @@ from backend.utils.auth import (
     verify_token_type,
 )
 from backend.utils.http_rate_limiter import strict_limiter, standard_limiter
+from backend.config import settings
 
 router = APIRouter()
 
@@ -202,12 +203,15 @@ async def register_user(request: Request, user_data: UserCreate, db: Session = D
     hashed_password = get_password_hash(user_data.password)
 
     # TR-023: Create user in INACTIVE state (requires admin activation)
+    # In DEBUG_MODE grant extra credits so dev/testing isn't blocked by credit limits
+    starting_credits = settings.DEBUG_CREDITS if settings.DEBUG_MODE else None
     user = crud.create_user(
         db,
         email=user_data.email,
         hashed_password=hashed_password,
         full_name=user_data.full_name,
         is_active=False,  # TR-023: New users inactive by default
+        credit_balance=starting_credits,
     )
 
     logger.info(

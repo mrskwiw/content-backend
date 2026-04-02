@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     API_TITLE: str = "Content Jumpstart API"
     API_VERSION: str = "1.0.0"
     DEBUG_MODE: bool = True
+    DEBUG_CREDITS: int = 100000  # Credits granted to new users in debug/dev mode
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000"

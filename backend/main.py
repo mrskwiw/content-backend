@@ -219,7 +219,7 @@ async def lifespan(app: FastAPI):
                         f">> Updated admin: {user_data['email']} (superuser={user_data['is_superuser']})"
                     )
                 else:
-                    # Create new user
+                    # Create new user; grant debug credits in dev/debug mode
                     user = User(
                         id=f"user-{uuid.uuid4().hex[:12]}",
                         email=user_data["email"],
@@ -227,6 +227,9 @@ async def lifespan(app: FastAPI):
                         full_name=user_data["full_name"],
                         is_active=True,
                         is_superuser=user_data["is_superuser"],
+                        credit_balance=(
+                            app_settings.DEBUG_CREDITS if app_settings.DEBUG_MODE else 1000
+                        ),
                     )
                     db.add(user)
                     created_count += 1
