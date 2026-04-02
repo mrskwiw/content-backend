@@ -224,12 +224,26 @@ IMPORTANT - Use ONLY these exact values for enums:
 - income_levels: "low", "middle", "upper_middle", "high"
 - education_levels: "high_school", "some_college", "bachelors", "masters", "doctorate"
 
-Return ONLY valid JSON:
+Return ONLY valid JSON. Use null for fields where data cannot be reasonably inferred. Example structure:
 {{
-  "demographics": {{...}},
-  "psychographics": {{...}},
-  "executive_summary": "...",
-  "audience_size_estimate": "..."
+  "demographics": {{
+    "primary_age_ranges": ["35-44", "45-54"],
+    "gender_distribution": "Primarily male (65%), female (35%)",
+    "locations": ["United States", "Canada", "United Kingdom"],
+    "income_levels": ["upper_middle", "high"],
+    "education_levels": ["bachelors", "masters"],
+    "job_titles": ["Marketing Manager", "CMO", "VP Marketing"],
+    "company_sizes": ["11-50 employees", "51-200 employees"]
+  }},
+  "psychographics": {{
+    "values": ["efficiency", "data-driven decisions", "ROI focus"],
+    "interests": ["marketing technology", "growth hacking", "analytics"],
+    "lifestyle": "Career-focused professionals who read industry publications",
+    "personality_traits": ["analytical", "ambitious", "pragmatic"],
+    "motivations": ["career advancement", "team performance", "budget efficiency"]
+  }},
+  "executive_summary": "Two-paragraph summary of key audience insights",
+  "audience_size_estimate": "~500,000 professionals in North America"
 }}"""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)

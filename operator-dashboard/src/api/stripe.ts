@@ -19,6 +19,16 @@ export interface PaymentStatus {
   project_id: string | null;
 }
 
+export interface PaymentHistoryItem {
+  id: string;
+  session_id: string;
+  amount_usd: number | null;
+  credits: number | null;
+  status: 'pending' | 'completed' | 'failed' | 'expired';
+  package_id: string | null;
+  created_at: string;
+}
+
 export const stripeApi = {
   async createCheckoutSession(req: CheckoutSessionRequest): Promise<CheckoutSessionResponse> {
     const { data } = await apiClient.post('/api/stripe/checkout', req);
@@ -28,5 +38,15 @@ export const stripeApi = {
   async getPaymentStatus(sessionId: string): Promise<PaymentStatus> {
     const { data } = await apiClient.get(`/api/stripe/payment-status/${sessionId}`);
     return data;
+  },
+
+  async getPayments(): Promise<PaymentHistoryItem[]> {
+    const { data } = await apiClient.get('/api/stripe/payments');
+    return data;
+  },
+
+  async getBillingPortalUrl(returnUrl: string): Promise<string> {
+    const { data } = await apiClient.post('/api/stripe/portal', { return_url: returnUrl });
+    return data.portal_url;
   },
 };

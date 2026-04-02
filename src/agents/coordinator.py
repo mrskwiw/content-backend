@@ -165,7 +165,7 @@ class CoordinatorAgent:
             system_prompt = (
                 f"You are an expert content strategist creating social media posts for {client_brief.company_name}. "
                 f"Ideal customer: {client_brief.ideal_customer}. "
-                f"Brand voice: {', '.join(t.value for t in client_brief.brand_personality)}. "
+                f"Brand voice: {', '.join(t.value if hasattr(t, 'value') else str(t) for t in client_brief.brand_personality)}. "
                 f"Focus on improving quality metrics while maintaining brand voice."
             )
 
@@ -503,7 +503,7 @@ class CoordinatorAgent:
             ideal_customer=ideal_customer,
             main_problem_solved=main_problem_solved,
             customer_pain_points=pain_points,
-            brand_personality=tones,
+            brand_personality=[t.value if hasattr(t, "value") else str(t) for t in tones],
             key_phrases=key_phrases,
             customer_questions=questions,
             target_platforms=platforms,
@@ -517,7 +517,9 @@ class CoordinatorAgent:
         print("=" * 60)
         print(f"\nClient: {client_brief.company_name}")
         print(f"Platforms: {', '.join(p.value for p in client_brief.target_platforms)}")
-        print(f"Tones: {', '.join(t.value for t in client_brief.brand_personality)}")
+        print(
+            f"Tones: {', '.join(t.value if hasattr(t, 'value') else str(t) for t in client_brief.brand_personality)}"
+        )
         print("\n")
 
         return client_brief

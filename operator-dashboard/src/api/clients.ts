@@ -34,6 +34,19 @@ export interface UpdateClientInput {
   location?: string;
 }
 
+export interface SendEmailInput {
+  email_type: 'general' | 'deliverable' | 'feedback_request' | 'invoice_reminder' | 'revision_confirmation';
+  subject: string;
+  content: string;
+}
+
+export interface SendEmailResponse {
+  success: boolean;
+  status: 'sent' | 'logged' | 'failed';
+  detail: string;
+  communication_id: number;
+}
+
 export const clientsApi = {
   async list(archived = false): Promise<Client[]> {
     const { data } = await apiClient.get('/api/clients/', { params: { archived } });
@@ -124,5 +137,10 @@ export const clientsApi = {
       blob: response.data,
       filename,
     };
+  },
+
+  async sendEmail(clientId: string, input: SendEmailInput): Promise<SendEmailResponse> {
+    const { data } = await apiClient.post(`/api/clients/${clientId}/send-email`, input);
+    return data as SendEmailResponse;
   },
 };

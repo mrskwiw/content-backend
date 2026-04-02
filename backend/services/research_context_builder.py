@@ -46,8 +46,8 @@ def build_research_context(db: Session, client_id: str) -> Dict[str, Any]:
         - tools_included: List of tool names included
     """
     # Check cache first
-    cache_key = f"{CACHE_PREFIX}:{client_id}"
-    cached = cache.get(cache_key)
+    cache_key = f"{CACHE_PREFIX}_{client_id}"
+    cached = cache.get_by_key(cache_key)
     if cached:
         logger.info(f"Using cached research context for client {client_id}")
         return cached
@@ -60,7 +60,14 @@ def build_research_context(db: Session, client_id: str) -> Dict[str, Any]:
 
     if not completed_results:
         logger.info(f"No completed research results found for client {client_id}")
-        return {"formatted_text": "", "tool_count": 0, "total_tokens": 0, "tools_included": []}
+        return {
+            "formatted_text": "",
+            "research_summary": "",
+            "formatted_research": "",
+            "tool_count": 0,
+            "total_tokens": 0,
+            "tools_included": [],
+        }
 
     # Group by tool name and keep most recent for each tool
     tool_results = {}
@@ -76,13 +83,17 @@ def build_research_context(db: Session, client_id: str) -> Dict[str, Any]:
     formatted = _format_all_results(tool_results)
 
     # Cache result
-    cache.set(cache_key, formatted, ttl=CACHE_TTL)
+    cache.put_by_key(cache_key, formatted)
     logger.info(
         f"Formatted research context for client {client_id}: "
         f"{formatted['tool_count']} tools, ~{formatted['total_tokens']} tokens"
     )
 
     return formatted
+
+
+# Alias for backwards compatibility
+build_structured_context = build_research_context
 
 
 def _format_all_results(tool_results: Dict[str, ResearchResult]) -> Dict[str, Any]:
@@ -144,6 +155,8 @@ def _format_all_results(tool_results: Dict[str, ResearchResult]) -> Dict[str, An
 
     return {
         "formatted_text": formatted_text,
+        "research_summary": formatted_text,
+        "formatted_research": formatted_text,
         "tool_count": len(tools_included),
         "total_tokens": total_tokens,
         "tools_included": tools_included,
@@ -1025,6 +1038,66 @@ def _format_business_report(result):
 
 
 def invalidate_cache(client_id):
-    cache_key = f"{CACHE_PREFIX}:{client_id}"
+    cache_key = f"{CACHE_PREFIX}_{client_id}"
     cache.delete(cache_key)
     logger.info(f"Invalidated cache for {client_id}")
+
+
+def get_story_context_for_template(
+    db: Session, client_id: str, template_name: str, project_id: str
+) -> Dict[str, Any]:
+    """
+    Fetch an available story for a story-based template and format it as generation context.
+
+    Args:
+        db: Database session
+        client_id: Client whose stories to query
+        template_name: Template slug (personal_story, things_i_got_wrong, milestone)
+        project_id: Current project ID (used to exclude already-used stories)
+
+    Returns:
+        Dict with:
+        - story_id (str | None): ID of the selected story, or None if none available
+        - formatted_text (str): Story context ready to inject into generation prompt
+        - available_count (int): Total number of eligible stories for this template
+    """
+    from backend.services.story_service import story_service
+
+    available = story_service.get_available_stories_for_template(
+        db, client_id, template_name, project_id, limit=5
+    )
+
+    if not available:
+        return {"story_id": None, "formatted_text": "", "available_count": 0}
+
+    # Pick the most recent eligible story
+    story = available[0]
+    full = story.full_story or {}
+
+    parts = []
+    if story.title:
+        parts.append(f"Story: {story.title}")
+    if story.summary:
+        parts.append(f"Summary: {story.summary}")
+    challenge = (full.get("challenge") or {}).get("problem_description") or (
+        full.get("challenge") if isinstance(full.get("challenge"), str) else None
+    )
+    if challenge:
+        parts.append(f"Challenge: {challenge}")
+    if story.key_metrics:
+        metrics = list(story.key_metrics.values())[:3]
+        parts.append(f"Key results: {chr(44).join(str(m) for m in metrics)}")
+    if story.emotional_hook:
+        parts.append(f"Emotional hook: {story.emotional_hook}")
+
+    formatted = "USE THIS STORY:\n" + "\n".join(parts) + f"\n[STORY_ID:{story.id}]"
+
+    logger.info(
+        f"Story context for template={template_name} project={project_id}: story {story.id} ({len(available)} available)"
+    )
+
+    return {
+        "story_id": story.id,
+        "formatted_text": formatted,
+        "available_count": len(available),
+    }

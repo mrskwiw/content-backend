@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { ApiError } from '@/types/api-types';
 import UsersTab from '@/components/settings/UsersTab';
 import { creditsApi } from '@/api/credits';
+import { stripeApi } from '@/api/stripe';
 import { settingsApi, WebSearchConfigUpdate } from '@/api/settings';
 import { adminApi } from '@/api/admin';
 import type { User as AdminUser } from '@/api/admin';
@@ -308,6 +309,12 @@ export default function Settings() {
   const { data: creditTransactions = [] } = useQuery({
     queryKey: ['credits', 'transactions'],
     queryFn: () => creditsApi.getTransactions(50, 0),
+    enabled: activeTab === 'credits',
+  });
+
+  const { data: paymentHistory = [] } = useQuery({
+    queryKey: ['stripe', 'payments'],
+    queryFn: () => stripeApi.getPayments(),
     enabled: activeTab === 'credits',
   });
 
@@ -1058,9 +1065,18 @@ export default function Settings() {
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      // TODO: Implement Stripe integration
-                      alert(`Purchase ${pkg.name} - Stripe integration coming soon`);
+                    onClick={async () => {
+                      try {
+                        const origin = window.location.origin;
+                        const result = await stripeApi.createCheckoutSession({
+                          package_id: pkg.id,
+                          success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                          cancel_url: `${origin}/dashboard/settings?tab=credits`,
+                        });
+                        window.location.href = result.checkout_url;
+                      } catch {
+                        alert('Failed to start checkout. Please try again.');
+                      }
                     }}
                     className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 dark:bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 dark:hover:bg-primary-600"
                   >
@@ -1073,6 +1089,72 @@ export default function Settings() {
             {creditPackages.length === 0 && (
               <div className="text-sm text-neutral-600 dark:text-neutral-400 text-center py-8">
                 No credit packages available. Contact support for custom pricing.
+              </div>
+            )}
+          </div>
+
+          {/* Payment History */}
+          <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Payment History</h3>
+              <button
+                onClick={async () => {
+                  try {
+                    const returnUrl = `${window.location.origin}/dashboard/settings?tab=credits`;
+                    const url = await stripeApi.getBillingPortalUrl(returnUrl);
+                    window.location.href = url;
+                  } catch {
+                    alert('Unable to open billing portal. Please try again.');
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              >
+                <CreditCard className="h-4 w-4" />
+                Manage Billing
+              </button>
+            </div>
+            {paymentHistory.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Date</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Amount</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Credits</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentHistory.map(payment => (
+                      <tr key={payment.id} className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                        <td className="py-3 px-2 text-sm text-neutral-900 dark:text-neutral-100">
+                          {new Date(payment.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-2 text-sm text-neutral-900 dark:text-neutral-100">
+                          {payment.amount_usd != null ? `$${payment.amount_usd.toFixed(2)}` : '—'}
+                        </td>
+                        <td className="py-3 px-2 text-sm text-neutral-900 dark:text-neutral-100">
+                          {payment.credits != null ? payment.credits.toLocaleString() : '—'}
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
+                            payment.status === 'completed'
+                              ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                              : payment.status === 'pending'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
+                              : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                          }`}>
+                            {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-600 dark:text-neutral-400 text-center py-8">
+                No payment history yet.
               </div>
             )}
           </div>

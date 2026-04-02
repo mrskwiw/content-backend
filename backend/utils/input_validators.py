@@ -22,6 +22,7 @@ Usage:
     def validate_name(cls, v: str) -> str:
         return validate_string_field(v, field_name="name", min_length=1, max_length=100)
 """
+
 import re
 from typing import Optional
 
@@ -29,14 +30,14 @@ from typing import Optional
 # Dangerous patterns that might indicate injection attempts
 # NOTE: Patterns are designed to catch actual attacks while allowing legitimate business text
 DANGEROUS_PATTERNS = [
-    r'<script[^>]*>',  # XSS - script tags
-    r'javascript:',     # XSS - javascript: protocol
-    r'on\w+\s*=',      # XSS - event handlers (onclick=, onerror=, etc.)
-    r';\s*(?:DROP|DELETE|INSERT|UPDATE|ALTER|CREATE)\s+(?:TABLE|DATABASE|INDEX)',  # SQL injection (requires SQL keywords after semicolon)
-    r'\.\./|\.\.',     # Path traversal
-    r'\$\{',           # Template injection
-    r'`[^`]*(?:bash|sh|cmd|powershell|python|ruby|perl|node|rm|curl|wget)[^`]*`',  # Command execution in backticks
-    r'\|\s*(?:bash|sh|cmd|powershell|python|ruby|perl|node|rm|curl|wget)',  # Command piping to shell executables
+    r"<script[^>]*>",  # XSS - script tags
+    r"javascript:",  # XSS - javascript: protocol
+    r"on\w+\s*=",  # XSS - event handlers (onclick=, onerror=, etc.)
+    r";\s*(?:DROP|DELETE|INSERT|UPDATE|ALTER|CREATE)\s+(?:TABLE|DATABASE|INDEX)",  # SQL injection (requires SQL keywords after semicolon)
+    r"\.\./|\.\.",  # Path traversal
+    r"\$\{",  # Template injection
+    r"`[^`]*(?:bash|sh|cmd|powershell|python|ruby|perl|node|rm|curl|wget)[^`]*`",  # Command execution in backticks
+    r"\|\s*(?:bash|sh|cmd|powershell|python|ruby|perl|node|rm|curl|wget)",  # Command piping to shell executables
 ]
 # Removed overly restrictive patterns (fixed in todo.md issue 2.1):
 # - r'--' : Blocked legitimate double hyphens (e.g., "self-service", "Q1--Q2", business names with dashes)
@@ -111,8 +112,7 @@ def validate_string_field(
     # Check custom pattern
     if pattern and not re.match(pattern, value):
         raise ValueError(
-            f"{field_name} format is invalid. "
-            f"Please check the format and try again."
+            f"{field_name} format is invalid. " f"Please check the format and try again."
         )
 
     return value
@@ -134,7 +134,7 @@ def validate_email(email: str) -> str:
     email = email.strip().lower()
 
     # Basic email regex (RFC 5322 simplified)
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 
     if not re.match(email_pattern, email):
         raise ValueError(
@@ -203,7 +203,7 @@ def validate_id_field(
         )
 
     # IDs should only contain safe characters
-    if not re.match(r'^[a-zA-Z0-9_-]+$', value):
+    if not re.match(r"^[a-zA-Z0-9_-]+$", value):
         raise ValueError(
             f"{field_name} contains invalid characters. "
             f"Please use only letters, numbers, hyphens (-), and underscores (_)."
@@ -234,8 +234,8 @@ def validate_integer_field(
         ValueError: If validation fails
     """
     if not isinstance(value, int):
-        try:
-            value = int(value)
+        try:  # type: ignore[unreachable]
+            value = int(value)  # type: ignore[arg-type]
         except (ValueError, TypeError):
             raise ValueError(
                 f"{field_name} must be a whole number. "
@@ -281,8 +281,8 @@ def validate_float_field(
         ValueError: If validation fails
     """
     if not isinstance(value, (int, float)):
-        try:
-            value = float(value)
+        try:  # type: ignore[unreachable]
+            value = float(value)  # type: ignore[arg-type]
         except (ValueError, TypeError):
             raise ValueError(
                 f"{field_name} must be a valid number. "
@@ -339,9 +339,12 @@ def validate_enum_field(
         if value_lower not in allowed_lower:
             # Format allowed values nicely
             if len(allowed_values) <= 3:
-                options_str = ', '.join(f"'{v}'" for v in allowed_values)
+                options_str = ", ".join(f"'{v}'" for v in allowed_values)
             else:
-                options_str = ', '.join(f"'{v}'" for v in allowed_values[:3]) + f", or {len(allowed_values) - 3} more"
+                options_str = (
+                    ", ".join(f"'{v}'" for v in allowed_values[:3])
+                    + f", or {len(allowed_values) - 3} more"
+                )
 
             raise ValueError(
                 f"{field_name} has an invalid value: '{value}'. "
@@ -354,9 +357,12 @@ def validate_enum_field(
         if value not in allowed_values:
             # Format allowed values nicely
             if len(allowed_values) <= 3:
-                options_str = ', '.join(f"'{v}'" for v in allowed_values)
+                options_str = ", ".join(f"'{v}'" for v in allowed_values)
             else:
-                options_str = ', '.join(f"'{v}'" for v in allowed_values[:3]) + f", or {len(allowed_values) - 3} more"
+                options_str = (
+                    ", ".join(f"'{v}'" for v in allowed_values[:3])
+                    + f", or {len(allowed_values) - 3} more"
+                )
 
             raise ValueError(
                 f"{field_name} has an invalid value: '{value}'. "
@@ -381,11 +387,11 @@ def sanitize_html(html: str, allow_tags: Optional[list[str]] = None) -> str:
 
     if allow_tags is None:
         # Strip all HTML tags by default
-        return re.sub(r'<[^>]+>', '', html)
+        return re.sub(r"<[^>]+>", "", html)
 
     # For now, just strip all tags
     # In production, use a library like bleach for proper HTML sanitization
-    return re.sub(r'<[^>]+>', '', html)
+    return re.sub(r"<[^>]+>", "", html)
 
 
 def validate_json_field(
@@ -416,9 +422,7 @@ def validate_json_field(
     if required_keys:
         missing = set(required_keys) - set(value.keys())
         if missing:
-            raise ValueError(
-                f"{field_name} is missing required keys: {', '.join(missing)}"
-            )
+            raise ValueError(f"{field_name} is missing required keys: {', '.join(missing)}")
 
     # Check depth (prevent DoS via deeply nested objects)
     def check_depth(obj, current_depth=0):

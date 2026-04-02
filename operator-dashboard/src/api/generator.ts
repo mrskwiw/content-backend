@@ -46,6 +46,7 @@ export interface TemplateValidationResponse {
   blocked_templates: ValidationBlockedTemplate[];
   warnings: ValidationWarning[];
   errors: string[];
+  story_counts: Record<string, number>;
 }
 
 const TemplateValidationResponseSchema = z.object({
@@ -65,6 +66,7 @@ const TemplateValidationResponseSchema = z.object({
     missing_research_tools: z.array(z.string()),
   })),
   errors: z.array(z.string()),
+  story_counts: z.record(z.string(), z.number()).default({}),
 });
 
 export const generatorApi = {

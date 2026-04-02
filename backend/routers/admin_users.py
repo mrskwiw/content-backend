@@ -90,7 +90,9 @@ def require_super_admin(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-@router.post("/users/{user_id}/activate", response_model=UserResponse)
+@router.post(
+    "/users/{user_id}/activate", response_model=UserResponse, response_model_by_alias=False
+)
 async def activate_user(
     user_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)
 ):
@@ -135,7 +137,9 @@ async def activate_user(
     )
 
 
-@router.post("/users/{user_id}/deactivate", response_model=UserResponse)
+@router.post(
+    "/users/{user_id}/deactivate", response_model=UserResponse, response_model_by_alias=False
+)
 async def deactivate_user(
     user_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)
 ):
@@ -188,7 +192,7 @@ async def deactivate_user(
     )
 
 
-@router.post("/users/{user_id}/promote", response_model=UserResponse)
+@router.post("/users/{user_id}/promote", response_model=UserResponse, response_model_by_alias=False)
 async def promote_to_admin(
     user_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)
 ):
@@ -242,7 +246,7 @@ async def promote_to_admin(
     )
 
 
-@router.post("/users/{user_id}/demote", response_model=UserResponse)
+@router.post("/users/{user_id}/demote", response_model=UserResponse, response_model_by_alias=False)
 async def demote_from_admin(
     user_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)
 ):
@@ -300,7 +304,9 @@ async def demote_from_admin(
     )
 
 
-@router.post("/users/{user_id}/reset-password", response_model=UserResponse)
+@router.post(
+    "/users/{user_id}/reset-password", response_model=UserResponse, response_model_by_alias=False
+)
 def reset_user_password(
     user_id: str,
     request: "PasswordResetRequest",
@@ -350,7 +356,7 @@ def reset_user_password(
     )
 
 
-@router.get("/users", response_model=List[UserResponse])
+@router.get("/users", response_model=List[UserResponse], response_model_by_alias=False)
 async def list_all_users(
     skip: int = 0,
     limit: int = 100,
@@ -389,7 +395,7 @@ async def list_all_users(
     ]
 
 
-@router.get("/users/inactive", response_model=List[UserResponse])
+@router.get("/users/inactive", response_model=List[UserResponse], response_model_by_alias=False)
 async def list_inactive_users(
     skip: int = 0,
     limit: int = 100,
@@ -464,7 +470,12 @@ async def get_user_stats(
     )
 
 
-@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/users",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
 async def create_user(
     user_data: AdminUserCreate,
     db: Session = Depends(get_db),

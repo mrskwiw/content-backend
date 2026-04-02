@@ -289,11 +289,20 @@ Business: {business_description}
 Current Content Topics: {topics_str}
 
 Provide a structured analysis:
-1. Content coverage areas (what topics are covered)
-2. Content depth (superficial vs comprehensive)
-3. Content formats present (blog, video, checklist, etc.)
-4. Buyer journey stages covered (awareness, consideration, decision)
-5. Audience segments addressed
+1. Content coverage areas (what topics are covered) — array of strings
+2. Content depth — one of: "superficial", "moderate", "comprehensive"
+3. Content formats present (blog, video, checklist, etc.) — array of strings
+4. Buyer journey stages covered — array containing any of: "awareness", "consideration", "decision"
+5. Audience segments addressed — array of strings
+
+Example output:
+{{
+  "coverage_areas": ["pricing strategy", "onboarding", "ROI measurement"],
+  "depth_assessment": "moderate",
+  "formats": ["blog posts", "case studies", "webinars"],
+  "buyer_stages": ["awareness", "consideration"],
+  "audience_segments": ["SMB founders", "marketing managers"]
+}}
 
 Return ONLY valid JSON with these exact keys: coverage_areas, depth_assessment, formats, buyer_stages, audience_segments. No markdown. No explanation."""
 

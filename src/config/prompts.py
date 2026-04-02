@@ -375,21 +375,22 @@ SEARCH STRATEGY:
 
 OUTPUT FORMAT:
 
-Return a structured analysis with these sections:
-- Brand voice and tone
-- Voice characteristics (adjectives)
-- Target audience (specific)
-- Pain points (5-10)
-- Customer questions (5-10)
-- Unique value proposition
-- Proof points/results
-- Topics/themes
-- Stories/examples
-- Competitive positioning
+Return ONLY valid JSON matching this exact schema. No markdown fences, no explanation.
 
-Be thorough but concise. Include ALL relevant information found in the brief.
+{
+  "brand_voice": "string — overall tone description",
+  "voice_characteristics": ["adjective1", "adjective2", "adjective3"],
+  "target_audience": "string — specific description including size/industry/role",
+  "pain_points": ["pain point 1", "pain point 2", "...5-10 items"],
+  "customer_questions": ["question 1?", "question 2?", "...5-10 items"],
+  "unique_value": "string — key differentiator",
+  "proof_points": ["stat or result 1", "stat or result 2"],
+  "topics": ["topic 1", "topic 2", "...content themes"],
+  "stories": ["story or anecdote 1", "..."],
+  "competitive_positioning": "string — how they differ from competitors"
+}
 
-Format response as clear sections or JSON structure."""
+If a field has no information in the brief, use null for strings or [] for arrays. Do not omit fields."""
 
     POST_REFINEMENT = """You are an expert editor refining social media content.
 

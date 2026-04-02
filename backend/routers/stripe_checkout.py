@@ -20,8 +20,11 @@ from backend.middleware.auth_dependency import get_current_user
 from backend.models import User
 from backend.models.stripe_payment import StripePayment
 from backend.schemas.stripe_schemas import (
+    BillingPortalRequest,
+    BillingPortalResponse,
     CheckoutSessionRequest,
     CheckoutSessionResponse,
+    PaymentHistoryItem,
     PaymentStatusResponse,
 )
 from backend.services import stripe_service
@@ -153,3 +156,51 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             stripe_service.fail_payment(db, pi_id)
 
     return {"received": True}
+
+
+@router.get("/payments", response_model=list[PaymentHistoryItem])
+async def list_payments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return Stripe payment history for the current user."""
+    payments = (
+        db.query(StripePayment)
+        .filter(StripePayment.user_id == current_user.id)
+        .order_by(StripePayment.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return [
+        PaymentHistoryItem(
+            id=p.id,
+            session_id=p.stripe_session_id,
+            amount_usd=p.amount_usd,
+            credits=p.credits,
+            status=p.status,
+            package_id=p.package_id,
+            created_at=p.created_at,
+        )
+        for p in payments
+    ]
+
+
+@router.post("/portal", response_model=BillingPortalResponse)
+@standard_limiter.limit("10/hour")
+async def create_billing_portal(
+    request: Request,
+    body: BillingPortalRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a Stripe Customer Portal session and return the URL."""
+    try:
+        portal_url = stripe_service.create_billing_portal_session(
+            db=db,
+            user=current_user,
+            return_url=body.return_url,
+        )
+        return BillingPortalResponse(portal_url=portal_url)
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating billing portal: {e}")
+        raise HTTPException(status_code=502, detail="Payment service unavailable")

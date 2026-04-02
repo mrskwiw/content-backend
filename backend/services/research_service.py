@@ -642,6 +642,44 @@ class ResearchService:
                         # Save to database
                         db_story = story_service.create_story(db, story_create, project.user_id)
 
+                        # Classify story for content template eligibility
+                        try:
+                            import types as _types
+                            from src.research.story_mining import StoryMiner
+
+                            _story_ns = _types.SimpleNamespace(
+                                one_sentence_summary=story_data.get("one_sentence_summary", "")
+                                or story_data.get("story_title", ""),
+                                customer_background=_types.SimpleNamespace(
+                                    starting_situation=(
+                                        story_data.get("customer_background") or {}
+                                    ).get("starting_situation", "")
+                                ),
+                                challenge=_types.SimpleNamespace(
+                                    problem_description=(story_data.get("challenge") or {}).get(
+                                        "problem_description", ""
+                                    )
+                                ),
+                                results=_types.SimpleNamespace(
+                                    quantitative_results=(story_data.get("results") or {}).get(
+                                        "quantitative_results", []
+                                    )
+                                ),
+                            )
+                            _miner = StoryMiner(project_id=project_id or "service-classification")
+                            eligible_templates = _miner._classify_story_templates(_story_ns)
+                            if eligible_templates:
+                                db_story.eligible_templates = eligible_templates
+                                db.commit()
+                                db.refresh(db_story)
+                                logger.info(
+                                    f"Classified story {db_story.id} templates: {eligible_templates}"
+                                )
+                        except Exception as _ce:
+                            logger.warning(
+                                f"Story template classification failed (non-critical): {_ce}"
+                            )
+
                         logger.info(
                             f"Saved mined story to database: {db_story.id} "
                             f"(title: {db_story.title})"
@@ -1064,9 +1102,13 @@ class ResearchService:
                     publish_date=None,
                     performance_metrics="Placeholder for client content analysis",
                 )
-                content_inventory = [placeholder]
+                content_inventory = [placeholder.model_dump()]
                 logger.info("Auto-generated placeholder content inventory")
-            inputs["content_inventory"] = content_inventory
+            # Convert ContentPiece objects to dicts if needed
+            inputs["content_inventory"] = [
+                item.model_dump() if hasattr(item, "model_dump") else item
+                for item in content_inventory
+            ]
 
         elif tool_name == "business_report":
             # Business report needs company name and location

@@ -4,7 +4,7 @@ Story models for Story Mining feature.
 Tracks mined client stories and their usage across posts/platforms.
 """
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -46,6 +46,9 @@ class MinedStory(Base):
         JSON, nullable=True
     )  # Numbers, results achieved (e.g., {"revenue": "+40%", "time": "6 months"})
     emotional_hook = Column(Text, nullable=True)  # Compelling element that makes story memorable
+    eligible_templates = Column(
+        JSON, nullable=True
+    )  # Template slugs this story qualifies for e.g. ["personal_story", "things_i_got_wrong"]
 
     # Metadata
     source = Column(
@@ -75,12 +78,23 @@ class StoryUsage(Base):
     """
 
     __tablename__ = "story_usage"
-    __table_args__ = {"extend_existing": True}
+    __table_args__ = (
+        UniqueConstraint(
+            "story_id", "template_name", "project_id", name="uix_story_template_project"
+        ),
+        {"extend_existing": True},
+    )
 
     id = Column(String, primary_key=True)  # usage-{uuid}
     story_id = Column(String, ForeignKey("mined_stories.id"), nullable=False, index=True)
     post_id = Column(String, ForeignKey("posts.id"), nullable=False, index=True)
     template_id = Column(Integer, nullable=True)  # Template number (1-15)
+    template_name = Column(
+        String(100), nullable=True, index=True
+    )  # Template slug e.g. "personal_story" -- used for per-template dedup
+    project_id = Column(
+        String, ForeignKey("projects.id"), nullable=True, index=True
+    )  # Per-project story reuse tracking
 
     # Platform tracking (prevents reuse on same platform)
     platform = Column(

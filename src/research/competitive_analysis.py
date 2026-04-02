@@ -291,7 +291,24 @@ Provide a comprehensive competitor profile including:
 Return as JSON with keys:
 positioning, target_audience, content_types (array), content_frequency, content_topics (array),
 brand_voice, tone_descriptors (array), strengths (array), weaknesses (array),
-estimated_reach, engagement_level"""
+estimated_reach, engagement_level
+
+Example when data is missing:
+{{
+  "positioning": "Premium B2B software for enterprise teams",
+  "target_audience": "Enterprise IT directors",
+  "content_types": ["blog", "case studies"],
+  "content_frequency": "Unknown — not found in search results",
+  "content_topics": ["security", "compliance", "integration"],
+  "brand_voice": "Professional and authoritative",
+  "tone_descriptors": ["technical", "formal", "credible"],
+  "strengths": ["Strong case study library", "Clear enterprise focus"],
+  "weaknesses": ["Limited social media presence"],
+  "estimated_reach": "Unknown — not found in search results",
+  "engagement_level": "weak"
+}}
+
+Use "Unknown — not found in search results" for string fields with no data. Use [] for array fields with no data."""
 
             try:
                 response = self.client.create_message(

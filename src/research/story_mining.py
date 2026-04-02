@@ -198,27 +198,29 @@ class StoryMiner(ResearchTool, CommonValidationMixin):
         self, client: Any, business_description: str, customer_context: str, notes: str
     ) -> CustomerBackground:
         """Gather customer background"""
-        prompt = f"""You are conducting a story mining interview. Based on this information, determine the customer's background.
+        prompt = f"""Extract the customer's background from the provided business information. Return ONLY JSON — do not ask follow-up questions.
 
 Business: {business_description}
 Customer Context: {customer_context}
 {f'Additional Notes: {notes}' if notes else ''}
 
-Extract customer background:
-1. Customer/company name (if mentioned)
+Extract these fields:
+1. Customer/company name (if mentioned, else null)
 2. Industry vertical
-3. Company size (if known)
+3. Company size (if known, else null)
 4. Customer's role/title
-5. Starting situation (before using solution)
+5. Starting situation (before using the solution)
 6. Key responsibilities (3-5 items)
 
-Return JSON with:
-- customer_name: string (or null)
-- industry: string
-- company_size: string (or null)
-- role_title: string
-- starting_situation: string
-- key_responsibilities: array of strings"""
+Return ONLY valid JSON with these exact keys. Use null for unknown string fields, [] for unknown arrays:
+{{
+  "customer_name": "string or null",
+  "industry": "string",
+  "company_size": "string or null",
+  "role_title": "string",
+  "starting_situation": "string",
+  "key_responsibilities": ["responsibility 1", "responsibility 2"]
+}}"""
 
         # Call Claude API with automatic JSON extraction (Phase 3 deduplication)
         data = self._call_claude_api(
@@ -605,6 +607,156 @@ Return as markdown text (not JSON)."""
             prompt, max_tokens=2000, temperature=0.4, extract_json=False, fallback_on_error=""
         )
         return text.strip() if isinstance(text, str) else ""
+
+    def _classify_story_templates(self, story: "SuccessStory") -> List[str]:
+        """
+        Classify a mined story to determine which content templates it is eligible for.
+
+        Returns a list of template slugs from:
+          - personal_story: vulnerable narrative, transformation arc, identity shift
+          - things_i_got_wrong: mistake, failure, wrong assumption, lesson learned
+          - milestone: concrete achievement, metric reached, before/after comparison
+
+        Returns:
+            List of template slugs the story qualifies for (may be empty)
+        """
+        title = story.one_sentence_summary or ""
+        summary = story.customer_background.starting_situation or ""
+        results = (
+            ", ".join(story.results.quantitative_results[:3])
+            if story.results.quantitative_results
+            else ""
+        )
+        challenge = story.challenge.problem_description or ""
+
+        prompt = f"""Classify this customer story for content template eligibility.
+
+Story title/summary: {title}
+Starting situation: {summary}
+Core challenge: {challenge}
+Key results: {results}
+
+Available templates and their criteria:
+- personal_story: deeply personal narrative with vulnerability, transformation arc, or identity shift
+- things_i_got_wrong: a mistake, failure, wrong assumption, or lesson learned the hard way
+- milestone: a concrete achievement, specific metric reached, or clear before/after comparison
+
+Return ONLY a valid JSON array of matching template names.
+Example: ["personal_story", "milestone"]
+Only include templates where the story is a genuine fit. Return [] if none match.
+No markdown. No explanation."""
+
+        result = self._call_claude_api(
+            prompt, max_tokens=200, temperature=0.2, extract_json=True, fallback_on_error=[]
+        )
+        if isinstance(result, list):
+            valid = {"personal_story", "things_i_got_wrong", "milestone"}
+            return [t for t in result if t in valid]
+        return []
+
+    def _save_stories_to_db(
+        self,
+        analysis: StoryMiningAnalysis,
+        db: Any,
+        client_id: str,
+        project_id: Optional[str],
+        user_id: str,
+    ) -> Optional[Any]:
+        """
+        Persist the mined story as a MinedStory DB record with template eligibility flags.
+
+        Called after run_analysis() completes, when DB context is available (API mode).
+        In CLI mode db=None, this method returns early without writing.
+
+        Args:
+            analysis: Completed StoryMiningAnalysis from run_analysis()
+            db: SQLAlchemy Session (None in CLI mode)
+            client_id: Client this story belongs to
+            project_id: Optional project context
+            user_id: User who ran Story Mining
+
+        Returns:
+            Created MinedStory instance or None
+        """
+        import uuid
+
+        if db is None:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "[Story Mining] No DB session provided -- skipping mined_stories write (CLI mode)"
+            )
+            return None
+
+        story = analysis.story
+
+        # Classify which templates this story is eligible for
+        eligible = self._classify_story_templates(story)
+
+        # Build structured full_story JSON
+        full_story = {
+            "background": {
+                "industry": story.customer_background.industry,
+                "role": story.customer_background.role_title,
+                "starting_situation": story.customer_background.starting_situation,
+            },
+            "challenge": {
+                "problem": story.challenge.problem_description,
+                "impact": story.challenge.impact_on_business,
+                "cost_of_inaction": story.challenge.cost_of_inaction,
+            },
+            "resolution": {
+                "why_chose": story.decision_process.why_chose_solution,
+                "implementation": story.implementation.getting_started,
+            },
+            "results": {
+                "quantitative": story.results.quantitative_results,
+                "roi": story.results.roi_metrics,
+                "before_after": story.results.before_after_comparison,
+            },
+        }
+
+        key_metrics = {
+            "quantitative_results": story.results.quantitative_results,
+            "roi_metrics": story.results.roi_metrics,
+            "time_savings": story.results.time_savings,
+        }
+
+        emotional_hook = story.testimonials.headline_quote or story.one_sentence_summary or ""
+
+        try:
+            from backend.models.story import MinedStory  # local import to avoid circular deps
+
+            story_id = f"story-{uuid.uuid4().hex[:12]}"
+            db_story = MinedStory(
+                id=story_id,
+                client_id=client_id,
+                project_id=project_id,
+                user_id=user_id,
+                story_type="customer_success",
+                title=story.story_title,
+                summary=story.one_sentence_summary,
+                full_story=full_story,
+                key_metrics=key_metrics,
+                emotional_hook=emotional_hook,
+                eligible_templates=eligible if eligible else None,
+                source="story_mining_tool",
+            )
+            db.add(db_story)
+            db.commit()
+            db.refresh(db_story)
+            import logging
+
+            logging.getLogger(__name__).info(
+                f"[Story Mining] Saved MinedStory {story_id} with eligible_templates={eligible}"
+            )
+            return db_story
+        except Exception as exc:
+            import logging
+
+            logging.getLogger(__name__).error(f"[Story Mining] Failed to save MinedStory: {exc}")
+            db.rollback()
+            return None
 
     def generate_reports(self, analysis: StoryMiningAnalysis) -> Dict[str, Path]:
         """Generate output files"""

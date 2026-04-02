@@ -14,15 +14,14 @@ export default function ResearchResults() {
   });
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
 
-  // Fetch all research results
-  // Note: This is simplified - in production you'd fetch by client or project
   const { data: results, isLoading } = useQuery({
     queryKey: ['research-results', filters],
-    queryFn: async () => {
-      // TODO: Update to fetch across all clients for current user
-      // For now, return empty array as placeholder
-      return { results: [], total: 0 };
-    }
+    queryFn: () =>
+      researchApi.getAllResults({
+        toolName: filters.toolType,
+        clientId: filters.clientId,
+        days: parseInt(filters.dateRange, 10),
+      }),
   });
 
   if (isLoading) {

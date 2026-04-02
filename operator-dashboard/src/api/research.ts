@@ -230,6 +230,23 @@ export const researchApi = {
   },
 
   /**
+   * Fetch all research results for the current user across all clients/projects.
+   * Supports optional filtering by tool name, client ID, and date range.
+   */
+  async getAllResults(params?: {
+    toolName?: string;
+    clientId?: string;
+    days?: number;
+  }): Promise<ResearchResultListResponse> {
+    const query: Record<string, string | number> = {};
+    if (params?.toolName && params.toolName !== 'all') query.tool_name = params.toolName;
+    if (params?.clientId && params.clientId !== 'all') query.client_id = params.clientId;
+    if (params?.days) query.days = params.days;
+    const { data } = await apiClient.get('/api/research/results/', { params: query });
+    return ResearchResultListResponseSchema.parse(data);
+  },
+
+  /**
    * Fetch the content of a research result output file
    */
   async getResearchOutputContent(

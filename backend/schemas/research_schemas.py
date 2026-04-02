@@ -64,8 +64,10 @@ class SEOKeywordParams(BaseModel):
     def validate_topics(cls, v: Optional[List[str]]) -> Optional[List[str]]:
         """Validate topics list if provided."""
         # Allow None - will trigger auto-generation
-        if v is None or len(v) == 0:
+        if v is None:
             return None
+        if len(v) == 0:
+            raise ValueError("Must provide between 1-10 main topics")
 
         if not 1 <= len(v) <= 10:
             raise ValueError("Must provide between 1-10 main topics")
@@ -198,8 +200,10 @@ class ContentAuditParams(BaseModel):
     def validate_inventory(cls, v: Optional[List[ContentPiece]]) -> Optional[List[ContentPiece]]:
         """Validate content inventory."""
         # Allow None - will auto-generate placeholder
-        if v is None or len(v) == 0:
+        if v is None:
             return None
+        if len(v) == 0:
+            raise ValueError("Must provide between 1-100 content pieces")
 
         if not 1 <= len(v) <= 100:
             raise ValueError("Must provide between 1-100 content pieces")
@@ -544,7 +548,7 @@ class ResearchResultResponse(BaseModel):
         default=None, serialization_alias="toolPrice"
     )  # Business model price
     params: Optional[Dict[str, Any]] = None
-    outputs: Dict[str, str]
+    outputs: Optional[Dict[str, Any]] = None
     data: Optional[Dict[str, Any]] = None
     status: str
     error_message: Optional[str] = Field(default=None, serialization_alias="errorMessage")

@@ -46,6 +46,7 @@ def soft_delete_client(client_id: str, db: Session, cascade: bool = True) -> Dic
         "client_id": client_id,
         "deleted_at": client.deleted_at.isoformat(),
         "deleted_counts": deleted_counts,
+        "recovery_period_days": 30,
     }
 
 
@@ -81,6 +82,11 @@ def export_client_data(client_id: str, db: Session) -> Dict:
     export_data = {
         "client": {"id": client.id, "name": client.name, "email": client.email},
         "projects": [],
+        "export_metadata": {
+            "exported_at": datetime.utcnow().isoformat(),
+            "format": "json",
+            "version": "1.0",
+        },
     }
     for p in projects:
         export_data["projects"].append({"id": p.id, "name": p.name, "status": p.status})

@@ -19,9 +19,79 @@ Rate Limits (from TRA report):
 OWASP Top 10 2021: API4:2023 - Unrestricted Resource Consumption
 """
 
+import time
+from urllib.parse import urlparse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi import Request
+from fastapi.responses import JSONResponse
+from backend.config import settings
+
+
+def get_real_ip(request: Request) -> str:
+    """
+    Extract real client IP, handling proxy headers securely.
+
+    In production (DEBUG_MODE=False): checks X-Forwarded-For and X-Real-IP headers.
+    In debug mode (DEBUG_MODE=True): ignores proxy headers to prevent IP spoofing during dev.
+
+    Security: Always take the FIRST IP in X-Forwarded-For chain (client IP, not proxy IP).
+
+    Returns:
+        Real client IP address as string
+    """
+    # In debug mode, ignore proxy headers (security: can't trust them locally)
+    if getattr(settings, "DEBUG_MODE", False):
+        return get_remote_address(request)
+
+    # Check X-Forwarded-For (standard proxy header)
+    x_forwarded_for = request.headers.get("X-Forwarded-For")
+    if x_forwarded_for:
+        # First IP is the client, rest are proxies - strip whitespace
+        return x_forwarded_for.split(",")[0].strip()
+
+    # Check X-Real-IP (nginx proxy header)
+    x_real_ip = request.headers.get("X-Real-IP")
+    if x_real_ip:
+        return x_real_ip.strip()
+
+    # Fall back to direct connection IP
+    return get_remote_address(request)
+
+
+def get_storage_uri() -> str:
+    """
+    Determine storage URI for rate limiter.
+
+    Tries Redis first (from settings.RATE_LIMIT_STORAGE), falls back to in-memory if unavailable.
+
+    Returns:
+        Storage URI string (redis:// or memory://)
+    """
+    storage = getattr(settings, "RATE_LIMIT_STORAGE", "memory://")
+
+    if not storage or storage == "memory://":
+        return "memory://"
+
+    # Try to connect to Redis to verify it's available
+    try:
+        import redis
+
+        parsed = urlparse(storage)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 6379
+        db_path = parsed.path.lstrip("/")
+        db = int(db_path) if db_path.isdigit() else 0
+        r = redis.Redis(host=host, port=port, db=db, socket_connect_timeout=1)
+        r.ping()
+        r.close()
+        return storage
+    except Exception:
+        return "memory://"
+
+
+# Determine storage URI at module load time
+_storage_uri = get_storage_uri()
 
 
 def get_user_id_or_ip(request: Request) -> str:
@@ -35,8 +105,8 @@ def get_user_id_or_ip(request: Request) -> str:
     if hasattr(request.state, "user") and request.state.user:
         return f"user:{request.state.user.id}"
 
-    # Fall back to IP address
-    return get_remote_address(request)
+    # Fall back to real IP address (proxy-aware)
+    return get_real_ip(request)
 
 
 def get_composite_key(request: Request) -> str:
@@ -48,7 +118,7 @@ def get_composite_key(request: Request) -> str:
     - Prevents single IP from creating multiple accounts to bypass limits
     - Provides defense-in-depth for critical operations
     """
-    ip = get_remote_address(request)
+    ip = get_real_ip(request)
     user = getattr(request.state, "user", None)
 
     if user and hasattr(user, "id"):
@@ -61,7 +131,7 @@ def get_composite_key(request: Request) -> str:
 limiter = Limiter(
     key_func=get_user_id_or_ip,
     default_limits=["60/minute"],  # Default limit for all endpoints
-    storage_uri="memory://",  # In-memory storage (use Redis for production clustering)
+    storage_uri=_storage_uri,  # Determined at module load (Redis or memory fallback)
     strategy="fixed-window",  # Fixed time window
 )
 
@@ -71,7 +141,7 @@ limiter = Limiter(
 strict_limiter = Limiter(
     key_func=get_composite_key,
     default_limits=[],  # No default - explicitly set per endpoint
-    storage_uri="memory://",
+    storage_uri=_storage_uri,
     strategy="fixed-window",
 )
 
@@ -97,10 +167,38 @@ lenient_limiter = Limiter(
 # Custom rate limit error message
 def rate_limit_exceeded_handler(request: Request, exc):
     """Custom handler for rate limit exceeded errors"""
-    return {
-        "error": {
-            "code": "RATE_LIMIT_EXCEEDED",
-            "message": "Too many requests. Please try again later.",
-            "retry_after": exc.detail,  # Seconds until reset
-        }
+    # Parse retry_after from exc.detail (e.g. "10 per 1 hour")
+    retry_after = 3600  # default 1 hour in seconds
+    try:
+        # slowapi puts the limit string in exc.detail
+        detail = str(exc.detail) if exc.detail else ""
+        if "minute" in detail:
+            retry_after = 60
+        elif "hour" in detail:
+            retry_after = 3600
+        elif "second" in detail:
+            retry_after = 1
+    except Exception:
+        pass
+
+    reset_at = int(time.time()) + retry_after
+
+    headers = {
+        "Retry-After": str(retry_after),
+        "X-RateLimit-Limit": "10",
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": str(reset_at),
     }
+
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": {
+                "code": "RATE_LIMIT_EXCEEDED",
+                "message": "Too many requests. Please try again later.",
+                "retry_after": retry_after,
+                "reset_at": reset_at,
+            }
+        },
+        headers=headers,
+    )

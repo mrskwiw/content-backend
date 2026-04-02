@@ -1,6 +1,7 @@
 """
 Shared enums for API schemas.
 """
+
 from enum import Enum
 
 
@@ -8,11 +9,23 @@ class Platform(str, Enum):
     """Social media platforms supported by the system"""
 
     LINKEDIN = "linkedin"
+    LINKEDIN_POSTS = "linkedin-posts"
+    LINKEDIN_ARTICLES = "linkedin-articles"
     TWITTER = "twitter"
+    TWITTER_THREADS = "twitter-threads"
     FACEBOOK = "facebook"
+    INSTAGRAM = "instagram"
+    MEDIUM = "medium"
+    SUBSTACK = "substack"
+    WORDPRESS = "wordpress"
+    GHOST = "ghost"
+    NOTION = "notion"
     BLOG = "blog"
     EMAIL = "email"
     GENERIC = "generic"  # Generic/multi-platform content
+    DOCX = "docx"  # Export format
+    MARKDOWN = "markdown"  # Export format
+    TXT = "txt"  # Export format
 
 
 class PostStatus(str, Enum):

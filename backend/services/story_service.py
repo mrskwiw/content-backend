@@ -223,6 +223,116 @@ class StoryService:
 
         return query.order_by(MinedStory.created_at.desc()).limit(limit).all()
 
+    def get_available_stories_for_template(
+        self,
+        db: Session,
+        client_id: str,
+        template_name: str,
+        project_id: Optional[str],
+        limit: int = 5,
+    ) -> List[MinedStory]:
+        """
+        Get stories eligible for a template that have not yet been used
+        for that template in this project.
+
+        Args:
+            db: Database session
+            client_id: Client ID
+            template_name: Template slug e.g. "personal_story"
+            project_id: Project ID (None matches stories with no project usage)
+            limit: Max stories to return
+
+        Returns:
+            List of available MinedStory instances ordered by created_at DESC
+        """
+        # Fetch all client stories that have eligible_templates populated
+        all_stories = (
+            db.query(MinedStory)
+            .filter(
+                MinedStory.client_id == client_id,
+                MinedStory.eligible_templates.isnot(None),
+            )
+            .order_by(MinedStory.created_at.desc())
+            .all()
+        )
+
+        # Filter in Python: eligible_templates must contain template_name
+        eligible = [
+            s
+            for s in all_stories
+            if isinstance(s.eligible_templates, list) and template_name in s.eligible_templates
+        ]
+
+        if not eligible:
+            return []
+
+        # Exclude stories already used for this template+project
+        eligible_ids = [s.id for s in eligible]
+        used_query = db.query(StoryUsage.story_id).filter(
+            StoryUsage.story_id.in_(eligible_ids),
+            StoryUsage.template_name == template_name,
+        )
+        if project_id:
+            used_query = used_query.filter(StoryUsage.project_id == project_id)
+        used_ids = {row[0] for row in used_query.distinct().all()}
+
+        available = [s for s in eligible if s.id not in used_ids]
+        return available[:limit]
+
+    def mark_story_used_for_template(
+        self,
+        db: Session,
+        story_id: str,
+        template_name: str,
+        project_id: Optional[str],
+        post_id: Optional[str] = None,
+    ) -> Optional[StoryUsage]:
+        """
+        Record that a story was used for a specific template in a project.
+
+        Idempotent: silently returns None if this (story_id, template_name,
+        project_id) combination already exists (unique constraint violation).
+
+        Args:
+            db: Database session
+            story_id: ID of the story that was used
+            template_name: Template slug e.g. "personal_story"
+            project_id: Project ID this generation belongs to
+            post_id: Optional post ID that used the story
+
+        Returns:
+            Created StoryUsage or None if already recorded
+        """
+        import uuid
+        from sqlalchemy.exc import IntegrityError
+
+        usage_id = f"usage-{uuid.uuid4().hex[:12]}"
+        # post_id is required by the model FK but may not be available yet;
+        # use a placeholder so we can record usage without a post
+        effective_post_id = post_id or f"pending-{usage_id}"
+
+        db_usage = StoryUsage(
+            id=usage_id,
+            story_id=story_id,
+            post_id=effective_post_id,
+            template_name=template_name,
+            project_id=project_id,
+            usage_type="primary",
+        )
+
+        try:
+            db.add(db_usage)
+            db.commit()
+            db.refresh(db_usage)
+            logger.info(f"Story {story_id} marked used for {template_name} in project {project_id}")
+            return db_usage
+        except IntegrityError:
+            db.rollback()
+            logger.debug(
+                f"Story {story_id} already marked used for {template_name} in project {project_id} -- skipping"
+            )
+            return None
+
     # ==================== Analytics ====================
 
     def get_story_analytics(self, db: Session, story_id: str) -> Optional[StoryAnalytics]:

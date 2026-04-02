@@ -52,8 +52,10 @@ from backend.routers import (
     trends,
     stripe_checkout,
 )
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from backend.utils.http_rate_limiter import (
+    rate_limit_exceeded_handler as _rate_limit_exceeded_handler,
+)
 
 # Import models so SQLAlchemy can create tables
 import backend.models  # noqa: F401
@@ -626,7 +628,9 @@ else:
 # These MUST be registered before any catch-all routes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(admin_users.router, prefix="/api/admin", tags=["Admin - User Management"])
-app.include_router(health.router, prefix="/api", tags=["Health & Monitoring"])
+app.include_router(
+    health.router, prefix="/api", tags=["Health & Monitoring"]
+)  # Routes at /api/health/...
 app.include_router(clients.router, prefix="/api/clients", tags=["Clients"])
 app.include_router(communications.router, prefix="/api", tags=["Communications"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])

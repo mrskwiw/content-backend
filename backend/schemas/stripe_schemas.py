@@ -1,5 +1,6 @@
 """Pydantic schemas for Stripe payment endpoints."""
 
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -23,3 +24,23 @@ class PaymentStatusResponse(BaseModel):
     status: str  # pending | completed | failed | expired
     credits: Optional[int] = None
     project_id: Optional[str] = None
+
+
+class PaymentHistoryItem(BaseModel):
+    id: str
+    session_id: str
+    amount_usd: Optional[float] = None
+    credits: Optional[int] = None
+    status: str
+    package_id: Optional[str] = None
+    created_at: datetime
+
+
+class BillingPortalRequest(BaseModel):
+    return_url: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class BillingPortalResponse(BaseModel):
+    portal_url: str

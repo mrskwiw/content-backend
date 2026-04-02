@@ -268,7 +268,7 @@ CRITICAL: This is a REVISION based on client feedback.
 **Client Context:**
 - Company: {client_brief.company_name}
 - Business: {client_brief.business_description}
-- Voice: {", ".join([t.value for t in client_brief.brand_personality])}
+- Voice: {", ".join([t.value if hasattr(t, "value") else str(t) for t in client_brief.brand_personality])}
 
 **Your Task:**
 Generate a revised version of the post that addresses the client's specific feedback while maintaining the overall quality and structure.

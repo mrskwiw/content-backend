@@ -146,6 +146,20 @@ def expire_payment(db: Session, session_id: str) -> None:
         db.commit()
 
 
+def create_billing_portal_session(db: Session, user, return_url: str) -> str:
+    """
+    Create a Stripe Customer Portal session for managing billing.
+    Returns the portal URL to redirect the user to.
+    """
+    s = _get_stripe()
+    stripe_customer_id = get_or_create_stripe_customer(db, user)
+    session = s.billing_portal.Session.create(
+        customer=stripe_customer_id,
+        return_url=return_url,
+    )
+    return session.url
+
+
 def fail_payment(db: Session, payment_intent_id: str) -> None:
     """Mark a payment as failed (payment_intent.payment_failed webhook)."""
     payment = (

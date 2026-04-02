@@ -461,7 +461,8 @@ def _generate_research_section(project_id: str, db: Session) -> dict:
         # Metadata
         if result.created_at:
             lines.append(f"**Executed:** {result.created_at.strftime('%B %d, %Y at %H:%M')}")
-        # Cost removed: Tools use credits, not dollar prices (Bug #51 fix)
+        if result.tool_price:
+            lines.append(f"**Cost:** ${result.tool_price:.2f}")
         lines.append("")
 
         # Format tool-specific data
@@ -565,6 +566,18 @@ def _read_output_files(outputs: dict) -> List[str]:
 def _format_voice_analysis(data: dict) -> List[str]:
     """Format comprehensive voice analysis results."""
     lines = []
+
+    # Simple format: data has "tone" key but not complex "primary_tone"
+    if "tone" in data and "primary_tone" not in data:
+        lines.append(f"**Tone:** {data['tone']}")
+        if "readability_score" in data:
+            lines.append(f"**Readability Score:** {data['readability_score']}")
+        recommendations = data.get("recommendations", [])
+        if recommendations and isinstance(recommendations, list):
+            lines.append("**Recommendations:**")
+            for rec in recommendations:
+                lines.append(f"- {rec}")
+        return lines
 
     # Summary
     if "summary" in data:
@@ -774,7 +787,16 @@ def _format_brand_archetype(data: dict) -> List[str]:
     secondary_arch = ARCHETYPES.get(secondary_id) if secondary_id else None
 
     if not primary_arch:
-        lines.append(f"**Brand Archetype:** {primary_id}")
+        lines.append(f"**Primary Archetype:** {primary_id}")
+        if secondary_id:
+            secondary_arch_obj = ARCHETYPES.get(secondary_id)
+            secondary_name = secondary_arch_obj.name if secondary_arch_obj else secondary_id
+            lines.append(f"**Secondary Archetype:** {secondary_name}")
+        content_themes = data.get("content_themes", [])
+        if content_themes:
+            lines.append("**Content Themes:**")
+            for theme in content_themes:
+                lines.append(f"- {theme}")
         return lines
 
     # 1. Archetype Summary
@@ -890,6 +912,20 @@ def _format_seo_keywords(data: dict) -> List[str]:
     # 2. Primary Keywords (comprehensive table)
     primary_keywords = data.get("primary_keywords", [])
     if primary_keywords:
+        # Detect simple format: has "volume" but not complex "monthly_volume_estimate"
+        first_kw = primary_keywords[0] if primary_keywords else {}
+        if "volume" in first_kw and "monthly_volume_estimate" not in first_kw:
+            lines.append("**Primary Keywords:**")
+            lines.append("| Keyword | Volume | Difficulty |")
+            lines.append("|---------|--------|------------|")
+            for kw in primary_keywords[:10]:
+                keyword_name = kw.get("keyword", "N/A")
+                volume = kw.get("volume", "N/A")
+                volume_str = f"{volume:,}" if isinstance(volume, int) else str(volume)
+                difficulty = kw.get("difficulty", "N/A")
+                lines.append(f"| {keyword_name} | {volume_str} | {difficulty} |")
+            return lines
+
         lines.append("### Primary Keywords")
         lines.append("")
         lines.append(
@@ -1062,6 +1098,23 @@ def _format_competitive_analysis(data: dict) -> List[str]:
 
     if not data:
         lines.append("**Competitive Analysis:** No data available")
+        return lines
+
+    # Detect simple format: competitors have "strength" or "key_differentiator" keys
+    competitors_raw = data.get("competitors", [])
+    first_comp = competitors_raw[0] if competitors_raw else {}
+    if "strength" in first_comp or "key_differentiator" in first_comp:
+        lines.append("**Key Competitors:**")
+        for comp in competitors_raw:
+            name = comp.get("name", "Unknown")
+            strength = comp.get("strength", "")
+            key_diff = comp.get("key_differentiator", "")
+            if strength:
+                lines.append(f"- **{name}** (Strength: {strength})")
+            else:
+                lines.append(f"- **{name}**")
+            if key_diff:
+                lines.append(f"  - {key_diff}")
         return lines
 
     # 1. Market Landscape
@@ -1322,6 +1375,22 @@ def _format_content_gap(data: dict) -> List[str]:
 
     if not data:
         lines.append("**Content Gap Analysis:** No data available")
+        return lines
+
+    # Detect simple format: data has "gaps" key directly
+    gaps_raw = data.get("gaps", [])
+    if gaps_raw:
+        lines.append("**Content Gaps Identified:**")
+        for gap in gaps_raw:
+            if isinstance(gap, dict):
+                topic = gap.get("topic", "Unknown")
+                priority = gap.get("priority", "")
+                if priority:
+                    lines.append(f"- **{topic}** (Priority: {priority})")
+                else:
+                    lines.append(f"- {topic}")
+            else:
+                lines.append(f"- {gap}")
         return lines
 
     # 1. Executive Summary
@@ -2910,6 +2979,20 @@ def _format_market_trends(data: dict) -> List[str]:
     """
     lines = []
 
+    # Detect simple format: data has "trends" key with items having "title" key
+    trends_raw = data.get("trends", [])
+    first_trend = trends_raw[0] if trends_raw else {}
+    if "title" in first_trend:
+        lines.append("**Top Market Trends:**")
+        for trend in trends_raw:
+            title = trend.get("title", "Unknown")
+            impact = trend.get("impact", "")
+            if impact:
+                lines.append(f"- **{title}** (Impact: {impact})")
+            else:
+                lines.append(f"- {title}")
+        return lines
+
     # 1. Market Summary (executive overview)
     if data.get("market_summary"):
         lines.append("### Market Trends Summary")
@@ -2920,12 +3003,21 @@ def _format_market_trends(data: dict) -> List[str]:
     # 2. Top Rising Trends (fastest growing)
     top_rising = data.get("top_rising_trends", [])
     if top_rising:
-        lines.append("### Top Rising Trends")
-        lines.append("")
-        lines.append("| # | Trend | Momentum | Relevance | Growth | Popularity | Urgency |")
-        lines.append("|---|-------|----------|-----------|--------|------------|---------|")
+        # Handle simple string list format
+        if top_rising and isinstance(top_rising[0], str):
+            lines.append("**Top Rising Trends:**")
+            for trend_str in top_rising:
+                lines.append(f"- {trend_str}")
+            lines.append("")
+        else:
+            lines.append("### Top Rising Trends")
+            lines.append("")
+            lines.append("| # | Trend | Momentum | Relevance | Growth | Popularity | Urgency |")
+            lines.append("|---|-------|----------|-----------|--------|------------|---------|")
 
         for i, trend in enumerate(top_rising[:5], 1):
+            if isinstance(trend, str):
+                break
             topic = trend.get("topic", "Unknown")
             momentum = trend.get("momentum", "unknown").upper()
             relevance = trend.get("relevance", "unknown").upper()
@@ -2949,10 +3041,13 @@ def _format_market_trends(data: dict) -> List[str]:
 
         lines.append("")
 
-        # Show detailed info for top 3 trends
-        lines.append("**Trend Details:**")
-        lines.append("")
+        # Show detailed info for top 3 trends (only for dict format)
+        if top_rising and isinstance(top_rising[0], dict):
+            lines.append("**Trend Details:**")
+            lines.append("")
         for i, trend in enumerate(top_rising[:3], 1):
+            if isinstance(trend, str):
+                break
             lines.append(f"**{i}. {trend.get('topic', 'Unknown')}**")
 
             description = trend.get("description", "")
@@ -3059,6 +3154,26 @@ def _format_market_trends(data: dict) -> List[str]:
             lines.append(f"- {theme}")
         lines.append("")
 
+    # 7b. Trend Categories (detailed breakdown)
+    trend_categories = data.get("trend_categories", [])
+    if trend_categories:
+        lines.append("### Trend Categories")
+        lines.append("")
+        for cat in trend_categories:
+            cat_name = cat.get("category_name", "Unknown")
+            cat_desc = cat.get("description", "")
+            lines.append(f"**{cat_name}**")
+            if cat_desc:
+                lines.append(f"_{cat_desc}_")
+            for t in cat.get("trends", []):
+                if isinstance(t, dict):
+                    topic = t.get("topic", "Unknown")
+                    momentum = t.get("momentum", "")
+                    lines.append(f"- {topic}" + (f" ({momentum})" if momentum else ""))
+                else:
+                    lines.append(f"- {t}")
+            lines.append("")
+
     # 8. Declining Topics (what to avoid)
     declining = data.get("declining_topics", [])
     if declining:
@@ -3080,6 +3195,7 @@ def _format_market_trends(data: dict) -> List[str]:
             upcoming_opps,
             key_themes,
             declining,
+            trend_categories,
         ]
     ):
         lines.append("**Market Trends:** No data available")

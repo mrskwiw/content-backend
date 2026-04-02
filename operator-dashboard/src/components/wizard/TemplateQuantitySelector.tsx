@@ -205,6 +205,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   const [completedTools, setCompletedTools] = useState<Set<string>>(new Set());
   const [loadingDeps, setLoadingDeps] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [storyCounts, setStoryCounts] = useState<Record<string, number>>({});
   const [validationResults, setValidationResults] = useState<Map<number, {
     blocked: boolean;
     warning: string | null;
@@ -318,6 +319,7 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
         });
 
         setValidationResults(results);
+        setStoryCounts(validation.story_counts ?? {});
       } catch (error) {
         console.error('Failed to validate templates:', error);
       } finally {
@@ -417,6 +419,13 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
   const hasBlockedTemplates = useMemo(() => {
     return Array.from(validationResults.values()).some((v) => v.blocked);
   }, [validationResults]);
+
+  // Story template ID -> slug mapping for story count display
+  const STORY_TEMPLATE_SLUGS: Record<number, string> = {
+    6: 'personal_story',
+    8: 'things_i_got_wrong',
+    15: 'milestone',
+  };
 
   return (
     <div className="space-y-8">
@@ -607,7 +616,6 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
             </div>
           </div>
         )}
-
       {/* Template Grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {TEMPLATES.map((template) => {
@@ -633,11 +641,24 @@ export const TemplateQuantitySelector = memo(function TemplateQuantitySelector({
                   <h4 className={`text-sm font-semibold ${hasQuantity ? 'text-blue-900 dark:text-blue-100' : 'text-neutral-900 dark:text-neutral-100'}`}>
                     #{template.id}. {template.name}
                   </h4>
-                  {hasQuantity && (
-                    <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
-                      {quantity}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {hasQuantity && (
+                      <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                        {quantity}
+                      </span>
+                    )}
+                    {(() => {
+                      const slug = STORY_TEMPLATE_SLUGS[template.id];
+                      if (!slug) return null;
+                      const count = storyCounts[slug];
+                      if (count === undefined) return null;
+                      return (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${count > 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'}`}>
+                          {count} {count === 1 ? 'story' : 'stories'}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400">{template.description}</p>
               </div>

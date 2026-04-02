@@ -64,6 +64,9 @@ class StoryUpdate(BaseModel):
     key_metrics: Optional[Dict[str, Any]] = None
     emotional_hook: Optional[str] = None
     source: Optional[str] = Field(None, max_length=100)
+    eligible_templates: Optional[List[str]] = Field(
+        None, description="Template slugs this story is eligible for"
+    )
 
     model_config = ConfigDict(extra="forbid")  # TR-022: Reject unknown fields
 

@@ -15,7 +15,7 @@ import hashlib
 import json
 from typing import Any, Callable, Dict, Optional
 
-from cachetools import TTLCache
+from cachetools import TTLCache  # type: ignore[import-untyped]
 
 # Import settings for cache configuration
 from backend.config import settings

@@ -5,13 +5,40 @@ Provides status checks for external integrations like Google Trends (pytrends),
 Anthropic API, and other dependencies.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 from typing import Dict, Any
 import time
 
+from backend.database import get_db
 from backend.utils.logger import logger
 
-router = APIRouter(prefix="/api/health", tags=["health"])
+router = APIRouter(prefix="/health", tags=["health"])
+
+
+@router.get("")
+async def health_check() -> Dict[str, Any]:
+    """Basic health check."""
+    return {"status": "healthy"}
+
+
+@router.get("/ready")
+async def readiness_check(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Readiness check — verifies database connectivity."""
+    try:
+        db.execute(__import__("sqlalchemy").text("SELECT 1"))
+        return {"status": "ready", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+
+@router.get("/live")
+async def liveness_check() -> Dict[str, Any]:
+    """Liveness check — confirms the process is alive."""
+    return {"status": "alive"}
 
 
 @router.get("/pytrends")

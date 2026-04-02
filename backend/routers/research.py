@@ -41,7 +41,7 @@ from backend.services.credit_service import InsufficientCreditsError
 from backend.pricing.credit_pricing import get_research_tool_cost
 from backend.utils.logger import logger
 from backend.utils.research_rate_limiter import research_rate_limiter
-from backend.utils.http_rate_limiter import strict_limiter, lenient_limiter
+from backend.utils.http_rate_limiter import strict_limiter, standard_limiter, lenient_limiter
 from backend.middleware.authorization import _check_ownership  # TR-021: IDOR prevention
 from src.utils.response_cache import ResponseCache
 import hashlib
@@ -64,12 +64,104 @@ class ResearchTool(BaseModel):
     name: str
     label: str
     credits: Optional[int] = None  # Credit cost (not dollars)
+    price: Optional[float] = None  # Dollar price for billing
     status: str = "available"  # available, coming_soon
     description: Optional[str] = None
     category: Optional[str] = None
     required_integrations: Optional[List[str]] = (
         []
     )  # List of required integrations: 'web_search', 'serpapi', etc.
+
+
+# Tool price lookup — handles canonical names and common aliases
+_TOOL_PRICE_MAP: Dict[str, float] = {
+    "voice_analysis": 400.0,
+    "brand_archetype": 300.0,
+    "seo_keyword_research": 400.0,
+    "determine_competitors": 400.0,
+    "competitive_analysis": 500.0,
+    "content_gap_analysis": 500.0,
+    "market_trends_research": 400.0,
+    "market_trends": 400.0,  # alias
+    "business_report": 300.0,
+    "content_audit": 400.0,
+    "platform_strategy": 300.0,
+    "content_calendar": 300.0,
+    "content_calendar_strategy": 300.0,  # alias
+    "audience_research": 500.0,
+    "icp_workshop": 600.0,
+    "story_mining": 500.0,
+    "story_mining_interview": 500.0,  # alias
+}
+
+# Bundle definitions: id → {name, tools (canonical + alias), price}
+_BUNDLES = [
+    {
+        "id": "foundation_pack",
+        "name": "Foundation Pack",
+        "tools": {"voice_analysis", "brand_archetype", "audience_research", "icp_workshop"},
+        "price": 1500.0,
+    },
+    {
+        "id": "seo_pack",
+        "name": "SEO Pack",
+        "tools": {"seo_keyword_research", "competitive_analysis", "content_gap_analysis"},
+        "price": 1300.0,
+    },
+    {
+        "id": "complete_strategy",
+        "name": "Complete Strategy",
+        "tools": {
+            "voice_analysis",
+            "brand_archetype",
+            "audience_research",
+            "icp_workshop",
+            "seo_keyword_research",
+            "competitive_analysis",
+            "content_gap_analysis",
+        },
+        "price": 2400.0,
+    },
+    {
+        "id": "ultimate_pack",
+        "name": "Ultimate Pack",
+        "tools": {
+            "voice_analysis",
+            "brand_archetype",
+            "audience_research",
+            "icp_workshop",
+            "seo_keyword_research",
+            "competitive_analysis",
+            "content_gap_analysis",
+            "content_audit",
+            "platform_strategy",
+            "content_calendar",
+            "content_calendar_strategy",
+            "story_mining",
+            "story_mining_interview",
+            "market_trends_research",
+            "market_trends",
+        },
+        "price": 4500.0,
+    },
+]
+
+# Canonical tool names for bundle matching (aliases resolve to canonical)
+_TOOL_ALIASES: Dict[str, str] = {
+    "market_trends": "market_trends_research",
+    "content_calendar_strategy": "content_calendar",
+    "story_mining_interview": "story_mining",
+}
+
+
+def _canonical(tool_id: str) -> str:
+    """Resolve alias to canonical tool name."""
+    return _TOOL_ALIASES.get(tool_id, tool_id)
+
+
+def _get_tool_price(tool_id: str) -> float:
+    """Return dollar price for a tool ID (including aliases)."""
+    return _TOOL_PRICE_MAP.get(tool_id, 0.0)
 
 
 class RunResearchInput(BaseModel):
@@ -385,10 +477,80 @@ async def list_research_tools(
     return RESEARCH_TOOLS
 
 
+class ExecuteResearchInput(BaseModel):
+    """Input for /execute endpoint (client-scoped, no project required)"""
+
+    client_id: str
+    tool_name: str
+    inputs: Optional[Dict[str, Any]] = {}
+
+
+class ExecuteResearchResponse(BaseModel):
+    id: str
+    result_id: str
+    tool_name: str
+    status: str = "pending"
+
+
+@router.post("/execute", response_model=ExecuteResearchResponse, status_code=202)
+@standard_limiter.limit("30/hour")
+async def execute_research(
+    request: Request,
+    body: ExecuteResearchInput,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Submit a research tool execution request (client-scoped, no project needed).
+
+    Validates inputs against the tool schema, creates a pending ResearchResult,
+    and returns immediately. The result may be processed asynchronously.
+    """
+    import uuid as _uuid
+
+    # Verify client exists and user owns it
+    client_obj = crud.get_client(db, body.client_id)
+    if not client_obj:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    if not _check_ownership("Client", client_obj, current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    # Validate inputs using tool schema (raises 422 if invalid)
+    validated_inputs = validate_research_params(body.tool_name, body.inputs or {})
+
+    # Create a pending research result record
+    result_id = f"res-{_uuid.uuid4().hex[:12]}"
+    tool_price = _get_tool_price(body.tool_name)
+
+    from backend.models import ResearchResult as ResearchResultModel
+
+    result = ResearchResultModel(
+        id=result_id,
+        user_id=current_user.id,
+        client_id=body.client_id,
+        tool_name=body.tool_name,
+        tool_label=next(
+            (t.label for t in RESEARCH_TOOLS if t.name == body.tool_name), body.tool_name
+        ),
+        tool_price=tool_price if tool_price > 0 else None,
+        params=validated_inputs,
+        status="pending",
+    )
+    db.add(result)
+    db.commit()
+
+    return ExecuteResearchResponse(
+        id=result_id,
+        result_id=result_id,
+        tool_name=body.tool_name,
+        status="pending",
+    )
+
+
 @router.post("/run", response_model=ResearchRunResult)
 @strict_limiter.limit(
-    "2/minute"
-)  # TR-004: DoS protection (2/min = 120/hr) - per-user limits still apply
+    "10/minute"
+)  # TR-004: DoS protection (10/min = 600/hr) - per-user limits still apply
 async def run_research(
     request: Request,
     input: RunResearchInput,
@@ -756,6 +918,39 @@ async def run_research(
 
 
 # ==================== Research Result Endpoints ====================
+
+
+@router.get("/results/", response_model=ResearchResultListResponse)
+@lenient_limiter.limit("1000/hour")
+async def get_all_research_results(
+    request: Request,
+    tool_name: Optional[str] = None,
+    client_id: Optional[str] = None,
+    days: Optional[int] = Query(None, ge=1, le=365),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get all research results for the current user, across all clients/projects.
+    Supports filtering by tool_name, client_id, and date range (days back from now).
+    """
+    from backend.models import ResearchResult
+
+    query = db.query(ResearchResult).filter(ResearchResult.user_id == current_user.id)
+    if tool_name and tool_name != "all":
+        query = query.filter(ResearchResult.tool_name == tool_name)
+    if client_id and client_id != "all":
+        query = query.filter(ResearchResult.client_id == client_id)
+    if days:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        query = query.filter(ResearchResult.created_at >= cutoff)
+
+    results = query.order_by(ResearchResult.created_at.desc()).limit(200).all()
+
+    return ResearchResultListResponse(
+        results=[ResearchResultResponse.model_validate(r) for r in results],
+        total=len(results),
+    )
 
 
 @router.get("/results/project/{project_id}", response_model=ResearchResultListResponse)
@@ -1284,15 +1479,15 @@ async def execute_research_batch(
 
 
 class PricingPreviewResponse(BaseModel):
-    """Response from pricing preview endpoint (credit-based)"""
+    """Response from pricing preview endpoint"""
 
-    base_cost: int  # Total credits needed
-    discount: int  # Always 0 (no bundle discounts in credit system)
-    final_cost: int  # Same as base_cost
-    bundle_applied: Optional[str] = None  # Always None (no bundles)
-    bundle_name: Optional[str] = None  # Always None (no bundles)
-    savings_percent: float = 0.0  # Always 0 (no discounts)
-    next_bundle_suggestion: Optional[Dict[str, Any]] = None  # Always None (no bundles)
+    base_cost: float
+    discount: float
+    final_cost: float
+    bundle_applied: Optional[str] = None
+    bundle_name: Optional[str] = None
+    savings_percent: float = 0.0
+    next_bundle_suggestion: Optional[Dict[str, Any]] = None
 
 
 @router.get("/pricing-preview", response_model=PricingPreviewResponse)
@@ -1303,58 +1498,95 @@ async def get_pricing_preview(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Calculate credit cost for selected research tools.
+    Calculate dollar cost for selected research tools with bundle detection.
 
     Query params:
     - tool_ids: Comma-separated tool IDs (e.g. "voice_analysis,brand_archetype")
-
-    Returns:
-    {
-      "base_cost": 175,  # Total credits needed
-      "discount": 0,      # No discounts in credit system
-      "final_cost": 175,  # Same as base_cost
-      "bundle_applied": null,
-      "bundle_name": null,
-      "savings_percent": 0.0,
-      "next_bundle_suggestion": null
-    }
-
-    Note: Bundle discounts removed - credit system uses flat per-tool pricing.
     """
-    # Parse tool IDs
     tool_list = [tid.strip() for tid in tool_ids.split(",") if tid.strip()]
 
-    # Calculate total credit cost
-    total_credits = 0
-    for tool_id in tool_list:
-        tool = next((t for t in RESEARCH_TOOLS if t.name == tool_id), None)
-        if tool and tool.credits:
-            total_credits += tool.credits
+    if not tool_list:
+        return PricingPreviewResponse(
+            base_cost=0.0,
+            discount=0.0,
+            final_cost=0.0,
+            bundle_applied=None,
+            bundle_name=None,
+            savings_percent=0.0,
+            next_bundle_suggestion=None,
+        )
 
-    # No discounts or bundles in credit system
+    # Calculate base cost using dollar prices
+    base_cost = sum(_get_tool_price(tid) for tid in tool_list)
+
+    # Resolve selected tools to canonical names for bundle matching
+    selected_canonical = {_canonical(tid) for tid in tool_list}
+
+    # Check for applied bundle (largest matching bundle where all tools are selected)
+    applied_bundle = None
+    for bundle in sorted(_BUNDLES, key=lambda b: len(b["tools"]), reverse=True):
+        bundle_canonical = {_canonical(t) for t in bundle["tools"]}
+        if bundle_canonical.issubset(selected_canonical):
+            applied_bundle = bundle
+            break
+
+    if applied_bundle:
+        final_cost = applied_bundle["price"]
+        discount = round(base_cost - final_cost, 2)
+        savings_percent = round(discount / base_cost * 100, 1) if base_cost > 0 else 0.0
+        bundle_applied = applied_bundle["id"]
+        bundle_name = applied_bundle["name"]
+    else:
+        final_cost = base_cost
+        discount = 0.0
+        savings_percent = 0.0
+        bundle_applied = None
+        bundle_name = None
+
+    # Suggest next bundle (smallest bundle that covers all selected tools + extras)
+    next_suggestion = None
+    if applied_bundle is None or applied_bundle["id"] != "ultimate_pack":
+        for bundle in sorted(_BUNDLES, key=lambda b: b["price"]):
+            if applied_bundle and bundle["price"] <= applied_bundle["price"]:
+                continue
+            bundle_canonical = {_canonical(t) for t in bundle["tools"]}
+            if selected_canonical.issubset(bundle_canonical):
+                missing = bundle_canonical - selected_canonical
+                additional_cost = sum(_TOOL_PRICE_MAP.get(t, 0.0) for t in missing)
+                potential_savings = round((base_cost + additional_cost) - bundle["price"], 2)
+                if potential_savings > 0:
+                    next_suggestion = {
+                        "bundle": bundle["id"],
+                        "bundle_name": bundle["name"],
+                        "missing_tools": list(missing),
+                        "additional_cost": round(additional_cost, 2),
+                        "potential_savings": round(potential_savings, 2),
+                    }
+                    break
+
     return PricingPreviewResponse(
-        base_cost=total_credits,
-        discount=0,
-        final_cost=total_credits,
-        bundle_applied=None,
-        bundle_name=None,
-        savings_percent=0.0,
-        next_bundle_suggestion=None,
+        base_cost=base_cost,
+        discount=discount,
+        final_cost=final_cost,
+        bundle_applied=bundle_applied,
+        bundle_name=bundle_name,
+        savings_percent=savings_percent,
+        next_bundle_suggestion=next_suggestion,
     )
 
 
 class ResearchAnalyticsResponse(BaseModel):
     """Response from analytics endpoint"""
 
-    total_revenue: float
-    total_api_cost: float
-    profit_margin: float
-    total_executions: int
-    cache_hit_rate: float
-    cache_savings: float
-    avg_cost_per_tool: float
-    top_tools: List[Dict[str, Any]]
-    date_range: int
+    total_revenue: float = 0.0
+    total_api_cost: float = 0.0
+    profit_margin: float = 0.0
+    total_executions: int = 0
+    cache_hit_rate: float = 0.0
+    cache_savings: float = 0.0
+    avg_cost_per_tool: float = 0.0
+    top_tools: List[Dict[str, Any]] = []
+    date_range: int = 90
 
 
 @router.get("/analytics", response_model=ResearchAnalyticsResponse)
@@ -1408,28 +1640,44 @@ async def get_research_analytics(
         )
 
     # Calculate aggregates
-    # total_revenue removed: Tools use credits, not prices (Bug #51)
-    total_api_cost = sum(r.actual_cost_usd or 0.0 for r in results)
+    total_revenue = sum(r.tool_price or 0.0 for r in results)
+    total_api_cost = round(sum(r.actual_cost_usd or 0.0 for r in results), 2)
+    cached_count = sum(1 for r in results if getattr(r, "is_cached_result", False))
+
+    cache_hit_rate = round(cached_count / len(results) * 100, 1) if results else 0.0
+    cache_savings = round(cache_hit_rate / 100 * total_revenue, 2)
+    profit_margin = (
+        round((total_revenue - total_api_cost) / total_revenue * 100, 1)
+        if total_revenue > 0
+        else 0.0
+    )
+    avg_cost_per_tool = round(total_api_cost / len(results), 4) if results else 0.0
 
     # Group by tool_name for top tools
-    tool_stats = {}
+    tool_stats: Dict[str, Any] = {}
     for r in results:
         if r.tool_name not in tool_stats:
             tool_stats[r.tool_name] = {
                 "tool_name": r.tool_name,
+                "execution_count": 0,
+                "total_revenue": 0.0,
                 "total_api_cost": 0.0,
             }
         tool_stats[r.tool_name]["execution_count"] += 1
-        # tool_stats revenue removed (Bug #51)
+        tool_stats[r.tool_name]["total_revenue"] += r.tool_price or 0.0
         tool_stats[r.tool_name]["total_api_cost"] += r.actual_cost_usd or 0.0
 
     # Sort by execution count
     top_tools = sorted(tool_stats.values(), key=lambda x: x["execution_count"], reverse=True)[:10]
 
     return ResearchAnalyticsResponse(
-        total_api_cost=round(total_api_cost, 2),
+        total_revenue=round(total_revenue, 2),
+        total_api_cost=total_api_cost,
+        profit_margin=profit_margin,
         total_executions=len(results),
-        avg_cost_per_tool=round(total_api_cost / len(results), 4) if results else 0.0,
+        cache_hit_rate=cache_hit_rate,
+        cache_savings=cache_savings,
+        avg_cost_per_tool=avg_cost_per_tool,
         top_tools=top_tools,
         date_range=days,
     )

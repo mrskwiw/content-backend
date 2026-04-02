@@ -42,8 +42,7 @@ class CalculatePriceResponse(BaseModel):
 
     numPosts: int
     researchIncluded: bool
-    # pricePerPost removed - system uses credits only
-    # researchPricePerPost removed - tools use credits (Bug #51)
+    pricePerPost: float = 0.0  # Price per post (totalPrice / numPosts)
     totalPrice: float
 
 
@@ -130,6 +129,7 @@ async def calculate_custom_price(
         return CalculatePriceResponse(
             numPosts=calculated_num_posts,
             researchIncluded=research_requested,
+            pricePerPost=price / calculated_num_posts if calculated_num_posts > 0 else 0.0,
             totalPrice=price,
         )
 
@@ -148,6 +148,7 @@ async def calculate_custom_price(
     return CalculatePriceResponse(
         numPosts=num_posts,
         researchIncluded=research,
+        pricePerPost=price / num_posts if num_posts > 0 else 0.0,
         totalPrice=price,
     )
 
@@ -205,5 +206,6 @@ async def calculate_price_from_template_quantities(
     return CalculatePriceResponse(
         numPosts=total_posts,
         researchIncluded=research,
+        pricePerPost=price / total_posts if total_posts > 0 else 0.0,
         totalPrice=price,
     )

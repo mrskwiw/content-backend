@@ -139,6 +139,9 @@ class Settings(BaseSettings):
     # Rate Limiting (70% of Anthropic limits)
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 2800
     RATE_LIMIT_TOKENS_PER_MINUTE: int = 280000
+    RATE_LIMIT_STORAGE: str = (
+        "memory://"  # Use "redis://localhost:6379/1" for production clustering
+    )
 
     # Content Generation
     PARALLEL_GENERATION: bool = True

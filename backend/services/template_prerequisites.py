@@ -37,14 +37,14 @@ TEMPLATE_IDS = {
 TEMPLATE_PREREQUISITES = {
     "personal_story": {
         "required_client_fields": ["business_description"],
-        "required_research_tools": ["story_mining"],
+        "recommended_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
         "error_message": "Personal Story posts require authentic stories. Run Story Mining first.",
     },
     "things_i_got_wrong": {
         "required_client_fields": ["business_description"],
-        "required_research_tools": ["story_mining"],
+        "recommended_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
         "error_message": "This template requires authentic learning stories. Run Story Mining first.",
@@ -57,10 +57,9 @@ TEMPLATE_PREREQUISITES = {
     },
     "milestone": {
         "required_client_fields": ["business_description"],
-        "required_research_tools": ["story_mining"],
         "risk_level": RiskLevel.CRITICAL,
         "block_generation": True,
-        "error_message": "Milestone posts require real achievements. Run Story Mining first.",
+        "error_message": "Milestone posts require real achievements.",
     },
     # HIGH RISK - Warn but allow generation
     "statistic_insight": {
@@ -184,15 +183,15 @@ def check_template_prerequisites(
         }
 
     # Check required client fields
-    required_fields = prereqs.get("required_client_fields", [])
+    required_fields: list = prereqs.get("required_client_fields", [])  # type: ignore[assignment]
     missing_required = [f for f in required_fields if not check_client_field(client_data, f)]
 
     # Check recommended client fields
-    recommended_fields = prereqs.get("recommended_client_fields", [])
+    recommended_fields: list = prereqs.get("recommended_client_fields", [])  # type: ignore[assignment]
     missing_recommended = [f for f in recommended_fields if not check_client_field(client_data, f)]
 
     # Check required research tools (block if missing)
-    required_tools = prereqs.get("required_research_tools", [])
+    required_tools: list = prereqs.get("required_research_tools", [])  # type: ignore[assignment]
     missing_required_tools = [t for t in required_tools if t not in completed_research_tools]
 
     # Determine if generation should be blocked

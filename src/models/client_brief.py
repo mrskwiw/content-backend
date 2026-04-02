@@ -15,6 +15,12 @@ class TonePreference(str, Enum):
     FRIENDLY = "friendly"
     INNOVATIVE = "innovative"
     EDUCATIONAL = "educational"
+    # Brand voice traits (used in brand_personality field)
+    APPROACHABLE = "approachable"
+    DIRECT = "direct"
+    WITTY = "witty"
+    VULNERABLE = "vulnerable"
+    DATA_DRIVEN = "data_driven"
 
 
 class Platform(str, Enum):

@@ -528,11 +528,27 @@ async def validate_templates(
         input.template_quantities, client_data, completed_research_tools
     )
 
+    # Add available story counts for story-based templates (6, 8, 15)
+    story_counts: dict = {}
+    _STORY_TEMPLATE_MAP = {6: "personal_story", 8: "things_i_got_wrong", 15: "milestone"}
+    try:
+        from backend.services.story_service import story_service as _ss
+
+        for _tid, _tname in _STORY_TEMPLATE_MAP.items():
+            if str(_tid) in (input.template_quantities or {}):
+                _avail = _ss.get_available_stories_for_template(
+                    db, input.client_id, _tname, input.project_id or "", limit=10
+                )
+                story_counts[_tname] = len(_avail)
+    except Exception as _sce:
+        logger.warning(f"Could not fetch story counts: {_sce}")
+
     return {
         "can_generate": validation["can_generate"],
         "blocked_templates": validation["blocked_templates"],
         "warnings": validation["warnings"],
         "errors": validation["errors"],
+        "story_counts": story_counts,
     }
 
 

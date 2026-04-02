@@ -40,6 +40,8 @@ import { ResearchResultsDrawer } from '@/components/research/ResearchResultsDraw
 import { StoryDetailsDrawer } from '@/components/stories/StoryDetailsDrawer';
 import { AddStoryDialog } from '@/components/stories/AddStoryDialog';
 import { EditClientDialog } from '@/components/clients/EditClientDialog';
+import { DeleteClientDialog } from '@/components/DeleteClientDialog';
+import { SendEmailDialog } from '@/components/clients/SendEmailDialog';
 import { NewCommunicationDialog } from '@/components/clients/NewCommunicationDialog';
 import type { Project, PostDraft, Deliverable, ResearchResult } from '@/types/domain';
 import type { PaginatedResponse } from '@/types/pagination';
@@ -72,8 +74,14 @@ export default function ClientDetail() {
   const [addStoryDialogOpen, setAddStoryDialogOpen] = useState(false);
   // Edit client dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // Delete client dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  // Send email dialog state
+  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
   // New communication dialog state
   const [newCommDialogOpen, setNewCommDialogOpen] = useState(false);
+  // Communication type filter
+  const [commTypeFilter, setCommTypeFilter] = useState<string>('all');
 
   // Data collection dialog state
   const [dialogInputValue, setDialogInputValue] = useState('');
@@ -438,13 +446,7 @@ export default function ClientDetail() {
               Edit
             </button>
             <button
-              onClick={() => {
-                if (client?.email) {
-                  window.location.href = `mailto:${client.email}`;
-                } else {
-                  alert('No email address on file for this client.');
-                }
-              }}
+              onClick={() => setSendEmailDialogOpen(true)}
               className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800"
             >
               <Mail className="h-4 w-4" />
@@ -488,11 +490,7 @@ export default function ClientDetail() {
               {archiveClientMutation.isPending ? 'Archiving...' : 'Archive'}
             </button>
             <button
-              onClick={() => {
-                if (client && confirm(`Are you sure you want to delete ${client.name}? This action cannot be undone.`)) {
-                  deleteClientMutation.mutate();
-                }
-              }}
+              onClick={() => setDeleteDialogOpen(true)}
               disabled={deleteClientMutation.isPending}
               className="inline-flex items-center gap-2 rounded-lg border border-red-300 dark:border-red-600 bg-white dark:bg-neutral-900 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -582,7 +580,7 @@ export default function ClientDetail() {
                   </div>
                   <div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">Phone</p>
-                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">+1 (555) 123-4567</p>
+                    <p className="mt-1 font-medium text-neutral-500 dark:text-neutral-400 italic">No phone on file</p>
                   </div>
                 </div>
               </div>
@@ -596,24 +594,15 @@ export default function ClientDetail() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">Industry</p>
-                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">Technology / SaaS</p>
+                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">
+                      {client.industry || <span className="text-neutral-500 dark:text-neutral-400 italic">Not specified</span>}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Company Size</p>
-                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">50-100 employees</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Website</p>
-                    <a
-                      href={`https://${client.name.toLowerCase().replace(/\s+/g, '')}.com`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
-                    >
-                      <Globe className="h-4 w-4" />
-                      Visit website
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Location</p>
+                    <p className="mt-1 font-medium text-neutral-900 dark:text-neutral-100">
+                      {client.location || <span className="text-neutral-500 dark:text-neutral-400 italic">Not specified</span>}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1446,13 +1435,30 @@ export default function ClientDetail() {
               </button>
             </div>
 
+            {/* Type filter */}
+            <div className="flex gap-2">
+              {['all', 'email', 'call', 'meeting', 'note'].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setCommTypeFilter(type)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
+                    commTypeFilter === type
+                      ? 'bg-primary-600 dark:bg-primary-500 text-white'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  {type === 'all' ? `All (${communications.length})` : type}
+                </button>
+              ))}
+            </div>
+
             {isLoadingCommunications ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
               </div>
             ) : (
               <div className="space-y-3">
-                {communications.map((comm) => {
+                {communications.filter(c => commTypeFilter === 'all' || c.type === commTypeFilter).map((comm) => {
                   const bgColors: Record<string, string> = {
                     email: 'bg-primary-100 dark:bg-primary-900/20',
                     call: 'bg-emerald-100 dark:bg-emerald-900/20',
@@ -1521,7 +1527,7 @@ export default function ClientDetail() {
               </div>
             )}
 
-            {!isLoadingCommunications && communications.length === 0 && (
+            {!isLoadingCommunications && communications.filter(c => commTypeFilter === 'all' || c.type === commTypeFilter).length === 0 && (
               <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-12 text-center">
                 <MessageSquare className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
                 <p className="mt-4 font-medium text-neutral-700 dark:text-neutral-300">No communication history</p>
@@ -1643,6 +1649,30 @@ export default function ClientDetail() {
           onClose={() => setNewCommDialogOpen(false)}
           onSubmit={(input) => createCommunicationMutation.mutate(input)}
           isSubmitting={createCommunicationMutation.isPending}
+        />
+      )}
+
+      {/* Send Email Dialog */}
+      {sendEmailDialogOpen && client && (
+        <SendEmailDialog
+          client={client}
+          onClose={() => setSendEmailDialogOpen(false)}
+          onSuccess={() => {
+            refetchCommunications();
+            setSendEmailDialogOpen(false);
+          }}
+        />
+      )}
+
+      {/* Delete Client Dialog */}
+      {client && (
+        <DeleteClientDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          clientId={client.id}
+          clientName={client.name}
+          onConfirmDelete={() => deleteClientMutation.mutateAsync()}
+          onExportData={handleExportProfile}
         />
       )}
     </div>

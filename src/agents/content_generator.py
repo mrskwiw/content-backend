@@ -40,12 +40,16 @@ if TYPE_CHECKING:
 
 # Research context integration
 try:
-    from backend.services.research_context_builder import build_research_context
+    from backend.services.research_context_builder import (
+        build_research_context,
+        get_story_context_for_template,
+    )
 
     RESEARCH_CONTEXT_AVAILABLE = True
 except ImportError:
     RESEARCH_CONTEXT_AVAILABLE = False
     build_research_context = None
+    get_story_context_for_template = None
 
 
 class ContentGeneratorAgent:
@@ -850,6 +854,23 @@ class ContentGeneratorAgent:
             # Check if post needs review
             self._check_quality_flags(post, template, client_brief)
 
+            # Mark story as used for this template+project if story context was injected
+            _used_story_id = context.get("_story_id_for_template")
+            if _used_story_id and self.backend_session and hasattr(client_brief, "project_id"):
+                try:
+                    from backend.services.story_service import story_service
+                    from backend.services.template_prerequisites import TEMPLATE_IDS
+
+                    _tmpl_slug = TEMPLATE_IDS.get(template.template_id, "")
+                    story_service.mark_story_used_for_template(
+                        self.backend_session,
+                        story_id=_used_story_id,
+                        template_name=_tmpl_slug,
+                        project_id=client_brief.project_id or "",
+                    )
+                except Exception as _me:
+                    logger.warning(f"Could not mark story {_used_story_id} as used: {_me}")
+
             return post
 
         except Exception as e:
@@ -1219,6 +1240,34 @@ Focus on providing deep value and comprehensive coverage of the topic. This is a
             context["comparison_guidance"] = (
                 "Use the competitors list above to create a detailed comparison"
             )
+
+        # Inject story context for story-based templates (6=personal_story, 8=things_i_got_wrong, 15=milestone)
+        _STORY_TEMPLATE_IDS = {6, 8, 15}
+        if (
+            RESEARCH_CONTEXT_AVAILABLE
+            and get_story_context_for_template is not None
+            and template.template_id in _STORY_TEMPLATE_IDS
+            and self.backend_session
+            and hasattr(client_brief, "client_id")
+            and hasattr(client_brief, "project_id")
+        ):
+            try:
+                from backend.services.template_prerequisites import TEMPLATE_IDS
+
+                _tmpl_slug = TEMPLATE_IDS.get(template.template_id, "")
+                _story_ctx = get_story_context_for_template(
+                    self.backend_session,
+                    client_brief.client_id,
+                    _tmpl_slug,
+                    client_brief.project_id or "",
+                )
+                if _story_ctx["formatted_text"]:
+                    context["story_context"] = _story_ctx["formatted_text"]
+                    context["_story_id_for_template"] = _story_ctx["story_id"]
+            except Exception as _se:
+                logger.warning(
+                    f"Could not inject story context for template {template.template_id}: {_se}"
+                )
 
         return context
 

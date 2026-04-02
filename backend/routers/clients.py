@@ -22,7 +22,7 @@ from backend.utils.http_rate_limiter import standard_limiter
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ClientResponse])
+@router.get("/", response_model=List[ClientResponse], response_model_by_alias=False)
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def list_clients(
     request: Request,
@@ -47,7 +47,12 @@ async def list_clients(
     return query.offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=ClientResponse,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def create_client(
     request: Request,
@@ -65,7 +70,7 @@ async def create_client(
     return crud.create_client(db, client, user_id=current_user.id)
 
 
-@router.get("/{client_id}", response_model=ClientResponse)
+@router.get("/{client_id}", response_model=ClientResponse, response_model_by_alias=False)
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def get_client(
     request: Request,
@@ -84,7 +89,7 @@ async def get_client(
     return client
 
 
-@router.patch("/{client_id}", response_model=ClientResponse)
+@router.patch("/{client_id}", response_model=ClientResponse, response_model_by_alias=False)
 @standard_limiter.limit("100/hour")  # TR-004: Standard operation
 async def update_client(
     request: Request,
@@ -133,8 +138,21 @@ async def delete_client(
     """
     # TR-021: client already verified by dependency
 
-    # Check for associated projects
-    from backend.models import Project
+    # Lazy imports — all used below for GDPR cascade delete
+    from backend.models import (
+        Brief,
+        Deliverable,
+        MinedStory,
+        Post,
+        Project,
+        ResearchResult,
+        Run,
+        StoryUsage,
+        TrendsInterestData,
+        TrendsKeywordInsight,
+        TrendsRelatedQuery,
+        TrendsSearch,
+    )
 
     projects = db.query(Project).filter(Project.client_id == client_id).all()
 
@@ -144,26 +162,97 @@ async def delete_client(
             detail=f"Client has {len(projects)} associated project(s). Use force=true to delete all related data.",
         )
 
-    # If force=True, delete associated projects first (cascade)
     if projects:
         for project in projects:
-            # Delete associated posts, runs, briefs, deliverables
-            from backend.models import Post, Run, Brief, Deliverable
+            project_id = project.id
 
-            db.query(Post).filter(Post.project_id == project.id).delete()
-            db.query(Run).filter(Run.project_id == project.id).delete()
-            db.query(Brief).filter(Brief.project_id == project.id).delete()
-            db.query(Deliverable).filter(Deliverable.project_id == project.id).delete()
+            # Story usage must be deleted before mined_stories (no SQL cascade)
+            story_ids = [
+                s.id
+                for s in db.query(MinedStory.id).filter(MinedStory.project_id == project_id).all()
+            ]
+            if story_ids:
+                db.query(StoryUsage).filter(StoryUsage.story_id.in_(story_ids)).delete(
+                    synchronize_session=False
+                )
+            db.query(MinedStory).filter(MinedStory.project_id == project_id).delete(
+                synchronize_session=False
+            )
+
+            # Trends: delete child tables before parent
+            trend_ids = [
+                t.id
+                for t in db.query(TrendsSearch.id)
+                .filter(TrendsSearch.project_id == project_id)
+                .all()
+            ]
+            if trend_ids:
+                db.query(TrendsInterestData).filter(
+                    TrendsInterestData.search_id.in_(trend_ids)
+                ).delete(synchronize_session=False)
+                db.query(TrendsRelatedQuery).filter(
+                    TrendsRelatedQuery.search_id.in_(trend_ids)
+                ).delete(synchronize_session=False)
+            db.query(TrendsSearch).filter(TrendsSearch.project_id == project_id).delete(
+                synchronize_session=False
+            )
+            db.query(TrendsKeywordInsight).filter(
+                TrendsKeywordInsight.project_id == project_id
+            ).delete(synchronize_session=False)
+
+            db.query(ResearchResult).filter(ResearchResult.project_id == project_id).delete(
+                synchronize_session=False
+            )
+            db.query(Post).filter(Post.project_id == project_id).delete(synchronize_session=False)
+            db.query(Run).filter(Run.project_id == project_id).delete(synchronize_session=False)
+            db.query(Brief).filter(Brief.project_id == project_id).delete(synchronize_session=False)
+            db.query(Deliverable).filter(Deliverable.project_id == project_id).delete(
+                synchronize_session=False
+            )
             db.delete(project)
 
-    # Delete the client
+    # Client-level cleanup: records that may not have a project_id
+    # (or belong to archived/deleted projects)
+    client_story_ids = [
+        s.id for s in db.query(MinedStory.id).filter(MinedStory.client_id == client_id).all()
+    ]
+    if client_story_ids:
+        db.query(StoryUsage).filter(StoryUsage.story_id.in_(client_story_ids)).delete(
+            synchronize_session=False
+        )
+    db.query(MinedStory).filter(MinedStory.client_id == client_id).delete(synchronize_session=False)
+
+    client_trend_ids = [
+        t.id for t in db.query(TrendsSearch.id).filter(TrendsSearch.client_id == client_id).all()
+    ]
+    if client_trend_ids:
+        db.query(TrendsInterestData).filter(
+            TrendsInterestData.search_id.in_(client_trend_ids)
+        ).delete(synchronize_session=False)
+        db.query(TrendsRelatedQuery).filter(
+            TrendsRelatedQuery.search_id.in_(client_trend_ids)
+        ).delete(synchronize_session=False)
+    db.query(TrendsSearch).filter(TrendsSearch.client_id == client_id).delete(
+        synchronize_session=False
+    )
+    db.query(TrendsKeywordInsight).filter(TrendsKeywordInsight.client_id == client_id).delete(
+        synchronize_session=False
+    )
+    db.query(ResearchResult).filter(ResearchResult.client_id == client_id).delete(
+        synchronize_session=False
+    )
+    db.query(Deliverable).filter(Deliverable.client_id == client_id).delete(
+        synchronize_session=False
+    )
+    # Communications are handled by SQL-level ondelete="CASCADE" on the FK
+
     db.delete(client)
     db.commit()
 
     return None
 
 
-@router.post("/{client_id}/archive", response_model=ClientResponse)
+@router.post("/{client_id}/archive", response_model=ClientResponse, response_model_by_alias=False)
 @standard_limiter.limit("100/hour")
 async def archive_client(
     request: Request,
@@ -179,7 +268,7 @@ async def archive_client(
     return client
 
 
-@router.post("/{client_id}/unarchive", response_model=ClientResponse)
+@router.post("/{client_id}/unarchive", response_model=ClientResponse, response_model_by_alias=False)
 @standard_limiter.limit("100/hour")
 async def unarchive_client(
     request: Request,
